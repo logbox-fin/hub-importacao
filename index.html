@@ -3098,7 +3098,7 @@ function renderPackingList(fonte){
   if (staging.length){
     stagingSection.style.display = "";
     stagingList.innerHTML = staging.map(s => {
-      const sel = PL_SEL[fonte].has(s.id);
+      const sel = PL_SEL[fonte].has(String(s.id));
       return `<div class="pl-staging-card ${sel ? "sel" : ""}" onclick="plToggleSel('${fonte}','${s.id}')">
         <input type="checkbox" ${sel ? "checked" : ""}>
         <div style="flex:1; min-width:0;">
@@ -3151,18 +3151,19 @@ function renderPackingList(fonte){
 
 function plAtualizarTotalStaging(fonte){
   const sel = [...PL_SEL[fonte]];
-  const total = sel.reduce((s, id) => { const st = PL_STAGING[fonte].find(x => x.id === id); return s + (st ? Number(st.total_rmb) || 0 : 0); }, 0);
+  const total = sel.reduce((s, id) => { const st = PL_STAGING[fonte].find(x => String(x.id) === String(id)); return s + (st ? Number(st.total_rmb) || 0 : 0); }, 0);
   const el = document.getElementById(`plStagingTotal_${fonte}`);
   if (el) el.textContent = sel.length ? `${sel.length} selecionado(s) · ¥ ${fmtN(total, 2)}` : "";
 }
 
 window.plToggleSel = function(fonte, id){
+  id = String(id);
   if (PL_SEL[fonte].has(id)) PL_SEL[fonte].delete(id); else PL_SEL[fonte].add(id);
   renderPackingList(fonte);
 };
 
 window.plVerItensStaging = function(fonte, id){
-  const s = PL_STAGING[fonte].find(x => x.id === id);
+  const s = PL_STAGING[fonte].find(x => String(x.id) === String(id));
   if (!s) return;
   const rows = (s.itens || []).map(it => `
     <div class="pl-item-row" style="grid-template-columns: 2fr 90px 90px 90px 90px 90px;">
@@ -3190,7 +3191,7 @@ window.plImportarSelecionados = async function(fonte){
   if (!ids.length){ toast("Selecione ao menos um contêiner pra importar.", "error"); return; }
   let okCount = 0, itensCount = 0, pendCount = 0;
   for (const id of ids){
-    const s = PL_STAGING[fonte].find(x => x.id === id);
+    const s = PL_STAGING[fonte].find(x => String(x.id) === String(id));
     if (!s) continue;
     const { data: novoContainer, error: eC } = await db.from("imp_containers").insert({
       fonte, nome: s.codigo, etd: s.etd_sugerido, eta: null, origem_staging_id: s.id
