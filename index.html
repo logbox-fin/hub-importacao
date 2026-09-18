@@ -497,20 +497,98 @@
 
     <!-- ============ PEDIDOS ============ -->
     <div class="view" id="view-v-pedidos">
-      <div class="toolbar">
-        <div class="search-box">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="pedidoSearchInput" placeholder="Buscar pedido..." oninput="renderPedidos()">
+      <div id="pedidos-lista">
+        <div class="summary-row" id="pedStatCards"></div>
+        <div class="toolbar">
+          <div class="search-box">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="pedidoSearchInput" placeholder="Buscar pedido..." oninput="renderPedidos()">
+          </div>
+          <select id="pedFiltroStatus" onchange="renderPedidos()">
+            <option value="">Todos os status</option>
+            <option value="rascunho">⏳ Rascunho</option>
+            <option value="enviado">📤 Enviado</option>
+            <option value="confirmado">✅ Confirmado</option>
+          </select>
+          <select id="pedFiltroMarca" onchange="renderPedidos()"><option value="">Todas as marcas</option></select>
+          <select id="pedFiltroResp" onchange="renderPedidos()"><option value="">Todos os responsáveis</option></select>
+          <select id="pedOrdenar" onchange="renderPedidos()">
+            <option value="recente">Data (recente)</option>
+            <option value="antigo">Data (mais antiga)</option>
+          </select>
+          <div class="spacer"></div>
+          <button class="btn btn-primary" onclick="abrirNovoPedido()">+ Novo Pedido</button>
         </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Pedido</th><th>Lote</th><th>Marca</th><th>Responsável</th><th>Status</th><th>Data Envio</th><th></th></tr></thead>
+            <tbody id="pedidoTbody"><tr><td colspan="7" class="empty-state">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="pedido-detalhe" style="display:none;">
+        <div class="ped-det-head">
+          <div>
+            <h2 id="pd_det_titulo">Pedido</h2>
+            <div class="sub" id="pd_det_sub"></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <div class="status-pick">
+              <span class="badge-status-pill status-pill rascunho" id="pd_det_status_pill">⏳ Rascunho</span>
+              <select id="pd_det_status" onchange="pedidoDetStatusMudou()">
+                <option value="rascunho">⏳ Rascunho</option>
+                <option value="enviado">📤 Enviado</option>
+                <option value="confirmado">✅ Confirmado</option>
+              </select>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="pd_det_verlote" onclick="pedidoDetVerLote()">📋 Ver Lote</button>
+            <button class="btn btn-ghost btn-sm" onclick="pedidoDetExportarPDF()">📄 PDF</button>
+            <button class="btn btn-ghost btn-sm" onclick="fecharPedidoDetalhe()">← Voltar</button>
+          </div>
+        </div>
+
+        <div class="ped-tot-row">
+          <div class="ped-tot-card dark"><div class="ptc-label">Total RMB</div><div class="ptc-value" id="pd_det_totrmb">¥ 0,00</div></div>
+          <div class="ped-tot-card light"><div class="ptc-label">Total USD</div><div class="ptc-value" id="pd_det_totusd">$ 0,00</div></div>
+          <div class="ped-tot-card light"><div class="ptc-label">Cotação RMB → USD</div><input type="text" inputmode="decimal" id="pd_det_cotrmb" onchange="renderPedidoDetItens()"></div>
+        </div>
+
+        <div class="table-wrap" style="padding:16px 18px; margin-bottom:16px;">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-faint); margin-bottom:6px;">📝 Observações</div>
+          <textarea id="pd_det_obs" placeholder="Condições negociadas, prazo de entrega, número do pedido do fornecedor..." style="width:100%; min-height:64px; padding:9px 11px; border-radius:8px; border:1px solid var(--border-strong); font-family:'Inter',sans-serif; font-size:13.5px; resize:vertical;" onchange="salvarPedidoDetalhe()"></textarea>
+        </div>
+
+        <div class="table-wrap" style="padding:16px 18px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+            <h3 style="margin:0; font-size:17px;">Produtos do Pedido</h3>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-size:11.5px; color:var(--text-faint);">Desmarque para excluir do total</span>
+              <button class="btn btn-ghost btn-sm" id="pd_det_addlote" onclick="pedidoDetAbrirAddLote()">+ Add do Lote</button>
+              <button class="btn btn-ghost btn-sm" onclick="pedidoDetAddManual()">+ Item manual</button>
+            </div>
+          </div>
+          <div class="ped-item-row head">
+            <span></span><span></span><span>Produto</span><span>Margem</span><span style="text-align:right;">¥ Unit.</span><span style="text-align:right;">Qtd</span><span style="text-align:right;">Total ¥</span><span></span>
+          </div>
+          <div id="pd_det_itens"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ ESTOQUE FUTURO ============ -->
+    <div class="view" id="view-v-estoquefuturo">
+      <div class="toolbar">
+        <select id="efFiltroGrupo" onchange="renderEstoqueFuturo()">
+          <option value="">Todos (Logbox + MTI)</option>
+          <option value="logbox">Somente Logbox</option>
+          <option value="mti">Somente MTI</option>
+        </select>
         <div class="spacer"></div>
-        <button class="btn btn-primary" onclick="abrirNovoPedido()">+ Novo Pedido</button>
+        <button class="btn btn-ghost" onclick="abrirGerenciarProdutosEF()">⚙ Gerenciar Produtos</button>
+        <button class="btn btn-primary" onclick="abrirNovoLoteEF()">+ Novo Lote de Entrada</button>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Pedido</th><th>Lote</th><th>Marca</th><th>Responsável</th><th>Status</th><th>Data Envio</th><th></th></tr></thead>
-          <tbody id="pedidoTbody"><tr><td colspan="7" class="empty-state">Carregando…</td></tr></tbody>
-        </table>
-      </div>
+      <div class="ef-wrap"><table class="ef-table" id="efTable"><thead id="efThead"></thead><tbody id="efTbody"></tbody></table></div>
     </div>
 
     <!-- ============ BASE DE DADOS DE PRODUTOS (Cadastro) ============ -->
@@ -646,27 +724,19 @@
   </div>
 </div>
 
-<!-- ============ MODAL: PEDIDO ============ -->
+<!-- ============ MODAL: NOVO PEDIDO ============ -->
 <div class="overlay" id="modalPedidoOverlay">
   <div class="modal">
-    <div class="modal-head"><h2 class="modal-title" id="modalPedidoTitle">Novo Pedido</h2><button class="modal-close" onclick="fecharModalPedido()">✕</button></div>
+    <div class="modal-head"><h2 class="modal-title">Novo Pedido</h2><button class="modal-close" onclick="fecharModalPedido()">✕</button></div>
     <div class="modal-body">
       <div class="field-grid">
         <div class="field"><label>Nome do Pedido *</label><input type="text" id="pd_nome"><div class="field-error" id="err_pd_nome"></div></div>
-        <div class="field"><label>Lote de Origem</label><select id="pd_lote" onchange="pedidoLoteMudou()"><option value="">— nenhum —</option></select></div>
+        <div class="field"><label>Lote de Origem</label><select id="pd_lote" onchange="pedidoLoteMudou()"><option value="">— nenhum (pedido do zero) —</option></select></div>
         <div class="field"><label>Marca</label><select id="pd_marca"></select></div>
         <div class="field"><label>Responsável</label><select id="pd_responsavel"></select></div>
-        <div class="field"><label>Status</label><select id="pd_status"><option value="rascunho">Rascunho</option><option value="enviado">Enviado</option><option value="confirmado">Confirmado</option><option value="produzindo">Produzindo</option><option value="concluido">Concluído</option></select></div>
-        <div class="field"><label>Data de Envio</label><input type="date" id="pd_data_envio"></div>
       </div>
-      <fieldset style="margin-top:16px;">
-        <legend>Itens do Pedido</legend>
-        <div id="pedidoItensList"></div>
-        <button class="btn btn-ghost btn-sm" style="margin-top:6px;" onclick="pedidoAddItem()">+ Adicionar item</button>
-      </fieldset>
-      <div class="field" style="margin-top:14px;"><label>Observações</label><input type="text" id="pd_obs"></div>
     </div>
-    <div class="modal-foot"><span></span><div style="display:flex; gap:10px;"><button class="btn btn-ghost" onclick="fecharModalPedido()">Cancelar</button><button class="btn btn-primary" onclick="salvarPedido()">Salvar Pedido</button></div></div>
+    <div class="modal-foot"><span></span><div style="display:flex; gap:10px;"><button class="btn btn-ghost" onclick="fecharModalPedido()">Cancelar</button><button class="btn btn-primary" onclick="criarPedido()">Criar e Abrir →</button></div></div>
   </div>
 </div>
 
@@ -717,6 +787,41 @@
       </form>
     </div>
     <div class="modal-foot"><span></span><div style="display:flex; gap:10px;"><button class="btn btn-ghost" id="btnCancelar">Cancelar</button><button class="btn btn-primary" id="btnSalvar">Salvar Produto</button></div></div>
+  </div>
+</div>
+
+<!-- ============ MODAL: GERENCIAR PRODUTOS — ESTOQUE FUTURO ============ -->
+<div class="overlay" id="modalEfProdutosOverlay">
+  <div class="modal modal-wide">
+    <div class="modal-head"><h2 class="modal-title">⚙ Gerenciar Produtos — Estoque Futuro</h2><button class="modal-close" onclick="document.getElementById('modalEfProdutosOverlay').classList.remove('open')">✕</button></div>
+    <div class="modal-body">
+      <div class="field-grid cols-3" style="margin-bottom:14px;">
+        <div class="field" style="grid-column:span 2; position:relative;"><label>Buscar produto (SKU ou nome)</label><input type="text" id="efBuscaProdutoInput" autocomplete="off" oninput="efBuscarProduto()"><div id="efBuscaDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:20; background:var(--surface); border:1px solid var(--border-strong); border-radius:8px; box-shadow:var(--shadow); max-height:220px; overflow:auto; margin-top:4px;"></div></div>
+        <div class="field"><label>Grupo</label><select id="efBuscaGrupo"><option value="logbox">Logbox</option><option value="mti">MTI</option></select></div>
+      </div>
+      <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--accent); margin-bottom:8px;">Produtos controlados</div>
+      <div id="efProdutosGerenciarList"></div>
+    </div>
+    <div class="modal-foot"><span></span><button class="btn btn-primary" onclick="document.getElementById('modalEfProdutosOverlay').classList.remove('open'); renderEstoqueFuturo();">Concluído</button></div>
+  </div>
+</div>
+
+<!-- ============ MODAL: NOVO LOTE DE ENTRADA — ESTOQUE FUTURO ============ -->
+<div class="overlay" id="modalEfLoteOverlay">
+  <div class="modal modal-wide">
+    <div class="modal-head"><h2 class="modal-title">+ Novo Lote de Entrada</h2><button class="modal-close" onclick="document.getElementById('modalEfLoteOverlay').classList.remove('open')">✕</button></div>
+    <div class="modal-body">
+      <div class="field-grid">
+        <div class="field"><label>Nome curto *</label><input type="text" id="efl_nome" placeholder="Ex: CLB 18"><div class="field-error" id="err_efl_nome"></div></div>
+        <div class="field"><label>Previsão de chegada *</label><input type="date" id="efl_data"><div class="field-error" id="err_efl_data"></div></div>
+      </div>
+      <fieldset style="margin-top:14px;">
+        <legend>Produtos e quantidades</legend>
+        <div id="eflItensList"></div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:6px;" onclick="eflAddItem()">+ Adicionar produto</button>
+      </fieldset>
+    </div>
+    <div class="modal-foot"><span></span><div style="display:flex; gap:10px;"><button class="btn btn-ghost" onclick="document.getElementById('modalEfLoteOverlay').classList.remove('open')">Cancelar</button><button class="btn btn-primary" onclick="salvarLoteEF()">Salvar Lote</button></div></div>
   </div>
 </div>
 
@@ -960,8 +1065,11 @@ function irPara(viewId, built, label){
     if (viewId === "v-precificacoes") loadLotes();
     if (viewId === "v-pedidos") loadPedidos();
     if (viewId === "v-produtos") loadProdutos();
+    if (viewId === "v-estoquefuturo") loadEstoqueFuturo();
   } else {
     if (viewId === "v-precificacoes") { document.getElementById("precif-lista").style.display=""; document.getElementById("precif-editor").style.display="none"; }
+    if (viewId === "v-pedidos") { document.getElementById("pedidos-lista").style.display=""; document.getElementById("pedido-detalhe").style.display="none"; renderPedStatCards(); renderPedidos(); }
+    if (viewId === "v-estoquefuturo") { renderEstoqueFuturo(); }
   }
 }
 
@@ -1194,6 +1302,10 @@ async function popularSelectsMarcaResp(){
     const el = document.getElementById(id);
     if (el) el.innerHTML = `<option value="">—</option>` + arr.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
   });
+  const pedMarcaSel = document.getElementById("pedFiltroMarca");
+  if (pedMarcaSel){ const atual = pedMarcaSel.value; pedMarcaSel.innerHTML = `<option value="">Todas as marcas</option>` + marcas.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join(""); pedMarcaSel.value = atual; }
+  const pedRespSel = document.getElementById("pedFiltroResp");
+  if (pedRespSel){ const atual = pedRespSel.value; pedRespSel.innerHTML = `<option value="">Todos os responsáveis</option>` + responsaveis.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join(""); pedRespSel.value = atual; }
 }
 function renderLotes(){
   const q = (document.getElementById("loteSearchInput").value || "").trim().toLowerCase();
@@ -1792,7 +1904,7 @@ window.confirmarGerarPedido = async function(){
 /* ======================= PEDIDOS =============================== */
 /* ============================================================ */
 let PEDIDOS = [];
-let pedidoItensAtual = [];
+const PED_STATUS_LABEL = { rascunho:"⏳ Rascunho", enviado:"📤 Enviado", confirmado:"✅ Confirmado" };
 
 async function loadPedidos(){
   const { data, error } = await db.from("imp_pedidos").select("*").order("created_at", {ascending:false});
@@ -1800,58 +1912,79 @@ async function loadPedidos(){
   PEDIDOS = data;
   await popularSelectsMarcaResp();
   const loteSel = document.getElementById("pd_lote");
-  loteSel.innerHTML = `<option value="">— nenhum —</option>` + LOTES.map(l => `<option value="${l.id}">${escapeHtml(l.nome)}</option>`).join("");
+  loteSel.innerHTML = `<option value="">— nenhum (pedido do zero) —</option>` + LOTES.map(l => `<option value="${l.id}">${escapeHtml(l.nome)}</option>`).join("");
+  renderPedStatCards();
   renderPedidos();
+}
+function totalRmbPedido(p){
+  return (p.itens||[]).filter(it => it.selecionado !== false).reduce((s,it) => s + (Number(it.rmb)||0)*(Number(it.qtde)||0), 0);
+}
+function renderPedStatCards(){
+  const grupos = { rascunho:{peds:[]}, enviado:{peds:[]}, confirmado:{peds:[]} };
+  PEDIDOS.forEach(p => { if (grupos[p.status]) grupos[p.status].peds.push(p); });
+  const filtroAtual = document.getElementById("pedFiltroStatus").value;
+  const el = document.getElementById("pedStatCards");
+  el.innerHTML = Object.keys(grupos).map(key => {
+    const total = grupos[key].peds.reduce((s,p) => s + totalRmbPedido(p), 0);
+    return `<div class="ped-stat-card ${filtroAtual===key?'active':''}" onclick="document.getElementById('pedFiltroStatus').value='${key}'; renderPedStatCards(); renderPedidos();">
+      <div class="psc-label">${PED_STATUS_LABEL[key]}</div>
+      <div class="psc-count">${grupos[key].peds.length}</div>
+      <div class="psc-total">¥ ${fmtN(total)}</div>
+    </div>`;
+  }).join("");
 }
 function renderPedidos(){
   const q = (document.getElementById("pedidoSearchInput").value || "").trim().toLowerCase();
-  let list = PEDIDOS;
+  const statusSel = document.getElementById("pedFiltroStatus").value;
+  const marcaSel = document.getElementById("pedFiltroMarca").value;
+  const respSel = document.getElementById("pedFiltroResp").value;
+  const ordenar = document.getElementById("pedOrdenar").value;
+  let list = PEDIDOS.slice();
   if (q) list = list.filter(p => (p.nome||"").toLowerCase().includes(q));
+  if (statusSel) list = list.filter(p => p.status === statusSel);
+  if (marcaSel) list = list.filter(p => p.marca === marcaSel);
+  if (respSel) list = list.filter(p => p.responsavel === respSel);
+  list.sort((a,b) => {
+    const da = new Date(a.created_at).getTime(), db_ = new Date(b.created_at).getTime();
+    return ordenar === "antigo" ? da - db_ : db_ - da;
+  });
   const tbody = document.getElementById("pedidoTbody");
-  if (!list.length){ tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Nenhum pedido ainda.</td></tr>`; return; }
+  if (!list.length){ tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Nenhum pedido encontrado.</td></tr>`; return; }
   tbody.innerHTML = list.map(p => `
-    <tr>
+    <tr class="pedido-row" onclick="abrirPedidoDetalhe('${p.id}')">
       <td>${escapeHtml(p.nome)}</td>
       <td>${escapeHtml(p.lote_nome) || "—"}</td>
       <td>${escapeHtml(p.marca) || "—"}</td>
       <td>${escapeHtml(p.responsavel) || "—"}</td>
-      <td><span class="badge-status">${escapeHtml(p.status)}</span></td>
+      <td>
+        <span class="status-pick" onclick="event.stopPropagation()">
+          <span class="badge-status-pill status-pill ${p.status}">${PED_STATUS_LABEL[p.status]||p.status}</span>
+          <select onchange="pedidoStatusInline('${p.id}', this.value)">
+            ${Object.keys(PED_STATUS_LABEL).map(k => `<option value="${k}" ${p.status===k?'selected':''}>${PED_STATUS_LABEL[k]}</option>`).join("")}
+          </select>
+        </span>
+      </td>
       <td class="mono">${p.data_envio ? new Date(p.data_envio).toLocaleDateString("pt-BR") : "—"}</td>
-      <td class="actions-cell">
-        <button class="btn-icon" title="Editar" onclick="abrirEditarPedido('${p.id}')">✎</button>
+      <td class="actions-cell" onclick="event.stopPropagation()">
         <button class="btn-icon" title="Excluir" onclick="confirmarExcluirPedido('${p.id}','${escapeHtml(p.nome)}')">🗑</button>
       </td>
     </tr>
   `).join("");
 }
-let editingPedidoId = null;
+window.pedidoStatusInline = async function(id, status){
+  const { error } = await db.from("imp_pedidos").update({ status }).eq("id", id);
+  if (error){ toast("Erro ao atualizar status.", "error"); return; }
+  const p = PEDIDOS.find(x => x.id === id);
+  if (p) p.status = status;
+  toast("Status atualizado.");
+  renderPedStatCards();
+  renderPedidos();
+};
 window.abrirNovoPedido = function(){
-  editingPedidoId = null;
-  document.getElementById("modalPedidoTitle").textContent = "Novo Pedido";
-  ["pd_nome","pd_data_envio","pd_obs"].forEach(id => document.getElementById(id).value = "");
+  ["pd_nome"].forEach(id => document.getElementById(id).value = "");
   document.getElementById("pd_lote").value = "";
   document.getElementById("pd_marca").value = "";
   document.getElementById("pd_responsavel").value = "";
-  document.getElementById("pd_status").value = "rascunho";
-  document.getElementById("err_pd_nome").textContent = "";
-  pedidoItensAtual = [];
-  renderPedidoItens();
-  document.getElementById("modalPedidoOverlay").classList.add("open");
-};
-window.abrirEditarPedido = function(id){
-  const p = PEDIDOS.find(x => x.id === id);
-  if (!p) return;
-  editingPedidoId = id;
-  document.getElementById("modalPedidoTitle").textContent = "Editar Pedido — " + p.nome;
-  document.getElementById("pd_nome").value = p.nome;
-  document.getElementById("pd_lote").value = p.lote_id || "";
-  document.getElementById("pd_marca").value = p.marca || "";
-  document.getElementById("pd_responsavel").value = p.responsavel || "";
-  document.getElementById("pd_status").value = p.status;
-  document.getElementById("pd_data_envio").value = p.data_envio ? p.data_envio.slice(0,10) : "";
-  document.getElementById("pd_obs").value = p.obs || "";
-  pedidoItensAtual = JSON.parse(JSON.stringify(p.itens || []));
-  renderPedidoItens();
   document.getElementById("err_pd_nome").textContent = "";
   document.getElementById("modalPedidoOverlay").classList.add("open");
 };
@@ -1864,53 +1997,446 @@ window.pedidoLoteMudou = function(){
     document.getElementById("pd_responsavel").value = lote.responsavel || "";
   }
 };
-function renderPedidoItens(){
-  const el = document.getElementById("pedidoItensList");
-  if (!pedidoItensAtual.length){ el.innerHTML = `<div style="color:var(--text-faint); font-size:12.5px; padding:6px 0;">Nenhum item ainda.</div>`; return; }
-  el.innerHTML = pedidoItensAtual.map((it, i) => `
-    <div style="display:flex; gap:8px; margin-bottom:6px; align-items:center;">
-      <input type="text" placeholder="Item" value="${escapeHtml(it.nome||'')}" oninput="pedidoItensAtual[${i}].nome=this.value" style="flex:2; padding:7px 9px; border-radius:6px; border:1px solid var(--border-strong);">
-      <input type="text" inputmode="decimal" placeholder="¥ RMB" value="${it.rmb??''}" oninput="pedidoItensAtual[${i}].rmb=parseNum(this.value)" style="width:90px; padding:7px 9px; border-radius:6px; border:1px solid var(--border-strong); font-family:'JetBrains Mono',monospace;">
-      <input type="text" inputmode="numeric" placeholder="Qtde" value="${it.qtde??''}" oninput="pedidoItensAtual[${i}].qtde=this.value" style="width:80px; padding:7px 9px; border-radius:6px; border:1px solid var(--border-strong); font-family:'JetBrains Mono',monospace;">
-      <button class="btn-icon" onclick="pedidoRemoveItem(${i})" title="Remover">🗑</button>
-    </div>
-  `).join("");
-}
-window.pedidoAddItem = function(){ pedidoItensAtual.push({nome:"", sku:"", ncm:"", rmb:null, qtde:""}); renderPedidoItens(); };
-window.pedidoRemoveItem = function(i){ pedidoItensAtual.splice(i,1); renderPedidoItens(); };
-
-window.salvarPedido = async function(){
+window.criarPedido = async function(){
   const nome = document.getElementById("pd_nome").value.trim();
   if (!nome){ document.getElementById("err_pd_nome").textContent = "Nome é obrigatório."; return; }
   const loteId = document.getElementById("pd_lote").value || null;
   const lote = LOTES.find(l => l.id === loteId);
-  const dataEnvio = document.getElementById("pd_data_envio").value;
   const payload = {
     nome, lote_id: loteId, lote_nome: lote ? lote.nome : "",
-    marca: document.getElementById("pd_marca").value,
-    responsavel: document.getElementById("pd_responsavel").value,
-    status: document.getElementById("pd_status").value,
-    obs: document.getElementById("pd_obs").value.trim(),
-    data_envio: dataEnvio ? new Date(dataEnvio).toISOString() : null,
-    itens: pedidoItensAtual.filter(it => it.nome && it.nome.trim()),
-    cot_rmb: lote ? lote.cot_rmb : 7, cot_usd: lote ? lote.cot_usd : 5.80,
+    marca: document.getElementById("pd_marca").value || (lote ? lote.marca : "") || "",
+    responsavel: document.getElementById("pd_responsavel").value || (lote ? lote.responsavel : "") || "",
+    status: "rascunho", obs: "", itens: [],
+    cot_rmb: lote ? lote.cot_rmb : (CONFIG?.rmb_usd || 7), cot_usd: lote ? lote.cot_usd : (CONFIG?.usd_brl || 5.80),
   };
-  let error;
-  if (editingPedidoId){ ({error} = await db.from("imp_pedidos").update(payload).eq("id", editingPedidoId)); }
-  else { ({error} = await db.from("imp_pedidos").insert(payload)); }
-  if (error){ toast("Erro ao salvar pedido.", "error"); return; }
-  toast("Pedido salvo.");
+  const { data, error } = await db.from("imp_pedidos").insert(payload).select().single();
+  if (error){ toast("Erro ao criar pedido.", "error"); return; }
+  toast("Pedido criado.");
   fecharModalPedido();
-  loadedViews.delete("v-pedidos");
-  loadPedidos();
+  PEDIDOS.unshift(data);
+  await abrirPedidoDetalhe(data.id);
 };
 window.confirmarExcluirPedido = function(id, nome){
   pedirConfirmacao("Excluir pedido", `Excluir o pedido "${nome}"?`, "Essa ação não pode ser desfeita.", async () => {
     const { error } = await db.from("imp_pedidos").delete().eq("id", id);
     if (error){ toast("Erro ao excluir pedido.", "error"); return; }
+    PEDIDOS = PEDIDOS.filter(p => p.id !== id);
     toast("Pedido excluído.");
-    loadPedidos();
+    renderPedStatCards();
+    renderPedidos();
   });
+};
+
+/* ---------- Pedido — Detalhe (página, igual Quotes) ---------- */
+let PEDIDO_ATUAL = null;
+window.abrirPedidoDetalhe = async function(id){
+  const { data: p, error } = await db.from("imp_pedidos").select("*").eq("id", id).single();
+  if (error){ toast("Erro ao abrir pedido.", "error"); return; }
+  PEDIDO_ATUAL = p;
+  if (!Array.isArray(PEDIDO_ATUAL.itens)) PEDIDO_ATUAL.itens = [];
+  PEDIDO_ATUAL.itens.forEach(it => { if (it.selecionado === undefined) it.selecionado = true; if (!it.id) it.id = "it_"+Math.random().toString(36).slice(2); });
+
+  document.getElementById("pd_det_titulo").textContent = p.nome;
+  document.getElementById("pd_det_sub").textContent = `${p.lote_nome || "sem lote"}${p.responsavel ? " ("+p.responsavel+")" : ""} · ${new Date(p.created_at).toLocaleDateString("pt-BR")}`;
+  document.getElementById("pd_det_status").value = p.status;
+  document.getElementById("pd_det_status_pill").className = "badge-status-pill status-pill " + p.status;
+  document.getElementById("pd_det_status_pill").textContent = PED_STATUS_LABEL[p.status]||p.status;
+  document.getElementById("pd_det_cotrmb").value = p.cot_rmb || 7;
+  document.getElementById("pd_det_obs").value = p.obs || "";
+  document.getElementById("pd_det_verlote").style.opacity = p.lote_id ? "1" : ".45";
+  document.getElementById("pd_det_verlote").style.cursor = p.lote_id ? "pointer" : "not-allowed";
+  document.getElementById("pd_det_addlote").style.display = p.lote_id ? "" : "none";
+
+  document.getElementById("pedidos-lista").style.display = "none";
+  document.getElementById("pedido-detalhe").style.display = "block";
+  renderPedidoDetItens();
+};
+window.fecharPedidoDetalhe = function(){
+  PEDIDO_ATUAL = null;
+  document.getElementById("pedido-detalhe").style.display = "none";
+  document.getElementById("pedidos-lista").style.display = "";
+  loadPedidos();
+};
+function renderPedidoDetItens(){
+  if (!PEDIDO_ATUAL) return;
+  const cotRmb = parseNum(document.getElementById("pd_det_cotrmb").value) || PEDIDO_ATUAL.cot_rmb || 7;
+  const itens = PEDIDO_ATUAL.itens;
+  const totalRmb = itens.filter(it => it.selecionado !== false).reduce((s,it) => s + (Number(it.rmb)||0)*(Number(it.qtde)||0), 0);
+  document.getElementById("pd_det_totrmb").textContent = "¥ " + fmtN(totalRmb);
+  document.getElementById("pd_det_totusd").textContent = "$ " + fmtN(totalRmb / (cotRmb||1));
+
+  const el = document.getElementById("pd_det_itens");
+  if (!itens.length){ el.innerHTML = `<div class="empty-state">Nenhum produto nesse pedido ainda.</div>`; return; }
+  el.innerHTML = itens.map((it, i) => {
+    const travado = !!it.prod_lote_id;
+    return `<div class="ped-item-row">
+      <span class="ped-item-drag">⠿</span>
+      <input type="checkbox" ${it.selecionado!==false?'checked':''} onchange="pedidoDetItemCampo(${i},'selecionado',this.checked)" style="width:16px; height:16px; accent-color:var(--accent);">
+      <span class="pir-nome">${travado
+          ? `<div style="font-weight:600; font-size:13px;">${escapeHtml(it.nome)}</div><div style="font-size:11px; color:var(--text-faint);">${it.sku?escapeHtml(it.sku)+' · ':''}${escapeHtml(it.ncm)||''}</div>`
+          : `<input type="text" value="${escapeHtml(it.nome||'')}" placeholder="Nome do item" oninput="pedidoDetItemCampo(${i},'nome',this.value)">`}</span>
+      <span>${it.margem_media!==null&&it.margem_media!==undefined ? `<span class="mkt-badge" style="background:${mbBg(it.margem_media)}; color:${mbColor(it.margem_media)};">${fmtN(it.margem_media,1)}%</span>` : '<span style="color:var(--text-faint); font-size:11.5px;">—</span>'}</span>
+      <input type="text" inputmode="decimal" value="${it.rmb??''}" onchange="pedidoDetItemCampo(${i},'rmb',parseNum(this.value))">
+      <input type="text" inputmode="numeric" value="${it.qtde??''}" onchange="pedidoDetItemCampo(${i},'qtde',parseNum(this.value))">
+      <span style="text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700;">¥ ${fmtN((Number(it.rmb)||0)*(Number(it.qtde)||0))}</span>
+      <button class="btn-icon" title="Remover" onclick="pedidoDetRemoverItem(${i})">✕</button>
+    </div>`;
+  }).join("");
+}
+window.pedidoDetItemCampo = function(i, campo, valor){
+  PEDIDO_ATUAL.itens[i][campo] = valor;
+  renderPedidoDetItens();
+  salvarPedidoDetalhe();
+};
+window.pedidoDetRemoverItem = function(i){
+  PEDIDO_ATUAL.itens.splice(i,1);
+  renderPedidoDetItens();
+  salvarPedidoDetalhe();
+};
+window.pedidoDetAddManual = function(){
+  PEDIDO_ATUAL.itens.push({ id:"it_"+Math.random().toString(36).slice(2), prod_lote_id:null, nome:"", sku:"", ncm:"", rmb:0, qtde:"", margem_media:null, selecionado:true });
+  renderPedidoDetItens();
+};
+window.pedidoDetAbrirAddLote = async function(){
+  if (!PEDIDO_ATUAL.lote_id){ toast("Esse pedido não está vinculado a um lote.", "error"); return; }
+  const { data: produtosLote } = await db.from("imp_lote_produtos").select("*").eq("lote_id", PEDIDO_ATUAL.lote_id).order("ordem");
+  const jaAdicionados = new Set(PEDIDO_ATUAL.itens.filter(it => it.prod_lote_id).map(it => it.prod_lote_id));
+  const disponiveis = (produtosLote||[]).filter(p => !jaAdicionados.has(p.id));
+  if (!disponiveis.length){ toast("Todos os produtos do lote já estão nesse pedido.", "error"); return; }
+  abrirOverlayDinamico("addLoteOverlay", `
+    <div style="padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <div style="font-size:15px; font-weight:800;">+ Adicionar do Lote</div>
+      <button onclick="document.getElementById('addLoteOverlay').remove()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
+    </div>
+    <div style="overflow-y:auto; flex:1; padding:12px 20px;">
+      ${disponiveis.map(p => `
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);">
+          <div><div style="font-weight:600; font-size:13.5px;">${escapeHtml(p.nome)}</div><div style="font-size:11px; color:var(--text-faint);">${p.sku?escapeHtml(p.sku)+' · ':''}¥ ${fmtN(p.rmb)}</div></div>
+          <button class="btn btn-primary btn-sm" onclick="pedidoDetAddDoLoteItem('${p.id}')">+ Adicionar</button>
+        </div>`).join("")}
+    </div>
+  `, 520);
+};
+window.pedidoDetAddDoLoteItem = function(prodLoteId){
+  db.from("imp_lote_produtos").select("*").eq("id", prodLoteId).single().then(({data:p}) => {
+    if (!p) return;
+    const margens = MKT_KEYS.map(mk => p.mkt?.[mk]?.margem_p || 0).filter(m => m > 0);
+    const margemMedia = margens.length ? margens.reduce((a,b)=>a+b,0)/margens.length : null;
+    PEDIDO_ATUAL.itens.push({ id:"it_"+Math.random().toString(36).slice(2), prod_lote_id:p.id, nome:p.nome, sku:p.sku||"", ncm:p.ncm||"", rmb:p.rmb, qtde:"", margem_media:margemMedia, selecionado:true });
+    renderPedidoDetItens();
+    salvarPedidoDetalhe();
+    document.getElementById("addLoteOverlay")?.remove();
+    toast("Produto adicionado ao pedido.");
+  });
+};
+let salvarPedidoDetTimer = null;
+window.salvarPedidoDetalhe = function(){
+  clearTimeout(salvarPedidoDetTimer);
+  salvarPedidoDetTimer = setTimeout(async () => {
+    if (!PEDIDO_ATUAL) return;
+    const payload = {
+      itens: PEDIDO_ATUAL.itens,
+      obs: document.getElementById("pd_det_obs").value.trim(),
+      cot_rmb: parseNum(document.getElementById("pd_det_cotrmb").value) || PEDIDO_ATUAL.cot_rmb,
+    };
+    const { error } = await db.from("imp_pedidos").update(payload).eq("id", PEDIDO_ATUAL.id);
+    if (error){ toast("Erro ao salvar pedido.", "error"); return; }
+    Object.assign(PEDIDO_ATUAL, payload);
+  }, 300);
+};
+window.pedidoDetStatusMudou = async function(){
+  const status = document.getElementById("pd_det_status").value;
+  const { error } = await db.from("imp_pedidos").update({ status }).eq("id", PEDIDO_ATUAL.id);
+  if (error){ toast("Erro ao atualizar status.", "error"); return; }
+  PEDIDO_ATUAL.status = status;
+  document.getElementById("pd_det_status_pill").className = "badge-status-pill status-pill " + status;
+  document.getElementById("pd_det_status_pill").textContent = PED_STATUS_LABEL[status]||status;
+  toast("Status atualizado.");
+};
+window.pedidoDetVerLote = function(){
+  if (!PEDIDO_ATUAL.lote_id){ toast("Esse pedido não está vinculado a nenhum lote.", "error"); return; }
+  fecharPedidoDetalhe();
+  irPara("v-precificacoes", true, "Precificações");
+  loadedViews.add("v-precificacoes");
+  abrirEditorLote(PEDIDO_ATUAL.lote_id);
+};
+window.pedidoDetExportarPDF = function(){
+  const p = PEDIDO_ATUAL;
+  const cotRmb = parseNum(document.getElementById("pd_det_cotrmb").value) || p.cot_rmb || 7;
+  const itensSel = p.itens.filter(it => it.selecionado !== false);
+  const totalRmb = itensSel.reduce((s,it) => s + (Number(it.rmb)||0)*(Number(it.qtde)||0), 0);
+  const data = new Date().toLocaleDateString("pt-BR");
+  const rowsHTML = itensSel.map((it,i) => `<tr style="background:${i%2===0?'#fff':'#f7f7fb'};">
+    <td style="padding:9px 12px; color:#9898aa; font-weight:600; font-size:12px;">${String(i+1).padStart(2,'0')}</td>
+    <td style="padding:9px 12px; font-weight:700; font-size:13px;">${escapeHtml(it.nome)}</td>
+    <td style="padding:9px 12px; color:#6b6b80; font-size:12px;">${escapeHtml(it.sku)||'—'}</td>
+    <td style="padding:9px 12px; text-align:right; font-weight:700;">¥ ${fmtN(it.rmb)}</td>
+    <td style="padding:9px 12px; text-align:center; font-weight:700;">${it.qtde||0}</td>
+    <td style="padding:9px 12px; text-align:right; font-weight:800;">¥ ${fmtN((Number(it.rmb)||0)*(Number(it.qtde)||0))}</td>
+  </tr>`).join("");
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>${escapeHtml(p.nome)}</title>
+    <style>
+      *{box-sizing:border-box; margin:0; padding:0;}
+      body{font-family:'Inter',sans-serif; color:#0a0a0f; background:#fff; padding:40px; font-size:13px;}
+      .header{display:flex; justify-content:space-between; border-bottom:3px solid #2563eb; padding-bottom:20px; margin-bottom:24px;}
+      .logo{font-size:22px; font-weight:900;} .logo span{color:#2563eb;}
+      .ped-title{font-size:18px; font-weight:900; text-align:right;} .ped-date{font-size:12px; color:#6b6b80; text-align:right; margin-top:4px;}
+      .status-badge{display:inline-block; padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; background:#eef2ff; color:#2563eb; margin-top:6px;}
+      .meta-row{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px;}
+      .meta-card{background:#f7f7fb; border-radius:10px; padding:12px 14px;}
+      .meta-label{font-size:10px; font-weight:700; color:#9898aa; text-transform:uppercase;}
+      .meta-value{font-size:15px; font-weight:800; margin-top:4px;}
+      table{width:100%; border-collapse:collapse; margin-bottom:20px; border:1px solid #e8e8f0;}
+      thead tr{background:#0a0a0f;} th{padding:11px 12px; text-align:left; font-size:10px; font-weight:700; color:#fff; text-transform:uppercase;}
+      .totals-bar{background:#0a0a0f; border-radius:10px; padding:16px 24px; color:#fff; display:flex; justify-content:space-between; margin-bottom:16px;}
+      .notes-box{background:#f7f7fb; border-radius:10px; padding:14px 16px;}
+    </style></head><body>
+    <div class="header"><div><div class="logo">HUB <span>IMPORTAÇÃO</span></div><div style="font-size:11px; color:#9898aa; margin-top:3px;">by LogBox</div></div>
+      <div><div class="ped-title">${escapeHtml(p.nome)}</div><div class="ped-date">Gerado em ${data}</div><div style="text-align:right;"><span class="status-badge">${PED_STATUS_LABEL[p.status]||p.status}</span></div></div></div>
+    <div class="meta-row">
+      <div class="meta-card"><div class="meta-label">Lote</div><div class="meta-value" style="font-size:13px;">${escapeHtml(p.lote_nome)||'—'}</div></div>
+      <div class="meta-card"><div class="meta-label">Total RMB</div><div class="meta-value">¥ ${fmtN(totalRmb)}</div></div>
+      ${p.marca?`<div class="meta-card"><div class="meta-label">Marca</div><div class="meta-value" style="font-size:13px;">${escapeHtml(p.marca)}</div></div>`:''}
+      ${p.responsavel?`<div class="meta-card"><div class="meta-label">Responsável</div><div class="meta-value" style="font-size:13px;">${escapeHtml(p.responsavel)}</div></div>`:''}
+    </div>
+    <table><thead><tr><th>#</th><th>Produto</th><th>SKU</th><th>¥ Unit.</th><th>Qtd</th><th>Total ¥</th></tr></thead><tbody>${rowsHTML}</tbody></table>
+    <div class="totals-bar"><div><div style="font-size:9px; font-weight:700; opacity:.5; text-transform:uppercase;">Produtos</div><div style="font-size:20px; font-weight:900;">${itensSel.length}</div></div>
+      <div><div style="font-size:9px; font-weight:700; opacity:.5; text-transform:uppercase;">Total RMB</div><div style="font-size:20px; font-weight:900;">¥ ${fmtN(totalRmb)}</div></div></div>
+    ${p.obs?`<div class="notes-box"><div class="meta-label">Observações</div><div style="font-size:13px; margin-top:6px; line-height:1.6;">${escapeHtml(p.obs)}</div></div>`:''}
+  </body></html>`;
+  const w = window.open("", "_blank");
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => w.print(), 300);
+};
+
+/* ============================================================ */
+/* ======================= ESTOQUE FUTURO ======================= */
+/* ============================================================ */
+const MESES_PT = ["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
+const EF_N_MESES = 6;
+let EF_GRUPO = [];        // [{sku, grupo, nome}]
+let EF_PRODMAP = {};      // sku -> {nome, marca}
+let EF_ESTOQUE = {};      // sku -> saldo total atual
+let EF_MEDIAS = {};       // "sku|YYYY-MM" -> media_mensal
+let EF_LOTES = [];        // [{id, nome, data_prevista, itens:[{sku,quantidade}]}]
+
+function efMesesList(){
+  const hoje = new Date();
+  const list = [];
+  for (let i = 0; i < EF_N_MESES; i++){
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+    list.push({ label: MESES_PT[d.getMonth()], key: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`, ano_mes: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01` });
+  }
+  return list;
+}
+async function loadEstoqueFuturo(){
+  const { data: grupoData, error: e1 } = await db.from("imp_ef_grupo_produtos").select("*").order("nome");
+  if (e1){ toast("Erro ao carregar Estoque Futuro.", "error"); return; }
+  EF_GRUPO = grupoData || [];
+  const skus = EF_GRUPO.map(g => g.sku);
+  EF_PRODMAP = {};
+  EF_ESTOQUE = {};
+  if (skus.length){
+    const { data: prodData } = await db.from("produtos").select("sku,nome,marca").in("sku", skus);
+    (prodData||[]).forEach(p => { EF_PRODMAP[p.sku] = p; });
+    const { data: estData } = await db.from("estoque_atual").select("sku,saldo").in("sku", skus);
+    (estData||[]).forEach(e => { EF_ESTOQUE[e.sku] = (EF_ESTOQUE[e.sku]||0) + (Number(e.saldo)||0); });
+  }
+  const { data: mediasData } = await db.from("imp_ef_medias").select("*");
+  EF_MEDIAS = {};
+  (mediasData||[]).forEach(m => { EF_MEDIAS[`${m.sku}|${String(m.ano_mes).slice(0,7)}`] = Number(m.media_mensal)||0; });
+  const { data: lotesData } = await db.from("imp_ef_lotes").select("*, imp_ef_lote_itens(*)").order("data_prevista");
+  EF_LOTES = lotesData || [];
+  renderEstoqueFuturo();
+}
+function efGetMedia(sku, mesKey){
+  if (EF_MEDIAS[`${sku}|${mesKey}`] !== undefined) return EF_MEDIAS[`${sku}|${mesKey}`];
+  // sugestão: média mais recente cadastrada antes desse mês
+  const anteriores = Object.keys(EF_MEDIAS).filter(k => k.startsWith(sku+"|") && k.split("|")[1] < mesKey).sort();
+  if (anteriores.length) return EF_MEDIAS[anteriores[anteriores.length-1]];
+  return 0;
+}
+function efEntradasDoMes(sku, mesKey){
+  const contribs = [];
+  EF_LOTES.forEach(l => {
+    const lk = String(l.data_prevista).slice(0,7);
+    if (lk !== mesKey) return;
+    (l.imp_ef_lote_itens||[]).forEach(it => { if (it.sku === sku && Number(it.quantidade) > 0) contribs.push({ nome: l.nome, qtd: Number(it.quantidade) }); });
+  });
+  return contribs;
+}
+function renderEstoqueFuturo(){
+  const thead = document.getElementById("efThead");
+  const tbody = document.getElementById("efTbody");
+  if (!thead || !tbody) return;
+  const meses = efMesesList();
+  thead.innerHTML = `
+    <tr class="ef-month-row"><th class="ef-marca" rowspan="2">Marca</th><th class="ef-sku" rowspan="2">SKU</th><th rowspan="2">Inicial</th>
+      ${meses.map(m => `<th colspan="3">${m.label}</th>`).join("")}
+    </tr>
+    <tr class="ef-sub-row">
+      ${meses.map(() => `<th class="ef-entrada">Entrada</th><th class="ef-saida">Saída</th><th class="ef-final">Final</th>`).join("")}
+    </tr>`;
+
+  const filtroGrupo = document.getElementById("efFiltroGrupo").value;
+  let linhas = EF_GRUPO.filter(g => !filtroGrupo || g.grupo === filtroGrupo);
+  linhas.sort((a,b) => {
+    const ma = (EF_PRODMAP[a.sku]?.marca||"").localeCompare(EF_PRODMAP[b.sku]?.marca||"");
+    if (ma !== 0) return ma;
+    return a.sku.localeCompare(b.sku);
+  });
+
+  if (!linhas.length){
+    tbody.innerHTML = `<tr><td colspan="${3+meses.length*3}" class="empty-state">Nenhum produto controlado ainda — clique em "⚙ Gerenciar Produtos" pra adicionar.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = linhas.map(g => {
+    const prod = EF_PRODMAP[g.sku] || {};
+    const marca = prod.marca || "—";
+    let inicial = EF_ESTOQUE[g.sku] || 0;
+    let cols = "";
+    meses.forEach((m, mi) => {
+      const venda = efGetMedia(g.sku, m.key);
+      const entradasArr = efEntradasDoMes(g.sku, m.key);
+      const entrada = entradasArr.reduce((s,c) => s + c.qtd, 0);
+      const final = inicial - venda + entrada;
+      const ruptureClass = final < 0 ? "rupture" : "";
+      const entradaAttr = entrada > 0 ? `onclick='efMostrarBreakdown(${JSON.stringify(entradasArr).replace(/'/g,"&apos;")}, "${escapeHtml(prod.nome||g.sku)}", "${m.label}")'` : "";
+      cols += `<td class="ef-entrada" ${entradaAttr} title="${entrada>0?'Clique pra ver de qual lote veio':''}">${entrada>0?fmtN(entrada,0):'—'}</td>`;
+      cols += `<td class="ef-venda"><input type="text" inputmode="numeric" value="${venda||''}" onchange="efSalvarMedia('${g.sku}','${m.key}',this.value)"></td>`;
+      cols += `<td class="ef-final ${ruptureClass}">${fmtN(final,0)}</td>`;
+      inicial = final;
+    });
+    return `<tr>
+      <td class="ef-marca">${escapeHtml(marca)}</td>
+      <td class="ef-sku">${escapeHtml(g.sku)}<div style="font-size:9.5px; font-weight:500; color:var(--text-faint); font-family:'Inter',sans-serif;">${escapeHtml(prod.nome||g.nome||"")}</div></td>
+      <td style="text-align:right; font-weight:700;">${fmtN(EF_ESTOQUE[g.sku]||0,0)}</td>
+      ${cols}
+    </tr>`;
+  }).join("");
+}
+window.efSalvarMedia = async function(sku, mesKey, valor){
+  const media = parseNum(valor) || 0;
+  const ano_mes = `${mesKey}-01`;
+  const { error } = await db.from("imp_ef_medias").upsert({ sku, ano_mes, media_mensal: media }, { onConflict: "sku,ano_mes" });
+  if (error){ toast("Erro ao salvar média.", "error"); return; }
+  EF_MEDIAS[`${sku}|${mesKey}`] = media;
+  toast("Média mensal salva.");
+  renderEstoqueFuturo();
+};
+window.efMostrarBreakdown = function(contribs, nomeProduto, mesLabel){
+  abrirOverlayDinamico("efBreakdownOverlay", `
+    <div style="padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <div><div style="font-size:15px; font-weight:800;">📦 Entradas — ${escapeHtml(nomeProduto)}</div><div style="font-size:11px; color:var(--text-faint); margin-top:2px;">${escapeHtml(mesLabel)}</div></div>
+      <button onclick="document.getElementById('efBreakdownOverlay').remove()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
+    </div>
+    <div style="padding:16px 20px;">
+      ${contribs.map(c => `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:13.5px;"><span style="font-weight:600;">${escapeHtml(c.nome)}</span><span class="mono" style="font-weight:700;">${fmtN(c.qtd,0)} un.</span></div>`).join("")}
+    </div>
+  `, 420);
+};
+
+/* ---------- Gerenciar Produtos (Estoque Futuro) ---------- */
+window.abrirGerenciarProdutosEF = function(){
+  document.getElementById("efBuscaProdutoInput").value = "";
+  document.getElementById("efBuscaDropdown").style.display = "none";
+  renderEfProdutosGerenciarList();
+  document.getElementById("modalEfProdutosOverlay").classList.add("open");
+};
+function renderEfProdutosGerenciarList(){
+  const el = document.getElementById("efProdutosGerenciarList");
+  if (!EF_GRUPO.length){ el.innerHTML = `<div class="empty-state">Nenhum produto controlado ainda.</div>`; return; }
+  const ordenado = EF_GRUPO.slice().sort((a,b) => a.grupo.localeCompare(b.grupo) || a.sku.localeCompare(b.sku));
+  el.innerHTML = ordenado.map(g => `
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border);">
+      <div><span class="badge-empresa ${g.grupo==='mti'?'mti':'logbox'}" style="margin-right:8px;">${g.grupo.toUpperCase()}</span><span class="mono" style="font-weight:700;">${escapeHtml(g.sku)}</span> — ${escapeHtml(EF_PRODMAP[g.sku]?.nome || g.nome || "")}</div>
+      <button class="btn-icon" title="Remover do controle" onclick="efRemoverProduto('${g.sku}')">🗑</button>
+    </div>`).join("");
+}
+window.efBuscarProduto = function(){
+  const q = document.getElementById("efBuscaProdutoInput").value.trim().toLowerCase();
+  const dropdown = document.getElementById("efBuscaDropdown");
+  if (!q || q.length < 2){ dropdown.style.display = "none"; return; }
+  db.from("produtos").select("sku,nome,marca").or(`sku.ilike.%${q}%,nome.ilike.%${q}%`).limit(20).then(({data}) => {
+    const matches = data || [];
+    if (!matches.length){ dropdown.innerHTML = `<div style="padding:10px 12px; font-size:12.5px; color:var(--text-faint);">Nenhum produto encontrado.</div>`; dropdown.style.display = "block"; return; }
+    dropdown.innerHTML = matches.map(p => `
+      <div onclick='efAdicionarProduto(${JSON.stringify(p).replace(/'/g,"&apos;")})' style="padding:9px 12px; cursor:pointer; border-bottom:1px solid var(--border); font-size:13px;" onmouseover="this.style.background='var(--surface-alt)'" onmouseout="this.style.background=''">
+        <span class="mono" style="font-weight:600;">${escapeHtml(p.sku)}</span> — ${escapeHtml(p.nome)} <span style="color:var(--text-faint);">${escapeHtml(p.marca||'')}</span>
+      </div>`).join("");
+    dropdown.style.display = "block";
+  });
+};
+window.efAdicionarProduto = async function(p){
+  const grupo = document.getElementById("efBuscaGrupo").value;
+  const { error } = await db.from("imp_ef_grupo_produtos").upsert({ sku: p.sku, grupo, nome: p.nome });
+  if (error){ toast("Erro ao adicionar produto.", "error"); return; }
+  if (!EF_GRUPO.some(g => g.sku === p.sku)) EF_GRUPO.push({ sku: p.sku, grupo, nome: p.nome });
+  else EF_GRUPO.find(g => g.sku === p.sku).grupo = grupo;
+  EF_PRODMAP[p.sku] = p;
+  document.getElementById("efBuscaProdutoInput").value = "";
+  document.getElementById("efBuscaDropdown").style.display = "none";
+  renderEfProdutosGerenciarList();
+  toast("Produto adicionado ao controle de Estoque Futuro.");
+};
+window.efRemoverProduto = function(sku){
+  pedirConfirmacao("Remover produto", `Remover "${sku}" do controle de Estoque Futuro?`, "As médias e entradas já lançadas pra ele deixam de aparecer.", async () => {
+    const { error } = await db.from("imp_ef_grupo_produtos").delete().eq("sku", sku);
+    if (error){ toast("Erro ao remover.", "error"); return; }
+    EF_GRUPO = EF_GRUPO.filter(g => g.sku !== sku);
+    renderEfProdutosGerenciarList();
+    toast("Produto removido do controle.");
+  });
+};
+document.addEventListener("click", (e) => {
+  const dropdown = document.getElementById("efBuscaDropdown");
+  if (dropdown && !e.target.closest("#efBuscaProdutoInput") && !e.target.closest("#efBuscaDropdown")) dropdown.style.display = "none";
+});
+
+/* ---------- Novo Lote de Entrada (Estoque Futuro) ---------- */
+let eflItensAtual = [];
+window.abrirNovoLoteEF = function(){
+  document.getElementById("efl_nome").value = "";
+  document.getElementById("efl_data").value = "";
+  document.getElementById("err_efl_nome").textContent = "";
+  document.getElementById("err_efl_data").textContent = "";
+  eflItensAtual = [{ sku:"", quantidade:"" }];
+  renderEflItens();
+  document.getElementById("modalEfLoteOverlay").classList.add("open");
+};
+function renderEflItens(){
+  const el = document.getElementById("eflItensList");
+  const opcoes = EF_GRUPO.map(g => `<option value="${escapeHtml(g.sku)}">${escapeHtml(g.sku)} — ${escapeHtml(EF_PRODMAP[g.sku]?.nome||g.nome||"")}</option>`).join("");
+  el.innerHTML = eflItensAtual.map((it,i) => `
+    <div style="display:flex; gap:8px; margin-bottom:6px; align-items:center;">
+      <select style="flex:2; padding:8px 10px; border-radius:6px; border:1px solid var(--border-strong);" onchange="eflItensAtual[${i}].sku=this.value">
+        <option value="">— selecione o produto —</option>${opcoes.replace(`value="${it.sku}"`, `value="${it.sku}" selected`)}
+      </select>
+      <input type="text" inputmode="numeric" placeholder="Qtde" value="${it.quantidade}" style="width:100px; padding:8px 10px; border-radius:6px; border:1px solid var(--border-strong); font-family:'JetBrains Mono',monospace;" oninput="eflItensAtual[${i}].quantidade=this.value">
+      <button class="btn-icon" onclick="eflRemoverItem(${i})" title="Remover">🗑</button>
+    </div>`).join("");
+}
+window.eflAddItem = function(){ eflItensAtual.push({ sku:"", quantidade:"" }); renderEflItens(); };
+window.eflRemoverItem = function(i){ eflItensAtual.splice(i,1); renderEflItens(); };
+window.salvarLoteEF = async function(){
+  const nome = document.getElementById("efl_nome").value.trim();
+  const data = document.getElementById("efl_data").value;
+  let ok = true;
+  if (!nome){ document.getElementById("err_efl_nome").textContent = "Nome é obrigatório."; ok = false; } else document.getElementById("err_efl_nome").textContent = "";
+  if (!data){ document.getElementById("err_efl_data").textContent = "Data é obrigatória."; ok = false; } else document.getElementById("err_efl_data").textContent = "";
+  if (!ok) return;
+  const itensValidos = eflItensAtual.filter(it => it.sku && parseNum(it.quantidade) > 0);
+  if (!itensValidos.length){ toast("Adicione ao menos um produto com quantidade.", "error"); return; }
+  const { data: lote, error } = await db.from("imp_ef_lotes").insert({ nome, data_prevista: data }).select().single();
+  if (error){ toast("Erro ao criar lote de entrada.", "error"); return; }
+  const payloads = itensValidos.map(it => ({ lote_id: lote.id, sku: it.sku, quantidade: parseNum(it.quantidade) }));
+  const { error: e2 } = await db.from("imp_ef_lote_itens").insert(payloads);
+  if (e2){ toast("Erro ao salvar produtos do lote.", "error"); return; }
+  toast("Lote de entrada salvo.");
+  document.getElementById("modalEfLoteOverlay").classList.remove("open");
+  await loadEstoqueFuturo();
 };
 
 /* ============================================================ */
@@ -2177,6 +2703,201 @@ window.reativarProduto = async function(id){
   const { error } = await db.from(TABLE_PRODUTOS).update({ ativo: true }).eq("id", id);
   if (error){ toast("Erro ao reativar produto.", "error"); return; }
   toast("Produto reativado.");
+  await loadProdutos();
+};
+
+/* ======================= EXPORTAR / IMPORTAR PLANILHA ======================= */
+const IMPORT_COLS = [
+  { header:"SKU", field:"sku", type:"text" },
+  { header:"Nome do Produto", field:"nome_produto", type:"text" },
+  { header:"Nome (Inglês)", field:"nome_ingles", type:"text" },
+  { header:"Nome (Chinês)", field:"nome_chines", type:"text" },
+  { header:"Empresa (LOGBOX/MTI)", field:"empresa", type:"text" },
+  { header:"Status (Ativo/Inativo)", field:"ativo", type:"bool" },
+  { header:"NCM", field:"ncm", type:"ncm" },
+  { header:"Código de Barras", field:"codigo_barras", type:"text" },
+  { header:"Marca", field:"marca", type:"text" },
+  { header:"Comprador", field:"comprador", type:"text" },
+  { header:"Preço RMB", field:"preco_rmb", type:"number" },
+  { header:"Valor DUIMP (USD)", field:"valor_duimp_usd", type:"number" },
+  { header:"Peso Item (kg)", field:"peso_item_kg", type:"number" },
+  { header:"Qtde/Caixa Master", field:"qtde_caixa_master", type:"number" },
+  { header:"Comprimento (cm)", field:"comprimento_cm", type:"number" },
+  { header:"Largura (cm)", field:"largura_cm", type:"number" },
+  { header:"Altura (cm)", field:"altura_cm", type:"number" },
+  { header:"Peso Líquido Caixa (kg)", field:"peso_liquido_caixa_kg", type:"number" },
+  { header:"Peso Bruto Caixa (kg)", field:"peso_bruto_caixa_kg", type:"number" },
+];
+window.exportarProdutosTemplate = function(){
+  const headers = IMPORT_COLS.map(c => c.header);
+  const rows = produtos.map(p => IMPORT_COLS.map(c => {
+    if (c.field === "ativo") return p.ativo === false ? "Inativo" : "Ativo";
+    const v = p[c.field];
+    return v === null || v === undefined ? "" : v;
+  }));
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  ws["!cols"] = headers.map(() => ({ wch: 20 }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Produtos");
+  XLSX.writeFile(wb, "banco_de_dados_produtos.xlsx");
+  toast(produtos.length ? "Planilha exportada com os produtos atuais." : "Planilha modelo exportada (sem produtos ainda).");
+};
+
+let IMPORT_PREVIEW = [];
+let IMPORT_NOVOS_MARCAS = [];
+let IMPORT_NOVOS_COMPRADORES = [];
+window.importarProdutosArquivo = function(inputEl){
+  const file = inputEl.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+    processarImportacao(rows);
+    inputEl.value = "";
+  };
+  reader.readAsArrayBuffer(file);
+};
+function processarImportacao(rows){
+  const bySku = {}; produtos.forEach(p => { if (p.sku) bySku[p.sku.trim().toUpperCase()] = p; });
+  const marcasExist = (CONFIG?.marcas || []).map(m => m.toLowerCase());
+  const compradoresExist = (CONFIG?.responsaveis || []).map(m => m.toLowerCase());
+  const novasMarcas = new Set(); const novosCompradores = new Set();
+
+  IMPORT_PREVIEW = rows.map((row) => {
+    const get = (header) => { const v = row[header]; return v === undefined || v === null ? "" : String(v).trim(); };
+    const novo = {};
+    IMPORT_COLS.forEach(c => {
+      let raw = get(c.header);
+      if (c.type === "number") novo[c.field] = raw === "" ? null : parseNum(raw);
+      else if (c.type === "bool") novo[c.field] = raw.toLowerCase().startsWith("inativ") ? false : true;
+      else if (c.type === "ncm") novo[c.field] = raw ? maskNcm(raw) : "";
+      else novo[c.field] = raw;
+    });
+    const errors = [];
+    if (!novo.sku) errors.push("SKU vazio.");
+    if (!novo.nome_produto) errors.push("Nome do Produto vazio.");
+    if (novo.empresa && !["LOGBOX","MTI"].includes(novo.empresa.toUpperCase())) errors.push("Empresa deve ser LOGBOX ou MTI.");
+    if (novo.empresa) novo.empresa = novo.empresa.toUpperCase();
+    if (novo.ncm && novo.ncm.replace(/\D/g,"").length !== 8) errors.push("NCM inválido (precisa de 8 dígitos).");
+    if (novo.marca && !marcasExist.includes(novo.marca.toLowerCase())) novasMarcas.add(novo.marca);
+    if (novo.comprador && !compradoresExist.includes(novo.comprador.toLowerCase())) novosCompradores.add(novo.comprador);
+
+    const existente = novo.sku ? bySku[novo.sku.trim().toUpperCase()] : null;
+    const diffs = [];
+    if (existente){
+      IMPORT_COLS.forEach(c => {
+        if (c.field === "sku") return;
+        const valNovo = novo[c.field];
+        const valAtual = c.field === "ativo" ? (existente.ativo !== false) : existente[c.field];
+        const novoVazio = valNovo === "" || valNovo === null || valNovo === undefined;
+        if (novoVazio) return;
+        const iguais = c.field === "ativo" ? (valNovo === valAtual) : String(valNovo).trim() === String(valAtual ?? "").trim();
+        if (!iguais) diffs.push({ campo: c.field, label: c.header, atual: valAtual, novo: valNovo, aplicar: true });
+      });
+    }
+    return {
+      novo, existente, errors,
+      status: errors.length ? "erro" : (existente ? "atualizar" : "novo"),
+      diffs,
+    };
+  });
+  IMPORT_NOVOS_MARCAS = [...novasMarcas];
+  IMPORT_NOVOS_COMPRADORES = [...novosCompradores];
+  renderImportPreview();
+  document.getElementById("modalImportOverlay").classList.add("open");
+}
+function renderImportPreview(){
+  const tagsEl = document.getElementById("importNovosTags");
+  let tagsHtml = "";
+  if (IMPORT_NOVOS_MARCAS.length || IMPORT_NOVOS_COMPRADORES.length){
+    tagsHtml += `<div style="background:var(--warn-soft); border:1px solid #fde68a; border-radius:10px; padding:14px 16px; margin-bottom:16px;">
+      <div style="font-weight:700; font-size:13px; margin-bottom:8px;">⚠️ Marcas/Compradores novos encontrados na planilha</div>
+      <div style="font-size:12.5px; color:var(--text-muted); margin-bottom:10px;">Desmarque os que você NÃO quer cadastrar em Configurações (as linhas com esse valor ficam sem marca/comprador preenchido).</div>
+      ${IMPORT_NOVOS_MARCAS.map(m => `<label class="toggle-chip" style="margin:0 8px 8px 0;"><input type="checkbox" checked class="import-novo-marca" data-val="${escapeHtml(m)}"> Marca: ${escapeHtml(m)}</label>`).join("")}
+      ${IMPORT_NOVOS_COMPRADORES.map(m => `<label class="toggle-chip" style="margin:0 8px 8px 0;"><input type="checkbox" checked class="import-novo-comprador" data-val="${escapeHtml(m)}"> Comprador: ${escapeHtml(m)}</label>`).join("")}
+    </div>`;
+  }
+  tagsEl.innerHTML = tagsHtml;
+
+  const rowsEl = document.getElementById("importRowsList");
+  const statusInfo = { novo:{label:"Novo produto", bg:"var(--success-soft)", color:"#166534"}, atualizar:{label:"Vai atualizar", bg:"var(--warn-soft)", color:"#92400e"}, erro:{label:"Erro", bg:"var(--danger-soft)", color:"#991b1b"} };
+  rowsEl.innerHTML = IMPORT_PREVIEW.map((r, i) => {
+    const si = statusInfo[r.status];
+    let diffHtml = "";
+    if (r.diffs.length){
+      diffHtml = `<div style="margin-top:8px; padding:10px 12px; background:var(--surface-alt); border-radius:8px;">
+        ${r.diffs.map((d,di) => `
+          <label style="display:flex; align-items:center; gap:8px; font-size:12px; padding:4px 0;">
+            <input type="checkbox" ${d.aplicar?'checked':''} onchange="IMPORT_PREVIEW[${i}].diffs[${di}].aplicar=this.checked">
+            <span style="font-weight:600; min-width:140px;">${escapeHtml(d.label)}</span>
+            <span style="color:var(--text-faint); text-decoration:line-through;">${escapeHtml(d.atual===true?'Ativo':d.atual===false?'Inativo':(d.atual??'—'))}</span>
+            <span>→</span>
+            <span style="color:var(--accent-dark); font-weight:600;">${escapeHtml(d.novo===true?'Ativo':d.novo===false?'Inativo':d.novo)}</span>
+          </label>
+        `).join("")}
+      </div>`;
+    }
+    const errHtml = r.errors.length ? `<div style="font-size:12px; color:#991b1b; margin-top:4px;">${r.errors.join(" ")}</div>` : "";
+    return `
+      <div style="border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:10px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; background:${si.bg}; color:${si.color};">${si.label}</span>
+          <span class="mono" style="font-weight:700;">${escapeHtml(r.novo.sku || "(sem SKU)")}</span>
+          <span style="color:var(--text-muted); font-size:13px;">${escapeHtml(r.novo.nome_produto || "")}</span>
+        </div>
+        ${errHtml}${diffHtml}
+      </div>`;
+  }).join("") || `<div class="empty-state">Nenhuma linha encontrada na planilha.</div>`;
+
+  const novos = IMPORT_PREVIEW.filter(r=>r.status==="novo").length;
+  const atualiza = IMPORT_PREVIEW.filter(r=>r.status==="atualizar").length;
+  const erros = IMPORT_PREVIEW.filter(r=>r.status==="erro").length;
+  document.getElementById("importResumo").textContent = `${novos} novo(s) · ${atualiza} para atualizar · ${erros} com erro (não serão importados)`;
+}
+window.fecharModalImport = function(){ document.getElementById("modalImportOverlay").classList.remove("open"); };
+window.confirmarImportacao = async function(){
+  document.querySelectorAll(".import-novo-marca").forEach(chk => {
+    if (!chk.checked){ const val = chk.dataset.val; IMPORT_PREVIEW.forEach(r => { if (r.novo.marca === val) r.novo.marca = ""; }); }
+  });
+  document.querySelectorAll(".import-novo-comprador").forEach(chk => {
+    if (!chk.checked){ const val = chk.dataset.val; IMPORT_PREVIEW.forEach(r => { if (r.novo.comprador === val) r.novo.comprador = ""; }); }
+  });
+  const marcasParaAdd = [...document.querySelectorAll(".import-novo-marca:checked")].map(c => c.dataset.val);
+  const compradoresParaAdd = [...document.querySelectorAll(".import-novo-comprador:checked")].map(c => c.dataset.val);
+  if (marcasParaAdd.length || compradoresParaAdd.length){
+    const marcas = [...(CONFIG.marcas||[]), ...marcasParaAdd.filter(m => !(CONFIG.marcas||[]).includes(m))];
+    const responsaveis = [...(CONFIG.responsaveis||[]), ...compradoresParaAdd.filter(m => !(CONFIG.responsaveis||[]).includes(m))];
+    await db.from("imp_config").update({ marcas, responsaveis }).eq("id", CONFIG.id);
+    CONFIG.marcas = marcas; CONFIG.responsaveis = responsaveis;
+  }
+
+  const validos = IMPORT_PREVIEW.filter(r => r.status !== "erro");
+  const paraInserir = []; const paraAtualizar = [];
+  validos.forEach(r => {
+    if (r.status === "novo"){
+      const payload = { ...r.novo };
+      Object.keys(payload).forEach(k => { if (payload[k] === "") payload[k] = null; });
+      paraInserir.push(payload);
+    } else {
+      const payload = {};
+      r.diffs.forEach(d => { if (d.aplicar) payload[d.campo] = d.novo; });
+      if (Object.keys(payload).length) paraAtualizar.push({ id: r.existente.id, payload });
+    }
+  });
+
+  let okCount = 0, errCount = 0;
+  if (paraInserir.length){
+    const { error } = await db.from(TABLE_PRODUTOS).insert(paraInserir);
+    if (error) errCount += paraInserir.length; else okCount += paraInserir.length;
+  }
+  for (const item of paraAtualizar){
+    const { error } = await db.from(TABLE_PRODUTOS).update(item.payload).eq("id", item.id);
+    if (error) errCount++; else okCount++;
+  }
+  toast(`Importação concluída: ${okCount} produto(s) processado(s)${errCount ? `, ${errCount} com erro` : ""}.`, errCount ? "error" : "success");
+  fecharModalImport();
   await loadProdutos();
 };
 
