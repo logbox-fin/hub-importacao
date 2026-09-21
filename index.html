@@ -3058,7 +3058,12 @@ let PL_STAGING = { logbox: [], mti: [] };
 let PL_CONTAINERS = { logbox: [], mti: [] };
 let PL_SEL = { logbox: new Set(), mti: new Set() };
 let PL_PRODUTOS = { logbox: [], mti: [] };   // cache de produtos_importacao por empresa, pra auto-link e busca
+let PL_ALIASES = { logbox: {}, mti: {} };    // cache de imp_sku_aliases por fonte — { modelo_normalizado: sku } — aprendizado dos vínculos manuais
 let PL_DETALHE = null;                       // { fonte, container } — contêiner aberto na tela de detalhe
+
+function normModelo(modeloOriginal){
+  return String(modeloOriginal || "").split("\n")[0].trim().toUpperCase();
+}
 
 async function loadPackingList(fonte){
   const grid = document.getElementById(`plContainersGrid_${fonte}`);
@@ -3076,12 +3081,18 @@ async function loadPackingList(fonte){
   const { data: prodData } = await db.from(TABLE_PRODUTOS).select("id,sku,nome_produto,marca,empresa").eq("empresa", PL_EMPRESA[fonte]).eq("ativo", true);
   PL_PRODUTOS[fonte] = prodData || [];
 
+  const { data: aliasData } = await db.from("imp_sku_aliases").select("modelo_original,sku").eq("fonte", fonte);
+  PL_ALIASES[fonte] = {};
+  (aliasData || []).forEach(a => { PL_ALIASES[fonte][a.modelo_original] = a.sku; });
+
   renderPackingList(fonte);
 }
 
 function plMatchSku(modeloOriginal, fonte){
-  const primeiraLinha = String(modeloOriginal || "").split("\n")[0].trim().toUpperCase();
+  const primeiraLinha = normModelo(modeloOriginal);
   if (!primeiraLinha) return null;
+  const aprendido = PL_ALIASES[fonte][primeiraLinha];
+  if (aprendido) return aprendido;
   const prod = PL_PRODUTOS[fonte].find(p => (p.sku || "").trim().toUpperCase() === primeiraLinha);
   return prod ? prod.sku : null;
 }
@@ -3448,9 +3459,29 @@ window.plResolverSkuBuscar = function(fonte, itemId){
     </div>`).join("");
 };
 window.plVincularSku = async function(fonte, itemId, sku){
+  const item = PL_CONTAINERS[fonte].flatMap(c => c.imp_container_itens || []).find(it => it.id === itemId);
+  const modeloNorm = item ? normModelo(item.modelo_original) : null;
+
   const { error } = await db.from("imp_container_itens").update({ sku }).eq("id", itemId);
   if (error){ toast("Erro ao vincular SKU.", "error"); return; }
-  toast(`SKU ${sku} vinculado.`);
+
+  let aplicados = 0;
+  if (modeloNorm){
+    // salva o aprendizado (só nesta fonte) pra próximos containers já virem vinculados
+    await db.from("imp_sku_aliases").upsert({ fonte, modelo_original: modeloNorm, sku }, { onConflict: "fonte,modelo_original" });
+    PL_ALIASES[fonte][modeloNorm] = sku;
+
+    // aplica retroativamente nos outros pendentes da mesma fonte com o mesmo modelo
+    const outrosPendentes = PL_CONTAINERS[fonte]
+      .flatMap(c => c.imp_container_itens || [])
+      .filter(it => it.id !== itemId && !it.sku && normModelo(it.modelo_original) === modeloNorm);
+    if (outrosPendentes.length){
+      const { error: eLote } = await db.from("imp_container_itens").update({ sku }).in("id", outrosPendentes.map(it => it.id));
+      if (!eLote) aplicados = outrosPendentes.length;
+    }
+  }
+
+  toast(`SKU ${sku} vinculado${aplicados ? ` · aplicado em mais ${aplicados} item${aplicados > 1 ? "s" : ""} pendente${aplicados > 1 ? "s" : ""}` : ""}.`);
   document.getElementById("plResolverSkuOverlay")?.remove();
   document.getElementById("plPendenciasOverlay")?.remove();
   await loadPackingList(fonte);
