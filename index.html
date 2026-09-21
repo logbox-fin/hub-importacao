@@ -331,6 +331,42 @@
   .pl-item-search-dd div{ padding:8px 10px; cursor:pointer; font-size:12.5px; border-bottom:1px solid var(--border); }
   .pl-item-search-dd div:hover{ background:var(--surface-alt); }
 
+  /* Tag de empresa maior — usada no Arquivo e no Kanban de Status */
+  .tag-emp{ display:inline-flex; align-items:center; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; letter-spacing:.3px; padding:4px 10px; border-radius:20px; border:1px solid transparent; flex-shrink:0; }
+  .tag-emp.logbox{ background:#dbeafe; color:#1d4ed8; border-color:#93c5fd; }
+  .tag-emp.mti{ background:#fef9c3; color:#854d0e; border-color:#fde047; }
+
+  /* Arquivo dos Contêineres */
+  .arq-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); cursor:pointer; transition:border-color .12s; }
+  .arq-card:hover{ border-color:var(--accent); }
+  .arq-card .arq-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:10px; }
+  .arq-card .arq-nome{ font-weight:700; font-size:16px; }
+  .arq-card .arq-data-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-faint); font-weight:600; }
+  .arq-card .arq-data{ font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; color:var(--text); margin-top:1px; }
+  .arq-card .arq-meta{ font-size:12px; color:var(--text-faint); margin:9px 0 11px; }
+  .arq-card .arq-valor{ font-family:'JetBrains Mono',monospace; font-size:19px; font-weight:700; color:var(--accent-dark); }
+
+  /* Kanban — Status dos Contêineres */
+  .kanban-board{ display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; align-items:flex-start; }
+  @media (max-width: 1100px){ .kanban-board{ grid-template-columns: 1fr; } }
+  .kanban-col{ background:var(--surface-alt); border:1px solid var(--border); border-radius:var(--radius); padding:12px; min-height:120px; transition:background .12s, border-color .12s; }
+  .kanban-col.drag-over{ background:var(--accent-soft); border-color:var(--accent); }
+  .kanban-col-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding:0 4px; }
+  .kanban-col-title{ font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:700; color:var(--text); }
+  .kanban-col-count{ font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; color:var(--text-faint); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:2px 9px; }
+  .kanban-card{ background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:11px 12px; margin-bottom:10px; box-shadow:var(--shadow); cursor:grab; }
+  .kanban-card:active{ cursor:grabbing; }
+  .kanban-card.dragging{ opacity:.4; }
+  .kanban-card .kc-nome{ font-weight:700; font-size:14px; margin-bottom:6px; }
+  .kanban-card .kc-meta{ font-size:11.5px; color:var(--text-faint); margin-bottom:9px; }
+  .kanban-card .kc-foot{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .kanban-arrows{ display:flex; gap:4px; }
+  .kanban-arrow{ background:var(--surface-alt); border:1px solid var(--border-strong); color:var(--text-muted); width:24px; height:24px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px; line-height:1; }
+  .kanban-arrow:hover{ background:var(--accent-soft); border-color:var(--accent); color:var(--accent-dark); }
+  .kanban-arrow:disabled{ opacity:.3; cursor:not-allowed; }
+  .kanban-arrow:disabled:hover{ background:var(--surface-alt); border-color:var(--border-strong); color:var(--text-muted); }
+  .kanban-empty{ text-align:center; padding:24px 10px; color:var(--text-faint); font-size:12.5px; }
+
   ::-webkit-scrollbar{ height:10px; width:10px; }
   ::-webkit-scrollbar-thumb{ background: var(--border-strong); border-radius:10px; }
   @media (max-width: 900px){ #sidebar{ width:70px; } .sidebar-brand span, .nav-group-label, .nav-item span.label{ display:none; } }
@@ -361,15 +397,15 @@
 
   <div class="nav-group">
     <div class="nav-group-label">Próximos Embarques</div>
-    <div class="nav-item" data-view="ph-cronograma-pre" onclick="irPara('ph-cronograma-pre', false, 'Cronograma — Próximos Embarques')"><span class="label">Cronograma</span><span class="soon-dot"></span></div>
+    <div class="nav-item built" data-view="ph-planejamento-logbox" onclick="irPara('ph-planejamento-logbox', true, 'Planejamento LOGBOX')"><span class="label">Planejamento LOGBOX</span><span class="soon-dot"></span></div>
+    <div class="nav-item built" data-view="ph-planejamento-mti" onclick="irPara('ph-planejamento-mti', true, 'Planejamento MTI')"><span class="label">Planejamento MTI</span><span class="soon-dot"></span></div>
+    <div class="nav-item built" data-view="ph-status" onclick="irPara('ph-status', true, 'Status dos Contêineres')"><span class="label">Status dos Contêineres</span><span class="soon-dot"></span></div>
   </div>
 
   <div class="nav-group">
     <div class="nav-group-label">Contêiner Embarcados</div>
     <div class="nav-item built" data-view="ph-pl-logbox" onclick="irPara('ph-pl-logbox', true, 'Packing List LOGBOX')"><span class="label">Packing List LOGBOX</span><span class="soon-dot"></span></div>
     <div class="nav-item built" data-view="ph-pl-mti" onclick="irPara('ph-pl-mti', true, 'Packing List MTI')"><span class="label">Packing List MTI</span><span class="soon-dot"></span></div>
-    <div class="nav-item built" data-view="ph-planejamento-logbox" onclick="irPara('ph-planejamento-logbox', true, 'Planejamento LOGBOX')"><span class="label">Planejamento LOGBOX</span><span class="soon-dot"></span></div>
-    <div class="nav-item built" data-view="ph-planejamento-mti" onclick="irPara('ph-planejamento-mti', true, 'Planejamento MTI')"><span class="label">Planejamento MTI</span><span class="soon-dot"></span></div>
     <div class="nav-item built" data-view="ph-arquivo" onclick="irPara('ph-arquivo', true, 'Arquivo dos Contêineres')"><span class="label">Arquivo dos Contêineres</span><span class="soon-dot"></span></div>
   </div>
 
@@ -734,10 +770,42 @@
     <!-- ============ ARQUIVO DOS CONTÊINERES ============ -->
     <div class="view" id="view-ph-arquivo">
       <div class="toolbar">
-        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted);">🗄 Contêineres já chegados — LOGBOX + MTI</div>
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted);">🗄 Contêineres já chegados</div>
         <div class="spacer"></div>
+        <select id="arqFiltroEmpresa" onchange="renderArquivo()">
+          <option value="">Todas as empresas</option>
+          <option value="logbox">Apenas LOGBOX</option>
+          <option value="mti">Apenas MTI</option>
+        </select>
+        <select id="arqOrdenar" onchange="renderArquivo()">
+          <option value="chegada">Data de chegada (recente)</option>
+          <option value="nome">Nome do contêiner (A–Z)</option>
+          <option value="valor">Valor (maior primeiro)</option>
+        </select>
       </div>
       <div class="lote-grid" id="arquivoGrid"><div class="empty-state">Carregando…</div></div>
+    </div>
+
+    <!-- ============ STATUS DOS CONTÊINERES (KANBAN) ============ -->
+    <div class="view" id="view-ph-status">
+      <div class="toolbar">
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted);">🚢 Contêineres no mar — arraste o card ou use as setas pra mover</div>
+        <div class="spacer"></div>
+      </div>
+      <div class="kanban-board" id="kanbanBoard">
+        <div class="kanban-col" data-status="booking" ondragover="kbDragOver(event)" ondragleave="kbDragLeave(event)" ondrop="kbDrop(event,'booking')">
+          <div class="kanban-col-head"><span class="kanban-col-title">📋 Booking Feito</span><span class="kanban-col-count" id="kbCount_booking">0</span></div>
+          <div id="kbList_booking"></div>
+        </div>
+        <div class="kanban-col" data-status="em_rota" ondragover="kbDragOver(event)" ondragleave="kbDragLeave(event)" ondrop="kbDrop(event,'em_rota')">
+          <div class="kanban-col-head"><span class="kanban-col-title">🚢 Em Rota</span><span class="kanban-col-count" id="kbCount_em_rota">0</span></div>
+          <div id="kbList_em_rota"></div>
+        </div>
+        <div class="kanban-col" data-status="desembaraco" ondragover="kbDragOver(event)" ondragleave="kbDragLeave(event)" ondrop="kbDrop(event,'desembaraco')">
+          <div class="kanban-col-head"><span class="kanban-col-title">🛃 Desembaraço</span><span class="kanban-col-count" id="kbCount_desembaraco">0</span></div>
+          <div id="kbList_desembaraco"></div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -1212,6 +1280,7 @@ function irPara(viewId, built, label){
     if (viewId === "ph-pl-mti") loadPackingList("mti");
     if (viewId === "ph-planejamento-logbox") loadPackingList("logbox");
     if (viewId === "ph-planejamento-mti") loadPackingList("mti");
+    if (viewId === "ph-status") loadStatusContainers();
     if (viewId === "ph-arquivo") loadArquivo();
   } else {
     if (viewId === "v-precificacoes") { document.getElementById("precif-lista").style.display=""; document.getElementById("precif-editor").style.display="none"; }
@@ -1221,6 +1290,7 @@ function irPara(viewId, built, label){
     if (viewId === "ph-pl-mti") loadPackingList("mti");
     if (viewId === "ph-planejamento-logbox") loadPackingList("logbox");
     if (viewId === "ph-planejamento-mti") loadPackingList("mti");
+    if (viewId === "ph-status") loadStatusContainers();
     if (viewId === "ph-arquivo") loadArquivo();
   }
 }
@@ -3201,29 +3271,34 @@ function renderPackingList(fonte){
 function renderArquivo(){
   const grid = document.getElementById("arquivoGrid");
   if (!grid) return;
-  const arquivados = [...PL_CONTAINERS.logbox, ...PL_CONTAINERS.mti]
-    .filter(c => c.chegou_em)
-    .sort((a, b) => (b.chegou_em || "").localeCompare(a.chegou_em || ""));
+  const filtroEmpresa = document.getElementById("arqFiltroEmpresa")?.value || "";
+  const ordenar = document.getElementById("arqOrdenar")?.value || "chegada";
+
+  let arquivados = [...PL_CONTAINERS.logbox, ...PL_CONTAINERS.mti].filter(c => c.chegou_em);
+  if (filtroEmpresa) arquivados = arquivados.filter(c => c.fonte === filtroEmpresa);
+
+  const totalRmbOf = c => (c.imp_container_itens || []).reduce((s, it) => s + (Number(it.valor_rmb) || 0), 0);
+  if (ordenar === "nome") arquivados.sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
+  else if (ordenar === "valor") arquivados.sort((a, b) => totalRmbOf(b) - totalRmbOf(a));
+  else arquivados.sort((a, b) => (b.chegou_em || "").localeCompare(a.chegou_em || ""));
+
   if (!arquivados.length){
-    grid.innerHTML = `<div class="empty-state">Nenhum contêiner chegou ainda. Quando você marcar um como chegado, ele aparece aqui.</div>`;
+    grid.innerHTML = `<div class="empty-state">${filtroEmpresa ? "Nenhum contêiner arquivado dessa empresa." : "Nenhum contêiner chegou ainda. Quando você marcar um como chegado, ele aparece aqui."}</div>`;
     return;
   }
   grid.innerHTML = arquivados.map(c => {
     const itens = c.imp_container_itens || [];
-    const totalRmb = itens.reduce((s, it) => s + (Number(it.valor_rmb) || 0), 0);
+    const totalRmb = totalRmbOf(c);
     const totalCbm = itens.reduce((s, it) => s + (Number(it.cbm_total) || 0), 0);
-    return `<div class="pl-container-card" onclick="abrirContainerDetalhe('${c.fonte}','${c.id}')">
-      <div class="plc-head">
-        <div class="plc-nome">${escapeHtml(c.nome)}</div>
-        <span class="badge-status" style="background:var(--surface-alt); color:var(--text-muted); border-color:var(--border);">${c.fonte.toUpperCase()}</span>
+    return `<div class="arq-card" onclick="abrirContainerDetalhe('${c.fonte}','${c.id}')">
+      <div class="arq-head">
+        <div class="arq-nome">${escapeHtml(c.nome)}</div>
+        <span class="tag-emp ${c.fonte === "mti" ? "mti" : "logbox"}">${c.fonte.toUpperCase()}</span>
       </div>
-      <div class="plc-meta">
-        Chegou em ${new Date(c.chegou_em).toLocaleDateString("pt-BR")}<br>
-        ${itens.length} ${itens.length === 1 ? "item" : "itens"} · CBM ${fmtN(totalCbm, 2)}
-      </div>
-      <div class="plc-foot">
-        <span class="mono" style="font-weight:700;">¥ ${fmtN(totalRmb, 2)}</span>
-      </div>
+      <div class="arq-data-label">Chegou em</div>
+      <div class="arq-data">${new Date(c.chegou_em).toLocaleDateString("pt-BR")}</div>
+      <div class="arq-meta">${itens.length} ${itens.length === 1 ? "item" : "itens"} · CBM ${fmtN(totalCbm, 2)}</div>
+      <div class="arq-valor">¥ ${fmtN(totalRmb, 2)}</div>
     </div>`;
   }).join("");
 }
@@ -3234,6 +3309,85 @@ async function loadArquivo(){
   await Promise.all([loadPackingList("logbox"), loadPackingList("mti")]);
   renderArquivo();
 }
+
+/* ======================= STATUS DOS CONTÊINERES (KANBAN) ======================= */
+const KB_STATUSES = ["booking", "em_rota", "desembaraco"];
+const KB_LABELS = { booking: "Booking Feito", em_rota: "Em Rota", desembaraco: "Desembaraço" };
+let KB_DRAGGING = null; // { fonte, id }
+
+async function loadStatusContainers(){
+  KB_STATUSES.forEach(s => { const el = document.getElementById(`kbList_${s}`); if (el) el.innerHTML = `<div class="kanban-empty">Carregando…</div>`; });
+  await Promise.all([loadPackingList("logbox"), loadPackingList("mti")]);
+  renderKanban();
+}
+
+function renderKanban(){
+  const ativos = [...PL_CONTAINERS.logbox, ...PL_CONTAINERS.mti].filter(c => !c.chegou_em);
+  KB_STATUSES.forEach(status => {
+    const lista = ativos.filter(c => (c.status_embarque || "em_rota") === status).sort((a, b) => {
+      if (!a.eta && !b.eta) return 0;
+      if (!a.eta) return 1;
+      if (!b.eta) return -1;
+      return a.eta.localeCompare(b.eta);
+    });
+    const countEl = document.getElementById(`kbCount_${status}`);
+    if (countEl) countEl.textContent = lista.length;
+    const listEl = document.getElementById(`kbList_${status}`);
+    if (!listEl) return;
+    if (!lista.length){ listEl.innerHTML = `<div class="kanban-empty">Nenhum contêiner aqui.</div>`; return; }
+    const idx = KB_STATUSES.indexOf(status);
+    listEl.innerHTML = lista.map(c => `
+      <div class="kanban-card" draggable="true" ondragstart="kbDragStart(event,'${c.fonte}','${c.id}')" ondragend="kbDragEnd(event)" onclick="abrirContainerDetalhe('${c.fonte}','${c.id}')">
+        <div class="kc-nome">${escapeHtml(c.nome)}</div>
+        <div class="kc-meta">ETA ${c.eta ? new Date(c.eta + "T00:00:00").toLocaleDateString("pt-BR") : "—"}${etaInfo(c.eta)}</div>
+        <div class="kc-foot">
+          <span class="tag-emp ${c.fonte === "mti" ? "mti" : "logbox"}">${c.fonte.toUpperCase()}</span>
+          <div class="kanban-arrows">
+            <button class="kanban-arrow" title="Mover pra ${idx > 0 ? KB_LABELS[KB_STATUSES[idx - 1]] : ""}" onclick="event.stopPropagation(); kbMover('${c.fonte}','${c.id}',${idx - 1})" ${idx === 0 ? "disabled" : ""}>‹</button>
+            <button class="kanban-arrow" title="Mover pra ${idx < KB_STATUSES.length - 1 ? KB_LABELS[KB_STATUSES[idx + 1]] : ""}" onclick="event.stopPropagation(); kbMover('${c.fonte}','${c.id}',${idx + 1})" ${idx === KB_STATUSES.length - 1 ? "disabled" : ""}>›</button>
+          </div>
+        </div>
+      </div>`).join("");
+  });
+}
+
+window.kbMover = async function(fonte, containerId, novoIdx){
+  if (novoIdx < 0 || novoIdx >= KB_STATUSES.length) return;
+  await kbAtualizarStatus(fonte, containerId, KB_STATUSES[novoIdx]);
+};
+
+async function kbAtualizarStatus(fonte, containerId, novoStatus){
+  const c = PL_CONTAINERS[fonte].find(x => String(x.id) === String(containerId));
+  if (c) c.status_embarque = novoStatus;
+  renderKanban();
+  const { error } = await db.from("imp_containers").update({ status_embarque: novoStatus }).eq("id", containerId);
+  if (error){ toast("Erro ao mover contêiner — tenta de novo.", "error"); await loadStatusContainers(); }
+};
+
+window.kbDragStart = function(ev, fonte, id){
+  KB_DRAGGING = { fonte, id };
+  ev.currentTarget.classList.add("dragging");
+  ev.dataTransfer.effectAllowed = "move";
+  ev.dataTransfer.setData("text/plain", id);
+};
+window.kbDragEnd = function(ev){
+  ev.currentTarget.classList.remove("dragging");
+  KB_DRAGGING = null;
+};
+window.kbDragOver = function(ev){
+  ev.preventDefault();
+  ev.currentTarget.classList.add("drag-over");
+};
+window.kbDragLeave = function(ev){
+  ev.currentTarget.classList.remove("drag-over");
+};
+window.kbDrop = function(ev, status){
+  ev.preventDefault();
+  ev.currentTarget.classList.remove("drag-over");
+  if (!KB_DRAGGING) return;
+  kbAtualizarStatus(KB_DRAGGING.fonte, KB_DRAGGING.id, status);
+  KB_DRAGGING = null;
+};
 
 function plAtualizarTotalStaging(fonte){
   const sel = [...PL_SEL[fonte]];
