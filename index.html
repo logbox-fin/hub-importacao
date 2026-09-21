@@ -754,6 +754,7 @@
           <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--accent);">📥 Disponíveis pra importar da planilha</div>
           <div style="display:flex; align-items:center; gap:12px;">
             <span class="mono" id="plStagingTotal_logbox" style="font-size:13px; font-weight:700; color:var(--text-muted);"></span>
+            <button class="btn btn-ghost btn-sm" id="plRecarregarBtn_logbox" onclick="plRecarregarLogbox()">🔄 Recarregar agora</button>
             <button class="btn btn-primary btn-sm" onclick="plImportarSelecionados('logbox')">Importar Selecionados →</button>
           </div>
         </div>
@@ -768,6 +769,7 @@
           <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--accent);">📥 Disponíveis pra importar da planilha</div>
           <div style="display:flex; align-items:center; gap:12px;">
             <span class="mono" id="plStagingTotal_mti" style="font-size:13px; font-weight:700; color:var(--text-muted);"></span>
+            <button class="btn btn-ghost btn-sm" id="plRecarregarBtn_mti" onclick="plRecarregarMti()">🔄 Recarregar agora</button>
             <button class="btn btn-primary btn-sm" onclick="plImportarSelecionados('mti')">Importar Selecionados →</button>
           </div>
         </div>
@@ -3329,6 +3331,62 @@ let PL_DETALHE = null;                       // { fonte, container } — contêi
 
 function normModelo(modeloOriginal){
   return String(modeloOriginal || "").split("\n")[0].trim().toUpperCase();
+}
+
+async function plRecarregarLogbox(){
+  const btn = document.getElementById("plRecarregarBtn_logbox");
+  const textoOriginal = btn ? btn.innerHTML : "";
+  if (btn){ btn.disabled = true; btn.innerHTML = "⏳ Lendo a planilha…"; }
+  try{
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/sync-logbox-planilha`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${SUPABASE_ANON_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    });
+    const dados = await resp.json();
+    if (!resp.ok || !dados.ok){
+      toast("Erro ao recarregar a planilha do LOGBOX: " + (dados.error || resp.status), "error");
+      return;
+    }
+    const partes = [];
+    if (dados.inseridos) partes.push(`${dados.inseridos} novo${dados.inseridos > 1 ? "s" : ""}`);
+    if (dados.atualizados) partes.push(`${dados.atualizados} atualizado${dados.atualizados > 1 ? "s" : ""}`);
+    if (dados.erros && dados.erros.length) partes.push(`${dados.erros.length} com erro`);
+    toast(partes.length ? `Planilha recarregada — ${partes.join(", ")}.` : "Planilha recarregada — nenhuma mudança.", dados.erros && dados.erros.length ? "error" : "success");
+    await loadPackingList("logbox");
+  }catch(err){
+    toast("Erro ao recarregar a planilha do LOGBOX: " + err.message, "error");
+  }finally{
+    if (btn){ btn.disabled = false; btn.innerHTML = textoOriginal; }
+  }
+}
+
+async function plRecarregarMti(){
+  const btn = document.getElementById("plRecarregarBtn_mti");
+  const textoOriginal = btn ? btn.innerHTML : "";
+  if (btn){ btn.disabled = true; btn.innerHTML = "⏳ Lendo a planilha…"; }
+  try{
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/sync-mti-planilha`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${SUPABASE_ANON_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    });
+    const dados = await resp.json();
+    if (!resp.ok || !dados.ok){
+      toast("Erro ao recarregar a planilha do MTI: " + (dados.error || resp.status), "error");
+      return;
+    }
+    const partes = [];
+    if (dados.inseridos) partes.push(`${dados.inseridos} novo${dados.inseridos > 1 ? "s" : ""}`);
+    if (dados.atualizados) partes.push(`${dados.atualizados} atualizado${dados.atualizados > 1 ? "s" : ""}`);
+    if (dados.erros && dados.erros.length) partes.push(`${dados.erros.length} com erro`);
+    toast(partes.length ? `Planilha recarregada — ${partes.join(", ")}.` : "Planilha recarregada — nenhuma mudança.", dados.erros && dados.erros.length ? "error" : "success");
+    await loadPackingList("mti");
+  }catch(err){
+    toast("Erro ao recarregar a planilha do MTI: " + err.message, "error");
+  }finally{
+    if (btn){ btn.disabled = false; btn.innerHTML = textoOriginal; }
+  }
 }
 
 async function loadPackingList(fonte){
