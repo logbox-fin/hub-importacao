@@ -925,7 +925,7 @@
         <fieldset>
           <legend>Identificação</legend>
           <div class="field-grid">
-            <div class="field"><label>Empresa *</label><select id="f_empresa"><option value="">Selecione...</option><option value="LOGBOX">LOGBOX</option><option value="MTI">MTI</option></select><div class="field-error" id="err_empresa"></div></div>
+            <div class="field"><label>Empresa *</label><div style="display:flex; gap:16px; align-items:center; height:38px;"><label style="display:flex; align-items:center; gap:6px; font-weight:500; font-size:13.5px; cursor:pointer;"><input type="checkbox" id="f_empresa_logbox" style="width:16px; height:16px;"> LOGBOX</label><label style="display:flex; align-items:center; gap:6px; font-weight:500; font-size:13.5px; cursor:pointer;"><input type="checkbox" id="f_empresa_mti" style="width:16px; height:16px;"> MTI</label></div><div class="field-error" id="err_empresa"></div></div>
             <div class="field"><label>Status</label><select id="f_ativo"><option value="true">🟢 Ativo</option><option value="false">🔴 Inativo</option></select></div>
             <div class="field"><label>SKU *</label><input type="text" id="f_sku" class="mono-field" autocomplete="off"><div class="field-error" id="err_sku"></div></div>
             <div class="field"><label>Nome do Produto *</label><input type="text" id="f_nome_produto"><div class="field-error" id="err_nome_produto"></div></div>
@@ -2540,7 +2540,7 @@ async function loadEstoqueFuturo(){
   // 1) lista automática: todo produto ATIVO do Cadastro (Hub)
   const { data: prodAtivos, error: e1 } = await db.from(TABLE_PRODUTOS).select("sku,nome_produto,marca,empresa").eq("ativo", true).order("nome_produto");
   if (e1){ toast("Erro ao carregar Estoque Futuro.", "error"); return; }
-  EF_GRUPO = (prodAtivos||[]).map(p => ({ sku: p.sku, grupo: p.empresa === "MTI" ? "mti" : "logbox", nome: p.nome_produto }));
+  EF_GRUPO = (prodAtivos||[]).map(p => ({ sku: p.sku, grupos: (Array.isArray(p.empresa) ? p.empresa : (p.empresa ? [p.empresa] : [])).map(e => e === "MTI" ? "mti" : "logbox"), nome: p.nome_produto }));
   EF_PRODMAP = {};
   (prodAtivos||[]).forEach(p => { EF_PRODMAP[p.sku] = { nome: p.nome_produto, marca: p.marca }; });
   const skusHub = EF_GRUPO.map(g => g.sku);
@@ -2667,7 +2667,7 @@ function renderEstoqueFuturo(){
     </tr>`;
 
   const filtroGrupo = EF_FILTRO_GRUPO;
-  let linhas = EF_GRUPO.filter(g => !filtroGrupo || g.grupo === filtroGrupo);
+  let linhas = EF_GRUPO.filter(g => !filtroGrupo || g.grupos.includes(filtroGrupo));
   linhas.sort((a,b) => {
     const ma = (EF_PRODMAP[a.sku]?.marca||"").localeCompare(EF_PRODMAP[b.sku]?.marca||"");
     if (ma !== 0) return ma;
@@ -2932,7 +2932,7 @@ function getFilteredProdutos(){
   const marcaSel = document.getElementById("marcaFilter").value;
   const compradorSel = document.getElementById("compradorFilter").value;
   let list = produtos.filter(p => showInativos ? true : p.ativo);
-  if (empresaSel) list = list.filter(p => p.empresa === empresaSel);
+  if (empresaSel) list = list.filter(p => (Array.isArray(p.empresa) ? p.empresa : [p.empresa]).includes(empresaSel));
   if (marcaSel) list = list.filter(p => p.marca === marcaSel);
   if (compradorSel) list = list.filter(p => p.comprador === compradorSel);
   if (ALERTA_FILTRO_ATIVO) list = list.filter(produtoTemAlerta);
@@ -2962,7 +2962,7 @@ function renderTableProdutos(){
     <tr class="${p.ativo ? "" : "inativo"} ${produtoTemAlerta(p) ? "linha-alerta" : ""}" style="cursor:pointer;" onclick="abrirEdicao('${p.id}')">
       <td class="sku mono">${escapeHtml(p.sku)}</td>
       <td class="name-cell"><div class="primary">${escapeHtml(p.nome_produto) || "—"}</div>${p.nome_ingles ? `<div class="secondary">${escapeHtml(p.nome_ingles)}</div>` : ""}</td>
-      <td><span class="badge-empresa ${p.empresa === "MTI" ? "mti" : "logbox"}">${escapeHtml(p.empresa) || "—"}</span></td>
+      <td><div style="display:flex; gap:4px; flex-wrap:wrap;">${(Array.isArray(p.empresa) ? p.empresa : (p.empresa ? [p.empresa] : [])).map(e => `<span class="badge-empresa ${e === "MTI" ? "mti" : "logbox"}">${escapeHtml(e)}</span>`).join("") || "—"}</div></td>
       <td>${escapeHtml(p.marca) || "—"}</td>
       <td>${escapeHtml(p.comprador) || "—"}</td>
       <td class="mono">${escapeHtml(p.ncm) || "—"}</td>
@@ -2996,10 +2996,12 @@ document.querySelectorAll("th.sortable").forEach(th => {
   });
 });
 
-const FIELD_IDS = ["empresa","sku","nome_produto","nome_ingles","nome_chines","ncm","codigo_barras","preco_rmb","valor_duimp_usd","peso_item_kg","qtde_caixa_master","comprimento_cm","largura_cm","altura_cm","peso_liquido_caixa_kg","peso_bruto_caixa_kg"];
+const FIELD_IDS = ["sku","nome_produto","nome_ingles","nome_chines","ncm","codigo_barras","preco_rmb","valor_duimp_usd","peso_item_kg","qtde_caixa_master","comprimento_cm","largura_cm","altura_cm","peso_liquido_caixa_kg","peso_bruto_caixa_kg"];
 
 function limparForm(){
   FIELD_IDS.forEach(id => { document.getElementById(`f_${id}`).value = ""; });
+  document.getElementById("f_empresa_logbox").checked = false;
+  document.getElementById("f_empresa_mti").checked = false;
   document.getElementById("f_ativo").value = "true";
   document.getElementById("f_marca").value = "";
   document.getElementById("f_comprador").value = "";
@@ -3020,7 +3022,9 @@ window.abrirEdicao = function(id){
   if (!p) return;
   editingId = id;
   limparForm();
-  document.getElementById("f_empresa").value = p.empresa || "";
+  const empresasAtuais = Array.isArray(p.empresa) ? p.empresa : (p.empresa ? [p.empresa] : []);
+  document.getElementById("f_empresa_logbox").checked = empresasAtuais.includes("LOGBOX");
+  document.getElementById("f_empresa_mti").checked = empresasAtuais.includes("MTI");
   document.getElementById("f_ativo").value = p.ativo === false ? "false" : "true";
   document.getElementById("f_sku").value = p.sku || "";
   document.getElementById("f_nome_produto").value = p.nome_produto || "";
@@ -3055,8 +3059,8 @@ function validarForm(){
   let ok = true;
   document.querySelectorAll(".field-error").forEach(e => e.textContent = "");
   document.querySelectorAll(".field input, .field select").forEach(e => e.classList.remove("invalid"));
-  const empresa = document.getElementById("f_empresa").value.trim();
-  if (!empresa){ setFieldError("empresa", "Empresa é obrigatória."); ok = false; }
+  const empresaMarcada = document.getElementById("f_empresa_logbox").checked || document.getElementById("f_empresa_mti").checked;
+  if (!empresaMarcada){ setFieldError("empresa", "Marque pelo menos uma empresa."); ok = false; }
   const sku = document.getElementById("f_sku").value.trim();
   if (!sku){ setFieldError("sku", "SKU é obrigatório."); ok = false; }
   const nome = document.getElementById("f_nome_produto").value.trim();
@@ -3080,8 +3084,12 @@ document.getElementById("btnSalvar").addEventListener("click", async () => {
   const sku = document.getElementById("f_sku").value.trim();
   const jaExiste = await skuJaExiste(sku, editingId);
   if (jaExiste){ setFieldError("sku", "Já existe um produto ativo ou inativo com esse SKU."); return; }
+  const empresaArr = [
+    ...(document.getElementById("f_empresa_logbox").checked ? ["LOGBOX"] : []),
+    ...(document.getElementById("f_empresa_mti").checked ? ["MTI"] : [])
+  ];
   const payload = {
-    sku, empresa: document.getElementById("f_empresa").value.trim(),
+    sku, empresa: empresaArr,
     ativo: document.getElementById("f_ativo").value === "true",
     nome_produto: document.getElementById("f_nome_produto").value.trim() || null,
     nome_ingles: document.getElementById("f_nome_ingles").value.trim() || null,
@@ -3129,7 +3137,7 @@ const IMPORT_COLS = [
   { header:"Nome do Produto", field:"nome_produto", type:"text" },
   { header:"Nome (Inglês)", field:"nome_ingles", type:"text" },
   { header:"Nome (Chinês)", field:"nome_chines", type:"text" },
-  { header:"Empresa (LOGBOX/MTI)", field:"empresa", type:"text" },
+  { header:"Empresa (LOGBOX, MTI ou LOGBOX+MTI)", field:"empresa", type:"empresa_list" },
   { header:"Status (Ativo/Inativo)", field:"ativo", type:"bool" },
   { header:"NCM", field:"ncm", type:"ncm" },
   { header:"Código de Barras", field:"codigo_barras", type:"text" },
@@ -3149,6 +3157,7 @@ window.exportarProdutosTemplate = function(){
   const headers = IMPORT_COLS.map(c => c.header);
   const rows = produtos.map(p => IMPORT_COLS.map(c => {
     if (c.field === "ativo") return p.ativo === false ? "Inativo" : "Ativo";
+    if (c.field === "empresa") return (Array.isArray(p.empresa) ? p.empresa : (p.empresa ? [p.empresa] : [])).join(" + ");
     const v = p[c.field];
     return v === null || v === undefined ? "" : v;
   }));
@@ -3190,13 +3199,14 @@ function processarImportacao(rows){
       if (c.type === "number") novo[c.field] = raw === "" ? null : parseNum(raw);
       else if (c.type === "bool") novo[c.field] = raw.toLowerCase().startsWith("inativ") ? false : true;
       else if (c.type === "ncm") novo[c.field] = raw ? maskNcm(raw) : "";
+      else if (c.type === "empresa_list") novo[c.field] = raw ? [...new Set(raw.toUpperCase().split(/[,;/+]+/).map(s => s.trim()).filter(Boolean))].sort() : [];
       else novo[c.field] = raw;
     });
     const errors = [];
     if (!novo.sku) errors.push("SKU vazio.");
     if (!novo.nome_produto) errors.push("Nome do Produto vazio.");
-    if (novo.empresa && !["LOGBOX","MTI"].includes(novo.empresa.toUpperCase())) errors.push("Empresa deve ser LOGBOX ou MTI.");
-    if (novo.empresa) novo.empresa = novo.empresa.toUpperCase();
+    if (!novo.empresa.length) errors.push("Empresa vazia (informe LOGBOX, MTI, ou LOGBOX+MTI).");
+    else if (novo.empresa.some(e => !["LOGBOX","MTI"].includes(e))) errors.push("Empresa deve ser LOGBOX e/ou MTI.");
     if (novo.ncm && novo.ncm.replace(/\D/g,"").length !== 8) errors.push("NCM inválido (precisa de 8 dígitos).");
     if (novo.marca && !marcasExist.includes(novo.marca.toLowerCase())) novasMarcas.add(novo.marca);
     if (novo.comprador && !compradoresExist.includes(novo.comprador.toLowerCase())) novosCompradores.add(novo.comprador);
@@ -3249,9 +3259,9 @@ function renderImportPreview(){
           <label style="display:flex; align-items:center; gap:8px; font-size:12px; padding:4px 0;">
             <input type="checkbox" ${d.aplicar?'checked':''} onchange="IMPORT_PREVIEW[${i}].diffs[${di}].aplicar=this.checked">
             <span style="font-weight:600; min-width:140px;">${escapeHtml(d.label)}</span>
-            <span style="color:var(--text-faint); text-decoration:line-through;">${escapeHtml(d.atual===true?'Ativo':d.atual===false?'Inativo':(d.atual??'—'))}</span>
+            <span style="color:var(--text-faint); text-decoration:line-through;">${escapeHtml(Array.isArray(d.atual) ? (d.atual.join(' + ') || '—') : (d.atual===true?'Ativo':d.atual===false?'Inativo':(d.atual??'—')))}</span>
             <span>→</span>
-            <span style="color:var(--accent-dark); font-weight:600;">${escapeHtml(d.novo===true?'Ativo':d.novo===false?'Inativo':d.novo)}</span>
+            <span style="color:var(--accent-dark); font-weight:600;">${escapeHtml(Array.isArray(d.novo) ? d.novo.join(' + ') : (d.novo===true?'Ativo':d.novo===false?'Inativo':d.novo))}</span>
           </label>
         `).join("")}
       </div>`;
@@ -3402,7 +3412,7 @@ async function loadPackingList(fonte){
   setConn(true);
   PL_CONTAINERS[fonte] = contData || [];
 
-  const { data: prodData } = await db.from(TABLE_PRODUTOS).select("id,sku,nome_produto,marca,empresa").eq("empresa", PL_EMPRESA[fonte]).eq("ativo", true);
+  const { data: prodData } = await db.from(TABLE_PRODUTOS).select("id,sku,nome_produto,marca,empresa").contains("empresa", [PL_EMPRESA[fonte]]).eq("ativo", true);
   PL_PRODUTOS[fonte] = prodData || [];
 
   const { data: aliasData } = await db.from("imp_sku_aliases").select("modelo_original,sku").eq("fonte", fonte);
