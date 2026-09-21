@@ -348,7 +348,7 @@
   <div class="nav-group">
     <div class="nav-group-label">Planejamento</div>
     <div class="nav-item built" data-view="v-config" onclick="irPara('v-config', true, 'Configurações')"><span class="label">Configurações</span><span class="soon-dot"></span></div>
-    <div class="nav-item built" data-view="v-ncm" onclick="irPara('v-ncm', true, 'Banco de Dados NCM')"><span class="label">Banco de Dados NCM</span><span class="soon-dot"></span></div>
+    <div class="nav-item built" data-view="v-ncm" onclick="irPara('v-ncm', true, 'Base NCM')"><span class="label">Base NCM</span><span class="soon-dot"></span></div>
     <div class="nav-item built" data-view="v-precificacoes" onclick="irPara('v-precificacoes', true, 'Precificações')"><span class="label">Precificações</span><span class="soon-dot"></span></div>
     <div class="nav-item built" data-view="v-pedidos" onclick="irPara('v-pedidos', true, 'Pedidos')"><span class="label">Pedidos</span><span class="soon-dot"></span></div>
   </div>
@@ -368,7 +368,9 @@
     <div class="nav-group-label">Contêiner Embarcados</div>
     <div class="nav-item built" data-view="ph-pl-logbox" onclick="irPara('ph-pl-logbox', true, 'Packing List LOGBOX')"><span class="label">Packing List LOGBOX</span><span class="soon-dot"></span></div>
     <div class="nav-item built" data-view="ph-pl-mti" onclick="irPara('ph-pl-mti', true, 'Packing List MTI')"><span class="label">Packing List MTI</span><span class="soon-dot"></span></div>
-    <div class="nav-item" data-view="ph-cronograma-pos" onclick="irPara('ph-cronograma-pos', false, 'Cronograma — Contêiner Embarcados')"><span class="label">Cronograma</span><span class="soon-dot"></span></div>
+    <div class="nav-item built" data-view="ph-planejamento-logbox" onclick="irPara('ph-planejamento-logbox', true, 'Planejamento LOGBOX')"><span class="label">Planejamento LOGBOX</span><span class="soon-dot"></span></div>
+    <div class="nav-item built" data-view="ph-planejamento-mti" onclick="irPara('ph-planejamento-mti', true, 'Planejamento MTI')"><span class="label">Planejamento MTI</span><span class="soon-dot"></span></div>
+    <div class="nav-item built" data-view="ph-arquivo" onclick="irPara('ph-arquivo', true, 'Arquivo dos Contêineres')"><span class="label">Arquivo dos Contêineres</span><span class="soon-dot"></span></div>
   </div>
 
   <div class="nav-group">
@@ -681,17 +683,6 @@
 
     <!-- ============ PACKING LIST — LOGBOX ============ -->
     <div class="view" id="view-ph-pl-logbox">
-      <div id="plStagingSection_logbox" style="display:none; margin-bottom:22px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
-          <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--accent);">📥 Disponíveis pra importar da planilha</div>
-          <div style="display:flex; align-items:center; gap:12px;">
-            <span class="mono" id="plStagingTotal_logbox" style="font-size:13px; font-weight:700; color:var(--text-muted);"></span>
-            <button class="btn btn-primary btn-sm" onclick="plImportarSelecionados('logbox')">Importar Selecionados →</button>
-          </div>
-        </div>
-        <div class="lote-grid" id="plStagingList_logbox"></div>
-      </div>
-
       <div class="toolbar">
         <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted);">📦 Contêineres LOGBOX</div>
         <div class="spacer"></div>
@@ -703,7 +694,32 @@
 
     <!-- ============ PACKING LIST — MTI ============ -->
     <div class="view" id="view-ph-pl-mti">
-      <div id="plStagingSection_mti" style="display:none; margin-bottom:22px;">
+      <div class="toolbar">
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted);">📦 Contêineres MTI</div>
+        <div class="spacer"></div>
+        <div id="plPendBadge_mti"></div>
+        <button class="btn btn-ghost" onclick="abrirNovoContainer('mti')">+ Novo Contêiner</button>
+      </div>
+      <div class="lote-grid" id="plContainersGrid_mti"><div class="empty-state">Carregando…</div></div>
+    </div>
+
+    <!-- ============ PLANEJAMENTO — LOGBOX ============ -->
+    <div class="view" id="view-ph-planejamento-logbox">
+      <div id="plStagingSection_logbox" style="margin-bottom:0;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+          <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--accent);">📥 Disponíveis pra importar da planilha</div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span class="mono" id="plStagingTotal_logbox" style="font-size:13px; font-weight:700; color:var(--text-muted);"></span>
+            <button class="btn btn-primary btn-sm" onclick="plImportarSelecionados('logbox')">Importar Selecionados →</button>
+          </div>
+        </div>
+        <div class="lote-grid" id="plStagingList_logbox"></div>
+      </div>
+    </div>
+
+    <!-- ============ PLANEJAMENTO — MTI ============ -->
+    <div class="view" id="view-ph-planejamento-mti">
+      <div id="plStagingSection_mti" style="margin-bottom:0;">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
           <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--accent);">📥 Disponíveis pra importar da planilha</div>
           <div style="display:flex; align-items:center; gap:12px;">
@@ -713,14 +729,15 @@
         </div>
         <div class="lote-grid" id="plStagingList_mti"></div>
       </div>
+    </div>
 
+    <!-- ============ ARQUIVO DOS CONTÊINERES ============ -->
+    <div class="view" id="view-ph-arquivo">
       <div class="toolbar">
-        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted);">📦 Contêineres MTI</div>
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted);">🗄 Contêineres já chegados — LOGBOX + MTI</div>
         <div class="spacer"></div>
-        <div id="plPendBadge_mti"></div>
-        <button class="btn btn-ghost" onclick="abrirNovoContainer('mti')">+ Novo Contêiner</button>
       </div>
-      <div class="lote-grid" id="plContainersGrid_mti"><div class="empty-state">Carregando…</div></div>
+      <div class="lote-grid" id="arquivoGrid"><div class="empty-state">Carregando…</div></div>
     </div>
 
   </div>
@@ -1193,12 +1210,18 @@ function irPara(viewId, built, label){
     if (viewId === "v-estoquefuturo") loadEstoqueFuturo();
     if (viewId === "ph-pl-logbox") loadPackingList("logbox");
     if (viewId === "ph-pl-mti") loadPackingList("mti");
+    if (viewId === "ph-planejamento-logbox") loadPackingList("logbox");
+    if (viewId === "ph-planejamento-mti") loadPackingList("mti");
+    if (viewId === "ph-arquivo") loadArquivo();
   } else {
     if (viewId === "v-precificacoes") { document.getElementById("precif-lista").style.display=""; document.getElementById("precif-editor").style.display="none"; }
     if (viewId === "v-pedidos") { document.getElementById("pedidos-lista").style.display=""; document.getElementById("pedido-detalhe").style.display="none"; renderPedStatCards(); renderPedidos(); }
     if (viewId === "v-estoquefuturo") { renderEstoqueFuturo(); }
     if (viewId === "ph-pl-logbox") loadPackingList("logbox");
     if (viewId === "ph-pl-mti") loadPackingList("mti");
+    if (viewId === "ph-planejamento-logbox") loadPackingList("logbox");
+    if (viewId === "ph-planejamento-mti") loadPackingList("mti");
+    if (viewId === "ph-arquivo") loadArquivo();
   }
 }
 
@@ -1772,7 +1795,7 @@ window.plNcmBuscar = function(){
   if (!q){ dropdown.style.display = "none"; return; }
   const matches = NCMS.filter(n => (n.ncm||"").toLowerCase().includes(q) || (n.descricao||"").toLowerCase().includes(q)).slice(0, 20);
   if (!matches.length){
-    dropdown.innerHTML = `<div style="padding:10px 12px; font-size:12.5px; color:var(--text-faint);">Nenhum NCM encontrado — cadastre em Planejamento &gt; Banco de Dados NCM.</div>`;
+    dropdown.innerHTML = `<div style="padding:10px 12px; font-size:12.5px; color:var(--text-faint);">Nenhum NCM encontrado — cadastre em Planejamento &gt; Base NCM.</div>`;
     dropdown.style.display = "block";
     return;
   }
@@ -1794,7 +1817,7 @@ window.plNcmSelecionar = function(codigo){
     document.getElementById("pl_cofins_p").value = achado.cofins;
     document.getElementById("pl_icms_p").value = achado.icms;
     errEl.style.color = "var(--success)";
-    errEl.textContent = `✓ Preenchido a partir do Banco de Dados NCM (${achado.descricao||''})`;
+    errEl.textContent = `✓ Preenchido a partir da Base NCM (${achado.descricao||''})`;
     recalcularPreviewProdLote();
   }
 };
@@ -1944,7 +1967,7 @@ window.crBuscarNCM = function(i, btn){
     btn.textContent = "✓"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)";
     toast("NCM encontrado — alíquotas carregadas!");
   } else {
-    toast("NCM não encontrado no Banco de Dados NCM.", "error");
+    toast("NCM não encontrado na Base NCM.", "error");
   }
 };
 window.salvarCadastroRapido = async function(){
@@ -2598,7 +2621,7 @@ window.fNcmBuscar = function(){
   if (!q){ dropdown.style.display = "none"; return; }
   const matches = NCMS.filter(n => (n.ncm||"").toLowerCase().includes(q) || (n.descricao||"").toLowerCase().includes(q)).slice(0, 20);
   if (!matches.length){
-    dropdown.innerHTML = `<div style="padding:10px 12px; font-size:12.5px; color:var(--text-faint);">Nenhum NCM encontrado — cadastre em Planejamento &gt; Banco de Dados NCM.</div>`;
+    dropdown.innerHTML = `<div style="padding:10px 12px; font-size:12.5px; color:var(--text-faint);">Nenhum NCM encontrado — cadastre em Planejamento &gt; Base NCM.</div>`;
     dropdown.style.display = "block";
     return;
   }
@@ -3101,14 +3124,22 @@ function plContainerPendentes(container){
   return (container.imp_container_itens || []).filter(it => !it.sku).length;
 }
 
+function etaInfo(etaStr){
+  if (!etaStr) return "";
+  const eta = new Date(etaStr + "T00:00:00");
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const diffDias = Math.round((eta - hoje) / 86400000);
+  if (diffDias > 0) return ` · faltam ${diffDias} dia${diffDias > 1 ? "s" : ""}`;
+  if (diffDias === 0) return " · chega hoje";
+  return ` · atrasado há ${Math.abs(diffDias)} dia${Math.abs(diffDias) > 1 ? "s" : ""}`;
+}
+
 function renderPackingList(fonte){
-  // ---- seção "disponíveis pra importar" ----
-  const stagingSection = document.getElementById(`plStagingSection_${fonte}`);
+  // ---- seção "disponíveis pra importar" (vive na tela de Planejamento) ----
   const stagingList = document.getElementById(`plStagingList_${fonte}`);
   const staging = PL_STAGING[fonte];
-  if (staging.length){
-    stagingSection.style.display = "";
-    stagingList.innerHTML = staging.map(s => {
+  if (stagingList){
+    stagingList.innerHTML = staging.length ? staging.map(s => {
       const sel = PL_SEL[fonte].has(String(s.id));
       return `<div class="pl-staging-card ${sel ? "sel" : ""}" onclick="plToggleSel('${fonte}','${s.id}')">
         <input type="checkbox" ${sel ? "checked" : ""}>
@@ -3119,24 +3150,31 @@ function renderPackingList(fonte){
           <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); plVerItensStaging('${fonte}','${s.id}')">👁 Ver itens</button>
         </div>
       </div>`;
-    }).join("");
+    }).join("") : `<div class="empty-state">Nada pendente de importar no momento — tudo que veio da planilha já foi importado.</div>`;
     plAtualizarTotalStaging(fonte);
-  } else {
-    stagingSection.style.display = "none";
   }
 
-  // ---- badge de pendências (soma de todos os contêineres já importados) ----
-  const totalPend = PL_CONTAINERS[fonte].reduce((s, c) => s + plContainerPendentes(c), 0);
+  // ---- badge de pendências (soma dos contêineres ainda ativos, não arquivados) ----
+  const ativos = PL_CONTAINERS[fonte].filter(c => !c.chegou_em);
+  const totalPend = ativos.reduce((s, c) => s + plContainerPendentes(c), 0);
   const badgeEl = document.getElementById(`plPendBadge_${fonte}`);
-  badgeEl.innerHTML = totalPend > 0
-    ? `<div class="pl-pend-badge" onclick="plAbrirPendencias('${fonte}')">⚠ ${totalPend} SKU${totalPend > 1 ? "s" : ""} pendente${totalPend > 1 ? "s" : ""}</div>`
-    : "";
+  if (badgeEl){
+    badgeEl.innerHTML = totalPend > 0
+      ? `<div class="pl-pend-badge" onclick="plAbrirPendencias('${fonte}')">⚠ ${totalPend} SKU${totalPend > 1 ? "s" : ""} pendente${totalPend > 1 ? "s" : ""}</div>`
+      : "";
+  }
 
-  // ---- grid de contêineres importados ----
+  // ---- grid de contêineres importados e ainda não chegados, ordenado por ETA (mais próximo primeiro) ----
   const grid = document.getElementById(`plContainersGrid_${fonte}`);
-  const containers = PL_CONTAINERS[fonte];
+  if (!grid) return;
+  const containers = ativos.slice().sort((a, b) => {
+    if (!a.eta && !b.eta) return 0;
+    if (!a.eta) return 1;
+    if (!b.eta) return -1;
+    return a.eta.localeCompare(b.eta);
+  });
   if (!containers.length){
-    grid.innerHTML = `<div class="empty-state">Nenhum contêiner ainda. Importe da planilha acima ${staging.length ? "" : "ou "}crie um manualmente.</div>`;
+    grid.innerHTML = `<div class="empty-state">Nenhum contêiner ativo. Importe em Planejamento ${PL_EMPRESA[fonte]} ou crie um manualmente.</div>`;
     return;
   }
   grid.innerHTML = containers.map(c => {
@@ -3150,7 +3188,7 @@ function renderPackingList(fonte){
         ${pend > 0 ? `<span class="badge-status" style="background:var(--warn-soft); color:#92400e; border-color:#fde68a;">⚠ ${pend}</span>` : `<span class="badge-status" style="background:var(--success-soft); color:#166534; border-color:#bbf7d0;">✓ ok</span>`}
       </div>
       <div class="plc-meta">
-        ETD ${c.etd ? new Date(c.etd + "T00:00:00").toLocaleDateString("pt-BR") : "—"} · ETA ${c.eta ? new Date(c.eta + "T00:00:00").toLocaleDateString("pt-BR") : "—"}<br>
+        ETD ${c.etd ? new Date(c.etd + "T00:00:00").toLocaleDateString("pt-BR") : "—"} · ETA ${c.eta ? new Date(c.eta + "T00:00:00").toLocaleDateString("pt-BR") : "—"}${etaInfo(c.eta)}<br>
         ${itens.length} ${itens.length === 1 ? "item" : "itens"} · CBM ${fmtN(totalCbm, 2)}
       </div>
       <div class="plc-foot">
@@ -3158,6 +3196,43 @@ function renderPackingList(fonte){
       </div>
     </div>`;
   }).join("");
+}
+
+function renderArquivo(){
+  const grid = document.getElementById("arquivoGrid");
+  if (!grid) return;
+  const arquivados = [...PL_CONTAINERS.logbox, ...PL_CONTAINERS.mti]
+    .filter(c => c.chegou_em)
+    .sort((a, b) => (b.chegou_em || "").localeCompare(a.chegou_em || ""));
+  if (!arquivados.length){
+    grid.innerHTML = `<div class="empty-state">Nenhum contêiner chegou ainda. Quando você marcar um como chegado, ele aparece aqui.</div>`;
+    return;
+  }
+  grid.innerHTML = arquivados.map(c => {
+    const itens = c.imp_container_itens || [];
+    const totalRmb = itens.reduce((s, it) => s + (Number(it.valor_rmb) || 0), 0);
+    const totalCbm = itens.reduce((s, it) => s + (Number(it.cbm_total) || 0), 0);
+    return `<div class="pl-container-card" onclick="abrirContainerDetalhe('${c.fonte}','${c.id}')">
+      <div class="plc-head">
+        <div class="plc-nome">${escapeHtml(c.nome)}</div>
+        <span class="badge-status" style="background:var(--surface-alt); color:var(--text-muted); border-color:var(--border);">${c.fonte.toUpperCase()}</span>
+      </div>
+      <div class="plc-meta">
+        Chegou em ${new Date(c.chegou_em).toLocaleDateString("pt-BR")}<br>
+        ${itens.length} ${itens.length === 1 ? "item" : "itens"} · CBM ${fmtN(totalCbm, 2)}
+      </div>
+      <div class="plc-foot">
+        <span class="mono" style="font-weight:700;">¥ ${fmtN(totalRmb, 2)}</span>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function loadArquivo(){
+  const grid = document.getElementById("arquivoGrid");
+  if (grid) grid.innerHTML = `<div class="empty-state">Carregando…</div>`;
+  await Promise.all([loadPackingList("logbox"), loadPackingList("mti")]);
+  renderArquivo();
 }
 
 function plAtualizarTotalStaging(fonte){
@@ -3317,8 +3392,13 @@ function renderContainerDetalhe(){
       <div class="pl-item-row head"><div>Modelo</div><div>SKU</div><div>Qtd/Cx</div><div>Caixas</div><div>Qtd Total</div><div>Valor RMB</div><div>CBM</div><div>Peso Bruto</div></div>
       ${rows}
     </div>
-    <div style="padding:14px 24px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
-      <button class="btn btn-ghost btn-sm" onclick="plConfirmarExcluirContainer()">🗑 Excluir Contêiner</button>
+    <div style="padding:14px 24px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; gap:10px; flex-wrap:wrap;">
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" onclick="plConfirmarExcluirContainer()">🗑 Excluir Contêiner</button>
+        ${container.chegou_em
+          ? `<button class="btn btn-ghost btn-sm" onclick="plDesfazerChegada('${fonte}','${containerId}')">↩ Desfazer chegada (chegou em ${new Date(container.chegou_em).toLocaleDateString("pt-BR")})</button>`
+          : `<button class="btn btn-ghost btn-sm" onclick="plMarcarChegou('${fonte}','${containerId}')">✅ Marcar como chegou</button>`}
+      </div>
       <div style="display:flex; gap:10px;">
         <button class="btn btn-ghost btn-sm" onclick="abrirNovoItemContainer()">+ Adicionar Produto</button>
         <button class="btn btn-primary btn-sm" onclick="plSalvarDetalhe()">💾 Salvar Alterações</button>
@@ -3326,6 +3406,22 @@ function renderContainerDetalhe(){
     </div>
   `, 1080);
 }
+window.plMarcarChegou = async function(fonte, containerId){
+  const { error } = await db.from("imp_containers").update({ chegou_em: new Date().toISOString() }).eq("id", containerId);
+  if (error){ toast("Erro ao marcar chegada.", "error"); return; }
+  toast("Contêiner marcado como chegado — foi pro Arquivo dos Contêineres.");
+  document.getElementById("plDetalheOverlay")?.remove();
+  PL_DETALHE = null;
+  await loadPackingList(fonte);
+};
+window.plDesfazerChegada = async function(fonte, containerId){
+  const { error } = await db.from("imp_containers").update({ chegou_em: null }).eq("id", containerId);
+  if (error){ toast("Erro ao desfazer chegada.", "error"); return; }
+  toast("Chegada desfeita — o contêiner voltou pra Packing List.");
+  document.getElementById("plDetalheOverlay")?.remove();
+  PL_DETALHE = null;
+  await loadPackingList(fonte);
+};
 window.plSalvarDetalhe = async function(){
   if (!PL_DETALHE) return;
   const { fonte, containerId } = PL_DETALHE;
