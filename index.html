@@ -3691,6 +3691,11 @@ window.plVerItensStaging = function(fonte, id){
   `, 720);
 };
 
+function numOrNull(v){
+  if (v === "" || v === null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
 window.plImportarSelecionados = async function(fonte){
   const ids = [...PL_SEL[fonte]];
   if (!ids.length){ toast("Selecione ao menos um contêiner pra importar.", "error"); return; }
@@ -3709,17 +3714,21 @@ window.plImportarSelecionados = async function(fonte){
         container_id: novoContainer.id,
         modelo_original: it.modelo,
         sku: skuMatch,
-        qty_ctn: it.qty_ctn, ctns: it.ctns, qtd_total: it.qtd_total,
-        preco_unit_rmb: it.preco_unit_rmb, valor_rmb: it.valor_rmb,
-        compr_cm: it.compr_cm, larg_cm: it.larg_cm, alt_cm: it.alt_cm,
-        cbm_caixa: it.cbm_caixa, cbm_total: it.cbm_total,
-        peso_liq_ctn: it.peso_liq_ctn, peso_liq_total: it.peso_liq_total,
-        peso_bruto_ctn: it.peso_bruto_ctn, peso_bruto_total: it.peso_bruto_total
+        qty_ctn: numOrNull(it.qty_ctn), ctns: numOrNull(it.ctns), qtd_total: numOrNull(it.qtd_total),
+        preco_unit_rmb: numOrNull(it.preco_unit_rmb), valor_rmb: numOrNull(it.valor_rmb),
+        compr_cm: numOrNull(it.compr_cm), larg_cm: numOrNull(it.larg_cm), alt_cm: numOrNull(it.alt_cm),
+        cbm_caixa: numOrNull(it.cbm_caixa), cbm_total: numOrNull(it.cbm_total),
+        peso_liq_ctn: numOrNull(it.peso_liq_ctn), peso_liq_total: numOrNull(it.peso_liq_total),
+        peso_bruto_ctn: numOrNull(it.peso_bruto_ctn), peso_bruto_total: numOrNull(it.peso_bruto_total)
       };
     });
     if (payloads.length){
       const { error: eI } = await db.from("imp_container_itens").insert(payloads);
-      if (eI){ toast(`Erro ao salvar itens de ${s.codigo}.`, "error"); continue; }
+      if (eI){
+        toast(`Erro ao salvar itens de ${s.codigo}: ${eI.message}`, "error");
+        await db.from("imp_containers").delete().eq("id", novoContainer.id);
+        continue;
+      }
       itensCount += payloads.length;
     }
     await db.from("imp_containers_staging").update({ status: "importado" }).eq("id", s.id);
