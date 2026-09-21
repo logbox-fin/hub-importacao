@@ -2515,7 +2515,8 @@ let EF_GRUPO = [];        // [{sku, grupo, nome}] — automático, todo produto 
 let EF_PRODMAP = {};      // sku -> {nome, marca}
 let EF_ESTOQUE = {};      // sku -> saldo real vindo do STOKBOX (via vínculo)
 let EF_LINK = {};         // sku_hub -> sku_stokbox
-let EF_MEDIAS = {};       // "sku|YYYY-MM" -> media_mensal
+let EF_MEDIAS = {};       // "sku|YYYY-MM" -> media_mensal (override manual daquele mês específico)
+let EF_MEDIA_FIXA = {};   // sku -> valor fixo da Média (usado em todo mês sem override)
 let EF_LOTES = [];        // [{id, nome, data_prevista, itens:[{sku,quantidade}]}] — entradas manuais
 let EF_FECHAMENTOS = {};  // "sku|YYYY-MM" -> estoque_final_real (mês fechado/travado)
 let EF_FILTRO_GRUPO = ""; // "" | "logbox" | "mti"
@@ -2579,6 +2580,10 @@ async function loadEstoqueFuturo(){
   EF_MEDIAS = {};
   (mediasData||[]).forEach(m => { EF_MEDIAS[`${m.sku}|${String(m.ano_mes).slice(0,7)}`] = Number(m.media_mensal)||0; });
 
+  const { data: mediaFixaData } = await db.from("imp_ef_media_fixa").select("*");
+  EF_MEDIA_FIXA = {};
+  (mediaFixaData||[]).forEach(m => { EF_MEDIA_FIXA[m.sku] = Number(m.media_fixa)||0; });
+
   const { data: lotesData } = await db.from("imp_ef_lotes").select("*, imp_ef_lote_itens(*)").order("data_prevista");
   EF_LOTES = lotesData || [];
 
@@ -2592,18 +2597,9 @@ async function loadEstoqueFuturo(){
   renderEstoqueFuturo();
 }
 function efGetMedia(sku, mesKey){
+  // mês com Saída editada manualmente tem prioridade; senão usa a Média fixa do SKU
   if (EF_MEDIAS[`${sku}|${mesKey}`] !== undefined) return EF_MEDIAS[`${sku}|${mesKey}`];
-  // sugestão: média mais recente cadastrada antes desse mês
-  const anteriores = Object.keys(EF_MEDIAS).filter(k => k.startsWith(sku+"|") && k.split("|")[1] < mesKey).sort();
-  if (anteriores.length) return EF_MEDIAS[anteriores[anteriores.length-1]];
-  return 0;
-}
-function efMediaTrimestral(sku){
-  const chaves = Object.keys(EF_MEDIAS).filter(k => k.startsWith(sku + "|")).sort();
-  const ultimos3 = chaves.slice(-3);
-  if (!ultimos3.length) return null;
-  const soma = ultimos3.reduce((s,k) => s + EF_MEDIAS[k], 0);
-  return soma / ultimos3.length;
+  return EF_MEDIA_FIXA[sku] || 0;
 }
 function efEntradasManuaisDoMes(sku, mesKey){
   const contribs = [];
@@ -2684,7 +2680,7 @@ function renderEstoqueFuturo(){
     const marca = prod.marca || "—";
     const linkado = !!EF_LINK[g.sku];
     const serie = efCalcularSerie(g.sku);
-    const media3 = efMediaTrimestral(g.sku);
+    const mediaFixa = EF_MEDIA_FIXA[g.sku];
     let cols = "";
     serie.forEach(row => {
       const ruptureClass = !row.locked && row.final < 0 ? "rupture" : "";
@@ -2701,18 +2697,46 @@ function renderEstoqueFuturo(){
       <td class="ef-marca ${efMarcaClass(marca)}">${escapeHtml(marca)}</td>
       <td class="ef-sku">${escapeHtml(g.sku)}<div style="font-size:9.5px; font-weight:500; color:var(--text-faint); font-family:'Inter',sans-serif;">${escapeHtml(prod.nome||g.nome||"")}</div></td>
       <td style="text-align:right; font-weight:700;">${inicialCell}</td>
-      <td class="ef-media">${media3 !== null ? fmtN(media3,0) : "—"}</td>
+      <td class="ef-media">
+        <div style="display:flex; align-items:center; gap:3px;">
+          <input type="text" inputmode="numeric" class="ef-media-input" style="width:60px;" value="${mediaFixa !== undefined && mediaFixa !== 0 ? mediaFixa : ''}" placeholder="—" title="Média fixa — usada em todo mês sem Saída editada manualmente" onchange="efSalvarMediaFixa('${g.sku}', this.value)">
+          <button class="btn-icon" style="width:22px; height:22px; font-size:11px; flex-shrink:0;" title="Redefinir todos os meses (ainda não fechados) para a Média" onclick="efResetarParaMedia('${g.sku}')">↺</button>
+        </div>
+      </td>
       ${cols}
     </tr>`;
   }).join("");
 }
+window.efSalvarMediaFixa = async function(sku, valor){
+  const media = parseNum(valor) || 0;
+  const { error } = await db.from("imp_ef_media_fixa").upsert({ sku, media_fixa: media }, { onConflict: "sku" });
+  if (error){ toast("Erro ao salvar a Média.", "error"); return; }
+  EF_MEDIA_FIXA[sku] = media;
+  toast("Média salva.");
+  renderEstoqueFuturo();
+};
+window.efResetarParaMedia = async function(sku){
+  if (!confirm("Isso vai apagar as saídas editadas manualmente desse produto (nos meses ainda não fechados) e voltar todos eles a usar a Média. Confirma?")) return;
+  const mesesAbertos = efMesesList().filter(m => EF_FECHAMENTOS[`${sku}|${m.key}`] === undefined).map(m => m.ano_mes);
+  if (mesesAbertos.length){
+    const { error } = await db.from("imp_ef_medias").delete().eq("sku", sku).in("ano_mes", mesesAbertos);
+    if (error){ toast("Erro ao redefinir os meses.", "error"); return; }
+  }
+  Object.keys(EF_MEDIAS).forEach(k => {
+    if (!k.startsWith(sku+"|")) return;
+    const mesKey = k.split("|")[1];
+    if (mesesAbertos.includes(`${mesKey}-01`)) delete EF_MEDIAS[k];
+  });
+  toast("Meses redefinidos para a Média.");
+  renderEstoqueFuturo();
+};
 window.efSalvarMedia = async function(sku, mesKey, valor){
   const media = parseNum(valor) || 0;
   const ano_mes = `${mesKey}-01`;
   const { error } = await db.from("imp_ef_medias").upsert({ sku, ano_mes, media_mensal: media }, { onConflict: "sku,ano_mes" });
-  if (error){ toast("Erro ao salvar média.", "error"); return; }
+  if (error){ toast("Erro ao salvar saída.", "error"); return; }
   EF_MEDIAS[`${sku}|${mesKey}`] = media;
-  toast("Média mensal salva.");
+  toast("Saída do mês salva.");
   renderEstoqueFuturo();
 };
 window.efMostrarBreakdown = function(contribs, nomeProduto, mesLabel){
@@ -3748,9 +3772,11 @@ function renderContainerDetalhe(){
   const totalCbm = itens.reduce((s, it) => s + (Number(it.cbm_total) || 0), 0);
   const totalPesoBruto = itens.reduce((s, it) => s + (Number(it.peso_bruto_total) || 0), 0);
 
+  const prodNomePorSku = {};
+  (PL_PRODUTOS[fonte] || []).forEach(p => { prodNomePorSku[p.sku] = p.nome_produto; });
   const rows = itens.map(it => `
     <div class="pl-item-row">
-      <div>${escapeHtml(String(it.modelo_original || "").split("\n")[0])}</div>
+      <div>${escapeHtml((it.sku && prodNomePorSku[it.sku]) || String(it.modelo_original || "").split("\n")[0])}</div>
       <div>${it.sku
         ? `<span class="pir-sku-ok">${escapeHtml(it.sku)}</span>`
         : `<div class="pir-sku-pend"><span style="color:#d97706; font-weight:700;">⚠ sem SKU</span><button class="btn-icon" style="width:24px; height:24px;" title="Vincular SKU" onclick="plAbrirResolverSku('${fonte}','${it.id}','${escapeHtml(String(it.modelo_original || "").split("\n")[0]).replace(/'/g, "&apos;")}')">🔗</button></div>`}
