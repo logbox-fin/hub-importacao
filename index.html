@@ -288,12 +288,21 @@
   table.ef-table td.ef-saida{ color:#e11d48; font-weight:700; text-align:right; }
   table.ef-table td.ef-final{ color:#0070c0; font-weight:700; text-align:right; }
   table.ef-table td.ef-final.rupture{ background:#fbe4d5; color:#0070c0; font-weight:800; border-radius:4px; }
-  table.ef-table td.ef-marca{ background:#20124d; color:#fff; font-weight:700; position:sticky; left:0; z-index:2; }
+  table.ef-table td.ef-marca{ font-weight:700; position:sticky; left:0; z-index:2; }
+  table.ef-table td.ef-marca.marca-boyu{ background:#20124d; color:#fff; }
+  table.ef-table td.ef-marca.marca-variall{ background:#dbeafe; color:#1d4ed8; }
+  table.ef-table td.ef-marca.marca-thametal{ background:#dc2626; color:#fff; }
+  table.ef-table td.ef-marca.marca-tibkids{ background:#ec4899; color:#fff; }
+  table.ef-table td.ef-marca.marca-outro{ background:#475569; color:#fff; }
   table.ef-table td.ef-sku{ position:sticky; left:74px; z-index:2; background:var(--surface); font-weight:700; }
   table.ef-table thead th.ef-marca, table.ef-table thead th.ef-sku{ position:sticky; left:0; z-index:4; background:#eaedf1; }
   table.ef-table thead th.ef-sku{ left:74px; }
   table.ef-table tbody tr:nth-child(even) td:not(.ef-marca):not(.ef-final.rupture){ background:#fafbfc; }
   table.ef-table td.ef-venda input{ width:64px; padding:4px 6px; border-radius:5px; border:1px solid var(--border-strong); font-family:'JetBrains Mono',monospace; font-size:12px; text-align:right; }
+  table.ef-table td.ef-venda input:disabled{ background:var(--surface-alt); color:var(--text-faint); cursor:not-allowed; }
+  table.ef-table td.ef-media{ text-align:right; font-weight:600; color:var(--text-muted); background:var(--surface-alt); }
+  table.ef-table td.ef-inicial-pendente{ color:#d97706; cursor:pointer; font-weight:700; text-align:right; }
+  table.ef-table td.ef-final.locked{ background:#eef2f7; }
 
   /* Estoque Futuro — cards de grupo (substituem o dropdown) */
   .ef-grupo-cards{ display:flex; gap:8px; }
@@ -399,13 +408,13 @@
     <div class="nav-group-label">Próximos Embarques</div>
     <div class="nav-item built" data-view="ph-planejamento-logbox" onclick="irPara('ph-planejamento-logbox', true, 'Planejamento LOGBOX')"><span class="label">Planejamento LOGBOX</span><span class="soon-dot"></span></div>
     <div class="nav-item built" data-view="ph-planejamento-mti" onclick="irPara('ph-planejamento-mti', true, 'Planejamento MTI')"><span class="label">Planejamento MTI</span><span class="soon-dot"></span></div>
-    <div class="nav-item built" data-view="ph-status" onclick="irPara('ph-status', true, 'Status dos Contêineres')"><span class="label">Status dos Contêineres</span><span class="soon-dot"></span></div>
   </div>
 
   <div class="nav-group">
     <div class="nav-group-label">Contêiner Embarcados</div>
     <div class="nav-item built" data-view="ph-pl-logbox" onclick="irPara('ph-pl-logbox', true, 'Packing List LOGBOX')"><span class="label">Packing List LOGBOX</span><span class="soon-dot"></span></div>
     <div class="nav-item built" data-view="ph-pl-mti" onclick="irPara('ph-pl-mti', true, 'Packing List MTI')"><span class="label">Packing List MTI</span><span class="soon-dot"></span></div>
+    <div class="nav-item built" data-view="ph-status" onclick="irPara('ph-status', true, 'Status dos Contêineres')"><span class="label">Status dos Contêineres</span><span class="soon-dot"></span></div>
     <div class="nav-item built" data-view="ph-arquivo" onclick="irPara('ph-arquivo', true, 'Arquivo dos Contêineres')"><span class="label">Arquivo dos Contêineres</span><span class="soon-dot"></span></div>
   </div>
 
@@ -659,7 +668,7 @@
           <div class="ef-grupo-card" data-grupo="mti" onclick="efSetFiltroGrupo('mti')">MTI</div>
         </div>
         <div class="spacer"></div>
-        <button class="btn btn-ghost" onclick="abrirGerenciarProdutosEF()">⚙ Gerenciar Produtos</button>
+        <button class="btn btn-ghost" onclick="abrirFecharMes()">🔒 Fechar Mês</button>
         <button class="btn btn-primary" onclick="abrirNovoLoteEF()">+ Novo Lote de Entrada</button>
       </div>
       <div class="ef-wrap"><table class="ef-table" id="efTable"><thead id="efThead"></thead><tbody id="efTbody"></tbody></table></div>
@@ -669,9 +678,8 @@
     <div class="view" id="view-v-produtos">
       <div class="summary-row">
         <div class="stat-card"><div class="stat-label">Produtos ativos</div><div class="stat-value" id="statAtivos">–</div></div>
-        <div class="stat-card"><div class="stat-label">Produtos incompletos</div><div class="stat-value" id="statIncompletos">–</div></div>
+        <div class="stat-card alerta" id="statIncompletosCard" onclick="toggleAlertaFiltro()" title="Clique pra mostrar só os produtos com pendência (sem NCM, marca ou comprador)"><div class="stat-label">⚠ Produtos incompletos</div><div class="stat-value" id="statIncompletos">–</div></div>
         <div class="stat-card"><div class="stat-label">Produtos inativos</div><div class="stat-value" id="statInativos">–</div></div>
-        <div class="stat-card alerta" id="statAlertaCard" onclick="toggleAlertaFiltro()" title="Clique pra mostrar só os produtos com pendência"><div class="stat-label">⚠ Faltando NCM/Marca/Comprador</div><div class="stat-value" id="statAlerta">–</div></div>
       </div>
       <div class="toolbar">
         <div class="search-box">
@@ -956,19 +964,32 @@
   </div>
 </div>
 
-<!-- ============ MODAL: GERENCIAR PRODUTOS — ESTOQUE FUTURO ============ -->
-<div class="overlay" id="modalEfProdutosOverlay">
-  <div class="modal modal-wide">
-    <div class="modal-head"><h2 class="modal-title">⚙ Gerenciar Produtos — Estoque Futuro</h2><button class="modal-close" onclick="document.getElementById('modalEfProdutosOverlay').classList.remove('open')">✕</button></div>
+<!-- ============ MODAL: VINCULAR SKU COM O STOKBOX — ESTOQUE FUTURO ============ -->
+<div class="overlay" id="modalEfVincularOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2 class="modal-title">🔗 Vincular saldo com o STOKBOX</h2><button class="modal-close" onclick="document.getElementById('modalEfVincularOverlay').classList.remove('open')">✕</button></div>
     <div class="modal-body">
-      <div class="field-grid cols-3" style="margin-bottom:14px;">
-        <div class="field" style="grid-column:span 2; position:relative;"><label>Buscar produto (SKU ou nome)</label><input type="text" id="efBuscaProdutoInput" autocomplete="off" oninput="efBuscarProduto()"><div id="efBuscaDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:20; background:var(--surface); border:1px solid var(--border-strong); border-radius:8px; box-shadow:var(--shadow); max-height:220px; overflow:auto; margin-top:4px;"></div></div>
-        <div class="field"><label>Grupo</label><select id="efBuscaGrupo"><option value="logbox">Logbox</option><option value="mti">MTI</option></select></div>
+      <div style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Produto do Hub: <b class="mono" id="efVincularSkuHub"></b><br>Busque o produto correspondente no STOKBOX pra puxar o saldo real dele.</div>
+      <div class="field" style="position:relative;">
+        <label>Buscar no STOKBOX (SKU ou nome)</label>
+        <input type="text" id="efVincularBusca" autocomplete="off" oninput="efBuscarStokbox()">
       </div>
-      <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--accent); margin-bottom:8px;">Produtos controlados</div>
-      <div id="efProdutosGerenciarList"></div>
+      <div id="efVincularDropdown" style="margin-top:8px; max-height:260px; overflow:auto; border:1px solid var(--border); border-radius:8px;"></div>
     </div>
-    <div class="modal-foot"><span></span><button class="btn btn-primary" onclick="document.getElementById('modalEfProdutosOverlay').classList.remove('open'); renderEstoqueFuturo();">Concluído</button></div>
+    <div class="modal-foot"><span></span><button class="btn btn-ghost" onclick="document.getElementById('modalEfVincularOverlay').classList.remove('open')">Cancelar</button></div>
+  </div>
+</div>
+
+<!-- ============ MODAL: FECHAR MÊS — ESTOQUE FUTURO ============ -->
+<div class="overlay" id="modalFecharMesOverlay">
+  <div class="modal modal-wide">
+    <div class="modal-head"><h2 class="modal-title">🔒 Fechar Mês — <span id="fecharMesLabel"></span></h2><button class="modal-close" onclick="document.getElementById('modalFecharMesOverlay').classList.remove('open')">✕</button></div>
+    <div class="modal-body">
+      <div style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">Confira ou ajuste o estoque final real de cada produto pra esse mês. Ao salvar, esse valor trava (🔒) e vira o Inicial do mês seguinte, independente do que a média de vendas calcular depois.</div>
+      <div class="pl-item-row head" style="grid-template-columns: 1fr 130px;"><div>Produto</div><div style="text-align:right;">Final real</div></div>
+      <div id="fecharMesLista"></div>
+    </div>
+    <div class="modal-foot"><span></span><div style="display:flex; gap:10px;"><button class="btn btn-ghost" onclick="document.getElementById('modalFecharMesOverlay').classList.remove('open')">Cancelar</button><button class="btn btn-primary" onclick="salvarFecharMes()">🔒 Confirmar e Fechar Mês</button></div></div>
   </div>
 </div>
 
@@ -1359,9 +1380,60 @@ window.cfgRemoverHistorico = async function(i){
 function renderTagList(containerId, arr, campo){
   const el = document.getElementById(containerId);
   el.innerHTML = arr.map((v,i) => `
-    <span class="tag-chip">${escapeHtml(v)}<button onclick="cfgRemoveTag('${campo}', ${i})" title="Remover">✕</button></span>
+    <span class="tag-chip">${escapeHtml(v)}<button onclick="cfgEditTag('${campo}', ${i})" title="Editar" style="color:var(--accent);">✏️</button><button onclick="cfgRemoveTag('${campo}', ${i})" title="Remover">✕</button></span>
   `).join("") || `<span style="color:var(--text-faint); font-size:12.5px;">Nenhum ainda</span>`;
 }
+window.cfgEditTag = function(campo, i){
+  const atual = CONFIG[campo][i];
+  abrirOverlayDinamico("cfgEditTagOverlay", `
+    <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <h2 class="modal-title" style="margin:0;">Renomear ${campo === "marcas" ? "marca" : "responsável"}</h2>
+      <button onclick="document.getElementById('cfgEditTagOverlay').remove()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
+    </div>
+    <div style="padding:20px 24px;">
+      <div class="field"><label>Nome atual: ${escapeHtml(atual)}</label><input type="text" id="cfgEditTagInput" value="${escapeHtml(atual)}"></div>
+      <div style="font-size:12px; color:var(--text-faint); margin-top:10px;">Isso atualiza automaticamente todos os produtos, lotes e pedidos que já usam "${escapeHtml(atual)}".</div>
+    </div>
+    <div style="padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn btn-ghost" onclick="document.getElementById('cfgEditTagOverlay').remove()">Cancelar</button>
+      <button class="btn btn-primary" onclick="cfgSalvarEditTag('${campo}', ${i})">Salvar e Atualizar Tudo</button>
+    </div>
+  `, 460);
+  setTimeout(() => document.getElementById("cfgEditTagInput")?.focus(), 50);
+};
+window.cfgSalvarEditTag = async function(campo, i){
+  const atual = CONFIG[campo][i];
+  const novo = document.getElementById("cfgEditTagInput").value.trim();
+  if (!novo){ toast("Nome não pode ficar vazio.", "error"); return; }
+  if (novo === atual){ document.getElementById("cfgEditTagOverlay")?.remove(); return; }
+  if ((CONFIG[campo]||[]).some((v,idx) => idx !== i && v.toLowerCase() === novo.toLowerCase())){
+    toast("Já existe um valor com esse nome.", "error");
+    return;
+  }
+  const arr = CONFIG[campo].slice();
+  arr[i] = novo;
+  const { error } = await db.from("imp_config").update({ [campo]: arr }).eq("id", CONFIG.id);
+  if (error){ toast("Erro ao renomear.", "error"); return; }
+  CONFIG[campo] = arr;
+  renderTagList(campo === "marcas" ? "cfg_marcas_list" : "cfg_responsaveis_list", CONFIG[campo], campo);
+  document.getElementById("cfgEditTagOverlay")?.remove();
+  toast("Renomeado — atualizando registros que usavam esse nome...");
+  try{
+    if (campo === "marcas"){
+      await db.from(TABLE_PRODUTOS).update({ marca: novo }).eq("marca", atual);
+      await db.from("imp_lotes").update({ marca: novo }).eq("marca", atual);
+      await db.from("imp_pedidos").update({ marca: novo }).eq("marca", atual);
+    } else {
+      await db.from(TABLE_PRODUTOS).update({ comprador: novo }).eq("comprador", atual);
+      await db.from("imp_lotes").update({ responsavel: novo }).eq("responsavel", atual);
+      await db.from("imp_pedidos").update({ responsavel: novo }).eq("responsavel", atual);
+    }
+    toast(`Pronto — tudo que usava "${atual}" agora usa "${novo}".`);
+    if (typeof loadProdutos === "function" && document.getElementById("view-v-produtos")?.classList.contains("active")) loadProdutos();
+  } catch(e){
+    toast("Nome atualizado na lista, mas houve erro ao atualizar alguns registros vinculados — confira manualmente.", "error");
+  }
+};
 window.cfgAddTag = async function(campo){
   const inputId = campo === "marcas" ? "cfg_marca_nova" : "cfg_responsavel_novo";
   const input = document.getElementById(inputId);
@@ -2437,12 +2509,16 @@ window.pedidoDetExportarPDF = function(){
 /* ============================================================ */
 const MESES_PT = ["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
 const EF_N_MESES = 6;
-let EF_GRUPO = [];        // [{sku, grupo, nome}]
+let EF_GRUPO = [];        // [{sku, grupo, nome}] — automático, todo produto ATIVO do Cadastro
 let EF_PRODMAP = {};      // sku -> {nome, marca}
-let EF_ESTOQUE = {};      // sku -> saldo total atual
+let EF_ESTOQUE = {};      // sku -> saldo real vindo do STOKBOX (via vínculo)
+let EF_LINK = {};         // sku_hub -> sku_stokbox
 let EF_MEDIAS = {};       // "sku|YYYY-MM" -> media_mensal
-let EF_LOTES = [];        // [{id, nome, data_prevista, itens:[{sku,quantidade}]}]
+let EF_LOTES = [];        // [{id, nome, data_prevista, itens:[{sku,quantidade}]}] — entradas manuais
+let EF_FECHAMENTOS = {};  // "sku|YYYY-MM" -> estoque_final_real (mês fechado/travado)
 let EF_FILTRO_GRUPO = ""; // "" | "logbox" | "mti"
+let EF_VINCULO_ALVO = null;
+let EF_FECHAMENTO_ALVO = null;
 window.efSetFiltroGrupo = function(grupo){
   EF_FILTRO_GRUPO = grupo;
   document.querySelectorAll("#efGrupoCards .ef-grupo-card").forEach(c => c.classList.toggle("active", c.dataset.grupo === grupo));
@@ -2459,23 +2535,58 @@ function efMesesList(){
   return list;
 }
 async function loadEstoqueFuturo(){
-  const { data: grupoData, error: e1 } = await db.from("imp_ef_grupo_produtos").select("*").order("nome");
+  // 1) lista automática: todo produto ATIVO do Cadastro (Hub)
+  const { data: prodAtivos, error: e1 } = await db.from(TABLE_PRODUTOS).select("sku,nome_produto,marca,empresa").eq("ativo", true).order("nome_produto");
   if (e1){ toast("Erro ao carregar Estoque Futuro.", "error"); return; }
-  EF_GRUPO = grupoData || [];
-  const skus = EF_GRUPO.map(g => g.sku);
+  EF_GRUPO = (prodAtivos||[]).map(p => ({ sku: p.sku, grupo: p.empresa === "MTI" ? "mti" : "logbox", nome: p.nome_produto }));
   EF_PRODMAP = {};
-  EF_ESTOQUE = {};
-  if (skus.length){
-    const { data: prodData } = await db.from("produtos").select("sku,nome,marca").in("sku", skus);
-    (prodData||[]).forEach(p => { EF_PRODMAP[p.sku] = p; });
-    const { data: estData } = await db.from("estoque_atual").select("sku,saldo").in("sku", skus);
-    (estData||[]).forEach(e => { EF_ESTOQUE[e.sku] = (EF_ESTOQUE[e.sku]||0) + (Number(e.saldo)||0); });
+  (prodAtivos||[]).forEach(p => { EF_PRODMAP[p.sku] = { nome: p.nome_produto, marca: p.marca }; });
+  const skusHub = EF_GRUPO.map(g => g.sku);
+
+  // 2) vínculos já salvos com o STOKBOX
+  EF_LINK = {};
+  if (skusHub.length){
+    const { data: linkData } = await db.from("imp_estoque_link").select("*").in("sku_hub", skusHub);
+    (linkData||[]).forEach(l => { EF_LINK[l.sku_hub] = l.sku_stokbox; });
+
+    // pra quem ainda não tem vínculo salvo, tenta achar automático por SKU idêntico no STOKBOX
+    const semVinculo = skusHub.filter(s => !EF_LINK[s]);
+    if (semVinculo.length){
+      const { data: matchExato } = await db.from("estoque_atual").select("sku").in("sku", semVinculo);
+      const encontrados = new Set((matchExato||[]).map(r => r.sku));
+      const novosLinks = semVinculo.filter(s => encontrados.has(s)).map(s => ({ sku_hub: s, sku_stokbox: s }));
+      if (novosLinks.length){
+        await db.from("imp_estoque_link").upsert(novosLinks, { onConflict: "sku_hub" });
+        novosLinks.forEach(l => { EF_LINK[l.sku_hub] = l.sku_stokbox; });
+      }
+    }
   }
+
+  // 3) saldo real do STOKBOX pros SKUs vinculados
+  EF_ESTOQUE = {};
+  const skusStokboxVinculados = [...new Set(Object.values(EF_LINK))];
+  if (skusStokboxVinculados.length){
+    const { data: estData } = await db.from("estoque_atual").select("sku,saldo").in("sku", skusStokboxVinculados);
+    const saldoPorStokbox = {};
+    (estData||[]).forEach(e => { saldoPorStokbox[e.sku] = (saldoPorStokbox[e.sku]||0) + (Number(e.saldo)||0); });
+    skusHub.forEach(s => { if (EF_LINK[s]) EF_ESTOQUE[s] = saldoPorStokbox[EF_LINK[s]] || 0; });
+  }
+
+  // 4) médias, lotes manuais e fechamentos
   const { data: mediasData } = await db.from("imp_ef_medias").select("*");
   EF_MEDIAS = {};
   (mediasData||[]).forEach(m => { EF_MEDIAS[`${m.sku}|${String(m.ano_mes).slice(0,7)}`] = Number(m.media_mensal)||0; });
+
   const { data: lotesData } = await db.from("imp_ef_lotes").select("*, imp_ef_lote_itens(*)").order("data_prevista");
   EF_LOTES = lotesData || [];
+
+  const { data: fechData } = await db.from("imp_ef_fechamentos").select("*");
+  EF_FECHAMENTOS = {};
+  (fechData||[]).forEach(f => { EF_FECHAMENTOS[`${f.sku}|${String(f.ano_mes).slice(0,7)}`] = Number(f.estoque_final_real)||0; });
+
+  // 5) contêineres em Packing List (ainda não chegados) — alimentam a Entrada automática
+  await Promise.all([loadPackingList("logbox"), loadPackingList("mti")]);
+
   renderEstoqueFuturo();
 }
 function efGetMedia(sku, mesKey){
@@ -2485,7 +2596,14 @@ function efGetMedia(sku, mesKey){
   if (anteriores.length) return EF_MEDIAS[anteriores[anteriores.length-1]];
   return 0;
 }
-function efEntradasDoMes(sku, mesKey){
+function efMediaTrimestral(sku){
+  const chaves = Object.keys(EF_MEDIAS).filter(k => k.startsWith(sku + "|")).sort();
+  const ultimos3 = chaves.slice(-3);
+  if (!ultimos3.length) return null;
+  const soma = ultimos3.reduce((s,k) => s + EF_MEDIAS[k], 0);
+  return soma / ultimos3.length;
+}
+function efEntradasManuaisDoMes(sku, mesKey){
   const contribs = [];
   EF_LOTES.forEach(l => {
     const lk = String(l.data_prevista).slice(0,7);
@@ -2494,13 +2612,52 @@ function efEntradasDoMes(sku, mesKey){
   });
   return contribs;
 }
+function efEntradasContainerDoMes(sku, mesKey){
+  const contribs = [];
+  [...(PL_CONTAINERS.logbox||[]), ...(PL_CONTAINERS.mti||[])].forEach(c => {
+    if (c.chegou_em) return;      // já chegou — o saldo real dele já está no estoque_atual, não conta de novo
+    if (!c.eta) return;           // sem ETA não dá pra saber o mês
+    if (String(c.eta).slice(0,7) !== mesKey) return;
+    (c.imp_container_itens||[]).forEach(it => {
+      if (it.sku === sku && Number(it.qtd_total) > 0) contribs.push({ nome: `Contêiner ${c.nome}`, qtd: Number(it.qtd_total) });
+    });
+  });
+  return contribs;
+}
+function efMarcaClass(marca){
+  const m = (marca||"").toUpperCase();
+  if (m.includes("BOYU")) return "marca-boyu";
+  if (m.includes("VARIALL")) return "marca-variall";
+  if (m.includes("THAMETAL")) return "marca-thametal";
+  if (m.includes("TIB")) return "marca-tibkids";
+  return "marca-outro";
+}
+// calcula a série completa (Inicial→Final mês a mês) de um SKU, respeitando meses já fechados/travados
+function efCalcularSerie(sku){
+  const meses = efMesesList();
+  let inicial = EF_ESTOQUE[sku] || 0;
+  return meses.map(m => {
+    const fech = EF_FECHAMENTOS[`${sku}|${m.key}`];
+    const venda = efGetMedia(sku, m.key);
+    const entradasManuais = efEntradasManuaisDoMes(sku, m.key);
+    const entradasContainer = efEntradasContainerDoMes(sku, m.key);
+    const contribsEntrada = [...entradasManuais, ...entradasContainer];
+    const entrada = contribsEntrada.reduce((s,c) => s + c.qtd, 0);
+    const computedFinal = inicial - venda + entrada;
+    const locked = fech !== undefined;
+    const final = locked ? fech : computedFinal;
+    const row = { mes: m, inicial, venda, entrada, contribsEntrada, final, locked };
+    inicial = final;
+    return row;
+  });
+}
 function renderEstoqueFuturo(){
   const thead = document.getElementById("efThead");
   const tbody = document.getElementById("efTbody");
   if (!thead || !tbody) return;
   const meses = efMesesList();
   thead.innerHTML = `
-    <tr class="ef-month-row"><th class="ef-marca" rowspan="2">Marca</th><th class="ef-sku" rowspan="2">SKU</th><th rowspan="2">Inicial</th>
+    <tr class="ef-month-row"><th class="ef-marca" rowspan="2">Marca</th><th class="ef-sku" rowspan="2">SKU</th><th rowspan="2">Inicial</th><th rowspan="2">Média</th>
       ${meses.map(m => `<th colspan="3">${m.label}</th>`).join("")}
     </tr>
     <tr class="ef-sub-row">
@@ -2516,31 +2673,33 @@ function renderEstoqueFuturo(){
   });
 
   if (!linhas.length){
-    tbody.innerHTML = `<tr><td colspan="${3+meses.length*3}" class="empty-state">Nenhum produto controlado ainda — clique em "⚙ Gerenciar Produtos" pra adicionar.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${4+meses.length*3}" class="empty-state">Nenhum produto ativo encontrado no Cadastro.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = linhas.map(g => {
     const prod = EF_PRODMAP[g.sku] || {};
     const marca = prod.marca || "—";
-    let inicial = EF_ESTOQUE[g.sku] || 0;
+    const linkado = !!EF_LINK[g.sku];
+    const serie = efCalcularSerie(g.sku);
+    const media3 = efMediaTrimestral(g.sku);
     let cols = "";
-    meses.forEach((m, mi) => {
-      const venda = efGetMedia(g.sku, m.key);
-      const entradasArr = efEntradasDoMes(g.sku, m.key);
-      const entrada = entradasArr.reduce((s,c) => s + c.qtd, 0);
-      const final = inicial - venda + entrada;
-      const ruptureClass = final < 0 ? "rupture" : "";
-      const entradaAttr = entrada > 0 ? `onclick='efMostrarBreakdown(${JSON.stringify(entradasArr).replace(/'/g,"&apos;")}, "${escapeHtml(prod.nome||g.sku)}", "${m.label}")'` : "";
-      cols += `<td class="ef-entrada" ${entradaAttr} title="${entrada>0?'Clique pra ver de qual lote veio':''}">${entrada>0?fmtN(entrada,0):'—'}</td>`;
-      cols += `<td class="ef-venda"><input type="text" inputmode="numeric" value="${venda||''}" onchange="efSalvarMedia('${g.sku}','${m.key}',this.value)"></td>`;
-      cols += `<td class="ef-final ${ruptureClass}">${fmtN(final,0)}</td>`;
-      inicial = final;
+    serie.forEach(row => {
+      const ruptureClass = !row.locked && row.final < 0 ? "rupture" : "";
+      const lockedClass = row.locked ? "locked" : "";
+      const entradaAttr = row.entrada > 0 ? `onclick='efMostrarBreakdown(${JSON.stringify(row.contribsEntrada).replace(/'/g,"&apos;")}, "${escapeHtml(prod.nome||g.sku)}", "${row.mes.label}")'` : "";
+      cols += `<td class="ef-entrada" ${entradaAttr} title="${row.entrada>0?'Clique pra ver de onde veio':''}">${row.entrada>0?fmtN(row.entrada,0):'—'}</td>`;
+      cols += `<td class="ef-venda"><input type="text" inputmode="numeric" value="${row.venda||''}" ${row.locked ? 'disabled title="Mês fechado — não editável"' : ''} onchange="efSalvarMedia('${g.sku}','${row.mes.key}',this.value)"></td>`;
+      cols += `<td class="ef-final ${ruptureClass} ${lockedClass}">${row.locked ? "🔒 " : ""}${fmtN(row.final,0)}</td>`;
     });
+    const inicialCell = linkado
+      ? fmtN(EF_ESTOQUE[g.sku]||0,0)
+      : `<span class="ef-inicial-pendente" onclick="efAbrirVincularSku('${escapeHtml(g.sku)}')" title="Clique pra vincular com o SKU do STOKBOX">⚠ vincular</span>`;
     return `<tr>
-      <td class="ef-marca">${escapeHtml(marca)}</td>
+      <td class="ef-marca ${efMarcaClass(marca)}">${escapeHtml(marca)}</td>
       <td class="ef-sku">${escapeHtml(g.sku)}<div style="font-size:9.5px; font-weight:500; color:var(--text-faint); font-family:'Inter',sans-serif;">${escapeHtml(prod.nome||g.nome||"")}</div></td>
-      <td style="text-align:right; font-weight:700;">${fmtN(EF_ESTOQUE[g.sku]||0,0)}</td>
+      <td style="text-align:right; font-weight:700;">${inicialCell}</td>
+      <td class="ef-media">${media3 !== null ? fmtN(media3,0) : "—"}</td>
       ${cols}
     </tr>`;
   }).join("");
@@ -2566,62 +2725,78 @@ window.efMostrarBreakdown = function(contribs, nomeProduto, mesLabel){
   `, 420);
 };
 
-/* ---------- Gerenciar Produtos (Estoque Futuro) ---------- */
-window.abrirGerenciarProdutosEF = function(){
-  document.getElementById("efBuscaProdutoInput").value = "";
-  document.getElementById("efBuscaDropdown").style.display = "none";
-  renderEfProdutosGerenciarList();
-  document.getElementById("modalEfProdutosOverlay").classList.add("open");
+/* ---------- Vincular SKU com o STOKBOX (Estoque Futuro) ---------- */
+window.efAbrirVincularSku = function(skuHub){
+  EF_VINCULO_ALVO = skuHub;
+  document.getElementById("efVincularSkuHub").textContent = skuHub;
+  document.getElementById("efVincularBusca").value = "";
+  document.getElementById("efVincularDropdown").innerHTML = "";
+  document.getElementById("modalEfVincularOverlay").classList.add("open");
 };
-function renderEfProdutosGerenciarList(){
-  const el = document.getElementById("efProdutosGerenciarList");
-  if (!EF_GRUPO.length){ el.innerHTML = `<div class="empty-state">Nenhum produto controlado ainda.</div>`; return; }
-  const ordenado = EF_GRUPO.slice().sort((a,b) => a.grupo.localeCompare(b.grupo) || a.sku.localeCompare(b.sku));
-  el.innerHTML = ordenado.map(g => `
-    <div style="display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border);">
-      <div><span class="badge-empresa ${g.grupo==='mti'?'mti':'logbox'}" style="margin-right:8px;">${g.grupo.toUpperCase()}</span><span class="mono" style="font-weight:700;">${escapeHtml(g.sku)}</span> — ${escapeHtml(EF_PRODMAP[g.sku]?.nome || g.nome || "")}</div>
-      <button class="btn-icon" title="Remover do controle" onclick="efRemoverProduto('${g.sku}')">🗑</button>
-    </div>`).join("");
-}
-window.efBuscarProduto = function(){
-  const q = document.getElementById("efBuscaProdutoInput").value.trim().toLowerCase();
-  const dropdown = document.getElementById("efBuscaDropdown");
-  if (!q || q.length < 2){ dropdown.style.display = "none"; return; }
-  db.from("produtos").select("sku,nome,marca").or(`sku.ilike.%${q}%,nome.ilike.%${q}%`).limit(20).then(({data}) => {
+window.efBuscarStokbox = function(){
+  const q = document.getElementById("efVincularBusca").value.trim().toLowerCase();
+  const dropdown = document.getElementById("efVincularDropdown");
+  if (!q || q.length < 2){ dropdown.innerHTML = ""; return; }
+  db.from("produtos").select("sku,nome").or(`sku.ilike.%${q}%,nome.ilike.%${q}%`).limit(20).then(({data}) => {
     const matches = data || [];
-    if (!matches.length){ dropdown.innerHTML = `<div style="padding:10px 12px; font-size:12.5px; color:var(--text-faint);">Nenhum produto encontrado.</div>`; dropdown.style.display = "block"; return; }
-    dropdown.innerHTML = matches.map(p => `
-      <div onclick='efAdicionarProduto(${JSON.stringify(p).replace(/'/g,"&apos;")})' style="padding:9px 12px; cursor:pointer; border-bottom:1px solid var(--border); font-size:13px;" onmouseover="this.style.background='var(--surface-alt)'" onmouseout="this.style.background=''">
-        <span class="mono" style="font-weight:600;">${escapeHtml(p.sku)}</span> — ${escapeHtml(p.nome)} <span style="color:var(--text-faint);">${escapeHtml(p.marca||'')}</span>
-      </div>`).join("");
-    dropdown.style.display = "block";
+    dropdown.innerHTML = matches.length ? matches.map(p => `
+      <div onclick="efVincularComStokbox('${escapeHtml(p.sku).replace(/'/g,"&apos;")}')" style="padding:9px 12px; cursor:pointer; border-bottom:1px solid var(--border); font-size:13px;" onmouseover="this.style.background='var(--surface-alt)'" onmouseout="this.style.background=''">
+        <span class="mono" style="font-weight:600;">${escapeHtml(p.sku)}</span> — ${escapeHtml(p.nome||"")}
+      </div>`).join("") : `<div style="padding:10px 12px; font-size:12.5px; color:var(--text-faint);">Nenhum produto encontrado no STOKBOX.</div>`;
   });
 };
-window.efAdicionarProduto = async function(p){
-  const grupo = document.getElementById("efBuscaGrupo").value;
-  const { error } = await db.from("imp_ef_grupo_produtos").upsert({ sku: p.sku, grupo, nome: p.nome });
-  if (error){ toast("Erro ao adicionar produto.", "error"); return; }
-  if (!EF_GRUPO.some(g => g.sku === p.sku)) EF_GRUPO.push({ sku: p.sku, grupo, nome: p.nome });
-  else EF_GRUPO.find(g => g.sku === p.sku).grupo = grupo;
-  EF_PRODMAP[p.sku] = p;
-  document.getElementById("efBuscaProdutoInput").value = "";
-  document.getElementById("efBuscaDropdown").style.display = "none";
-  renderEfProdutosGerenciarList();
-  toast("Produto adicionado ao controle de Estoque Futuro.");
+window.efVincularComStokbox = async function(skuStokbox){
+  const skuHub = EF_VINCULO_ALVO;
+  if (!skuHub) return;
+  const { error } = await db.from("imp_estoque_link").upsert({ sku_hub: skuHub, sku_stokbox: skuStokbox }, { onConflict: "sku_hub" });
+  if (error){ toast("Erro ao vincular.", "error"); return; }
+  EF_LINK[skuHub] = skuStokbox;
+  document.getElementById("modalEfVincularOverlay").classList.remove("open");
+  toast("Vinculado! Recarregando saldo...");
+  await loadEstoqueFuturo();
 };
-window.efRemoverProduto = function(sku){
-  pedirConfirmacao("Remover produto", `Remover "${sku}" do controle de Estoque Futuro?`, "As médias e entradas já lançadas pra ele deixam de aparecer.", async () => {
-    const { error } = await db.from("imp_ef_grupo_produtos").delete().eq("sku", sku);
-    if (error){ toast("Erro ao remover.", "error"); return; }
-    EF_GRUPO = EF_GRUPO.filter(g => g.sku !== sku);
-    renderEfProdutosGerenciarList();
-    toast("Produto removido do controle.");
-  });
+
+/* ---------- Fechar Mês (Estoque Futuro) ---------- */
+window.abrirFecharMes = function(){
+  const meses = efMesesList();
+  let mesAlvo = null;
+  for (const m of meses){
+    const algumAberto = EF_GRUPO.some(g => EF_FECHAMENTOS[`${g.sku}|${m.key}`] === undefined);
+    if (algumAberto){ mesAlvo = m; break; }
+  }
+  if (!mesAlvo){ toast("Todos os meses visíveis já estão fechados."); return; }
+  EF_FECHAMENTO_ALVO = mesAlvo;
+  document.getElementById("fecharMesLabel").textContent = mesAlvo.label;
+  renderFecharMesModal();
+  document.getElementById("modalFecharMesOverlay").classList.add("open");
 };
-document.addEventListener("click", (e) => {
-  const dropdown = document.getElementById("efBuscaDropdown");
-  if (dropdown && !e.target.closest("#efBuscaProdutoInput") && !e.target.closest("#efBuscaDropdown")) dropdown.style.display = "none";
-});
+function renderFecharMesModal(){
+  const m = EF_FECHAMENTO_ALVO;
+  const listaEl = document.getElementById("fecharMesLista");
+  const linhas = EF_GRUPO.slice().sort((a,b) => a.sku.localeCompare(b.sku));
+  listaEl.innerHTML = linhas.map(g => {
+    const serie = efCalcularSerie(g.sku);
+    const row = serie.find(r => r.mes.key === m.key);
+    const sugestao = row ? row.final : (EF_ESTOQUE[g.sku]||0);
+    return `<div class="pl-item-row" style="grid-template-columns: 1fr 130px;">
+      <div><span class="mono" style="font-weight:700;">${escapeHtml(g.sku)}</span> <span style="color:var(--text-faint); font-size:12px;">${escapeHtml(EF_PRODMAP[g.sku]?.nome||"")}</span></div>
+      <input type="text" inputmode="numeric" data-sku="${escapeHtml(g.sku)}" value="${fmtN(sugestao,0)}" style="width:110px; padding:7px 9px; border-radius:6px; border:1px solid var(--border-strong); font-family:'JetBrains Mono',monospace; text-align:right;">
+    </div>`;
+  }).join("");
+}
+window.salvarFecharMes = async function(){
+  const m = EF_FECHAMENTO_ALVO;
+  if (!m) return;
+  const inputs = document.querySelectorAll("#fecharMesLista input[data-sku]");
+  const rows = [...inputs].map(inp => ({ sku: inp.dataset.sku, ano_mes: m.ano_mes, estoque_final_real: parseNum(inp.value) || 0 }));
+  if (!rows.length){ document.getElementById("modalFecharMesOverlay").classList.remove("open"); return; }
+  const { error } = await db.from("imp_ef_fechamentos").upsert(rows, { onConflict: "sku,ano_mes" });
+  if (error){ toast("Erro ao fechar o mês.", "error"); return; }
+  rows.forEach(r => { EF_FECHAMENTOS[`${r.sku}|${m.key}`] = r.estoque_final_real; });
+  document.getElementById("modalFecharMesOverlay").classList.remove("open");
+  toast(`${m.label} fechado — o valor travado vira o Inicial do mês seguinte.`);
+  renderEstoqueFuturo();
+};
 
 /* ---------- Novo Lote de Entrada (Estoque Futuro) ---------- */
 let eflItensAtual = [];
@@ -2736,19 +2911,17 @@ function produtoTemAlerta(p){ return !p.ncm || !p.marca || !p.comprador; }
 let ALERTA_FILTRO_ATIVO = false;
 function toggleAlertaFiltro(){
   ALERTA_FILTRO_ATIVO = !ALERTA_FILTRO_ATIVO;
-  document.getElementById("statAlertaCard").style.borderColor = ALERTA_FILTRO_ATIVO ? "var(--accent)" : "#fde68a";
-  document.getElementById("statAlertaCard").style.background = ALERTA_FILTRO_ATIVO ? "var(--accent-soft)" : "";
+  document.getElementById("statIncompletosCard").style.borderColor = ALERTA_FILTRO_ATIVO ? "var(--accent)" : "#fde68a";
+  document.getElementById("statIncompletosCard").style.background = ALERTA_FILTRO_ATIVO ? "var(--accent-soft)" : "";
   renderTableProdutos();
 }
 function renderStatsProdutos(){
   const ativos = produtos.filter(p => p.ativo);
   const inativos = produtos.filter(p => !p.ativo);
-  const incompletos = ativos.filter(p => !p.ncm || !p.comprimento_cm || !p.largura_cm || !p.altura_cm);
   const alertas = ativos.filter(produtoTemAlerta);
   document.getElementById("statAtivos").textContent = ativos.length;
-  document.getElementById("statIncompletos").textContent = incompletos.length;
+  document.getElementById("statIncompletos").textContent = alertas.length;
   document.getElementById("statInativos").textContent = inativos.length;
-  document.getElementById("statAlerta").textContent = alertas.length;
 }
 function getFilteredProdutos(){
   const q = document.getElementById("searchInput").value.trim().toLowerCase();
