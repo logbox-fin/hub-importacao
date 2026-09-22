@@ -303,6 +303,7 @@
   table.ef-table td.ef-media{ text-align:right; font-weight:600; color:var(--text-muted); background:var(--surface-alt); }
   table.ef-table td.ef-inicial-pendente{ color:#d97706; cursor:pointer; font-weight:700; text-align:right; }
   table.ef-table td.ef-final.locked{ background:#eef2f7; }
+  table.ef-table th.ef-mes-divisor, table.ef-table td.ef-mes-divisor{ border-left:2px solid var(--border-strong); }
 
   /* Estoque Futuro — cards de grupo (substituem o dropdown) */
   .ef-grupo-cards{ display:flex; gap:8px; }
@@ -2513,7 +2514,8 @@ const MESES_PT = ["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO",
 const EF_N_MESES = 6;
 let EF_GRUPO = [];        // [{sku, grupo, nome}] — automático, todo produto ATIVO do Cadastro
 let EF_PRODMAP = {};      // sku -> {nome, marca}
-let EF_ESTOQUE = {};      // sku -> saldo real vindo do STOKBOX (via vínculo)
+let EF_ESTOQUE = {};      // sku -> saldo do STOKBOX no dia 01 do mês atual (via vínculo)
+let EF_ESTOQUE_SEM_HISTORICO = {}; // sku_hub -> true quando vinculado mas o STOKBOX ainda não tem nenhuma leitura de saldo
 let EF_LINK = {};         // sku_hub -> sku_stokbox
 let EF_MEDIAS = {};       // "sku|YYYY-MM" -> media_mensal (override manual daquele mês específico)
 let EF_MEDIA_FIXA = {};   // sku -> valor fixo da Média (usado em todo mês sem override)
@@ -2565,14 +2567,22 @@ async function loadEstoqueFuturo(){
     }
   }
 
-  // 3) saldo real do STOKBOX pros SKUs vinculados
+  // 3) saldo do STOKBOX pros SKUs vinculados — fechado no dia 01 do mês atual (não é o saldo ao vivo)
   EF_ESTOQUE = {};
+  EF_ESTOQUE_SEM_HISTORICO = {};
   const skusStokboxVinculados = [...new Set(Object.values(EF_LINK))];
   if (skusStokboxVinculados.length){
-    const { data: estData } = await db.from("estoque_atual").select("sku,saldo").in("sku", skusStokboxVinculados);
+    const hoje = new Date();
+    const cutoffIso = new Date(hoje.getFullYear(), hoje.getMonth(), 1, 0, 0, 0).toISOString();
+    const { data: saldoData, error: eSaldo } = await db.rpc("ef_saldo_em_data", { p_skus: skusStokboxVinculados, p_cutoff: cutoffIso });
+    if (eSaldo) toast("Erro ao calcular saldo inicial do STOKBOX.", "error");
     const saldoPorStokbox = {};
-    (estData||[]).forEach(e => { saldoPorStokbox[e.sku] = (saldoPorStokbox[e.sku]||0) + (Number(e.saldo)||0); });
-    skusHub.forEach(s => { if (EF_LINK[s]) EF_ESTOQUE[s] = saldoPorStokbox[EF_LINK[s]] || 0; });
+    (saldoData||[]).forEach(r => { saldoPorStokbox[r.sku] = Number(r.saldo)||0; });
+    skusHub.forEach(s => {
+      if (!EF_LINK[s]) return;
+      if (saldoPorStokbox[EF_LINK[s]] !== undefined) EF_ESTOQUE[s] = saldoPorStokbox[EF_LINK[s]];
+      else EF_ESTOQUE_SEM_HISTORICO[s] = true;
+    });
   }
 
   // 4) médias, lotes manuais e fechamentos
@@ -2656,10 +2666,10 @@ function renderEstoqueFuturo(){
   const meses = efMesesList();
   thead.innerHTML = `
     <tr class="ef-month-row"><th class="ef-marca" rowspan="2">Marca</th><th class="ef-sku" rowspan="2">SKU</th><th rowspan="2">Inicial</th><th rowspan="2">Média</th>
-      ${meses.map(m => `<th colspan="3">${m.label}</th>`).join("")}
+      ${meses.map((m,idx) => `<th colspan="3" ${idx>0?'class="ef-mes-divisor"':''}>${m.label}</th>`).join("")}
     </tr>
     <tr class="ef-sub-row">
-      ${meses.map(() => `<th class="ef-entrada">Entrada</th><th class="ef-saida">Saída</th><th class="ef-final">Final</th>`).join("")}
+      ${meses.map((m,idx) => `<th class="ef-entrada ${idx>0?'ef-mes-divisor':''}">Entrada</th><th class="ef-saida">Saída</th><th class="ef-final">Final</th>`).join("")}
     </tr>`;
 
   const filtroGrupo = EF_FILTRO_GRUPO;
@@ -2682,17 +2692,20 @@ function renderEstoqueFuturo(){
     const serie = efCalcularSerie(g.sku);
     const mediaFixa = EF_MEDIA_FIXA[g.sku];
     let cols = "";
-    serie.forEach(row => {
+    serie.forEach((row, idx) => {
       const ruptureClass = !row.locked && row.final < 0 ? "rupture" : "";
       const lockedClass = row.locked ? "locked" : "";
+      const divisorClass = idx > 0 ? "ef-mes-divisor" : "";
       const entradaAttr = row.entrada > 0 ? `onclick='efMostrarBreakdown(${JSON.stringify(row.contribsEntrada).replace(/'/g,"&apos;")}, "${escapeHtml(prod.nome||g.sku)}", "${row.mes.label}")'` : "";
-      cols += `<td class="ef-entrada" ${entradaAttr} title="${row.entrada>0?'Clique pra ver de onde veio':''}">${row.entrada>0?fmtN(row.entrada,0):'—'}</td>`;
+      cols += `<td class="ef-entrada ${divisorClass}" ${entradaAttr} title="${row.entrada>0?'Clique pra ver de onde veio':''}">${row.entrada>0?fmtN(row.entrada,0):'—'}</td>`;
       cols += `<td class="ef-venda"><input type="text" inputmode="numeric" value="${row.venda||''}" ${row.locked ? 'disabled title="Mês fechado — não editável"' : ''} onchange="efSalvarMedia('${g.sku}','${row.mes.key}',this.value)"></td>`;
       cols += `<td class="ef-final ${ruptureClass} ${lockedClass}">${row.locked ? "🔒 " : ""}${fmtN(row.final,0)}</td>`;
     });
-    const inicialCell = linkado
-      ? fmtN(EF_ESTOQUE[g.sku]||0,0)
-      : `<span class="ef-inicial-pendente" onclick="efAbrirVincularSku('${escapeHtml(g.sku)}')" title="Clique pra vincular com o SKU do STOKBOX">⚠ vincular</span>`;
+    const inicialCell = !linkado
+      ? `<span class="ef-inicial-pendente" onclick="efAbrirVincularSku('${escapeHtml(g.sku)}')" title="Clique pra vincular com o SKU do STOKBOX">⚠ vincular</span>`
+      : EF_ESTOQUE_SEM_HISTORICO[g.sku]
+        ? `<span class="ef-inicial-pendente" title="Vinculado, mas o STOKBOX ainda não tem nenhuma leitura de saldo pra esse SKU">⚠ sem histórico</span>`
+        : fmtN(EF_ESTOQUE[g.sku]||0,0);
     return `<tr>
       <td class="ef-marca ${efMarcaClass(marca)}">${escapeHtml(marca)}</td>
       <td class="ef-sku">${escapeHtml(g.sku)}<div style="font-size:9.5px; font-weight:500; color:var(--text-faint); font-family:'Inter',sans-serif;">${escapeHtml(prod.nome||g.nome||"")}</div></td>
@@ -2837,18 +2850,43 @@ window.abrirNovoLoteEF = function(){
 };
 function renderEflItens(){
   const el = document.getElementById("eflItensList");
-  const opcoes = EF_GRUPO.map(g => `<option value="${escapeHtml(g.sku)}">${escapeHtml(g.sku)} — ${escapeHtml(EF_PRODMAP[g.sku]?.nome||g.nome||"")}</option>`).join("");
-  el.innerHTML = eflItensAtual.map((it,i) => `
-    <div style="display:flex; gap:8px; margin-bottom:6px; align-items:center;">
-      <select style="flex:2; padding:8px 10px; border-radius:6px; border:1px solid var(--border-strong);" onchange="eflItensAtual[${i}].sku=this.value">
-        <option value="">— selecione o produto —</option>${opcoes.replace(`value="${it.sku}"`, `value="${it.sku}" selected`)}
-      </select>
+  el.innerHTML = eflItensAtual.map((it,i) => {
+    const label = it.sku ? `${it.sku} — ${EF_PRODMAP[it.sku]?.nome || ""}` : (it._busca || "");
+    return `
+    <div style="display:flex; gap:8px; margin-bottom:6px; align-items:flex-start;">
+      <div style="flex:2; position:relative;">
+        <input type="text" autocomplete="off" placeholder="Buscar SKU ou nome do produto..." value="${escapeHtml(label)}" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--border-strong); box-sizing:border-box;" oninput="eflBuscarSku(${i}, this.value)">
+        <div id="eflDropdown${i}" class="pl-item-search-dd" style="display:none;"></div>
+      </div>
       <input type="text" inputmode="numeric" placeholder="Qtde" value="${it.quantidade}" style="width:100px; padding:8px 10px; border-radius:6px; border:1px solid var(--border-strong); font-family:'JetBrains Mono',monospace;" oninput="eflItensAtual[${i}].quantidade=this.value">
       <button class="btn-icon" onclick="eflRemoverItem(${i})" title="Remover">🗑</button>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }
-window.eflAddItem = function(){ eflItensAtual.push({ sku:"", quantidade:"" }); renderEflItens(); };
+window.eflAddItem = function(){ eflItensAtual.push({ sku:"", quantidade:"", _busca:"" }); renderEflItens(); };
 window.eflRemoverItem = function(i){ eflItensAtual.splice(i,1); renderEflItens(); };
+window.eflBuscarSku = function(i, valor){
+  eflItensAtual[i].sku = "";
+  eflItensAtual[i]._busca = valor;
+  const dropdown = document.getElementById(`eflDropdown${i}`);
+  const q = valor.trim().toLowerCase();
+  if (!q){ dropdown.style.display = "none"; return; }
+  const matches = EF_GRUPO.filter(g => (g.sku||"").toLowerCase().includes(q) || (EF_PRODMAP[g.sku]?.nome||g.nome||"").toLowerCase().includes(q)).slice(0, 20);
+  if (!matches.length){ dropdown.innerHTML = `<div style="color:var(--text-faint);">Nenhum produto encontrado.</div>`; dropdown.style.display = "block"; return; }
+  dropdown.innerHTML = matches.map(g => `<div onclick="eflSelecionarSku(${i}, '${String(g.sku).replace(/'/g,"\\'")}')"><span class="mono" style="font-weight:700;">${escapeHtml(g.sku)}</span> — ${escapeHtml(EF_PRODMAP[g.sku]?.nome||g.nome||"")}</div>`).join("");
+  dropdown.style.display = "block";
+};
+window.eflSelecionarSku = function(i, sku){
+  eflItensAtual[i].sku = sku;
+  eflItensAtual[i]._busca = "";
+  renderEflItens();
+};
+document.addEventListener("click", (e) => {
+  document.querySelectorAll("[id^='eflDropdown']").forEach(d => {
+    if (d.style.display === "none") return;
+    if (!e.target.closest(`#${d.id}`) && e.target !== d.previousElementSibling) d.style.display = "none";
+  });
+});
 window.salvarLoteEF = async function(){
   const nome = document.getElementById("efl_nome").value.trim();
   const data = document.getElementById("efl_data").value;
