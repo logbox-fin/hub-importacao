@@ -376,6 +376,52 @@
   .kanban-arrow:disabled{ opacity:.3; cursor:not-allowed; }
   .kanban-arrow:disabled:hover{ background:var(--surface-alt); border-color:var(--border-strong); color:var(--text-muted); }
   .kanban-empty{ text-align:center; padding:24px 10px; color:var(--text-faint); font-size:12.5px; }
+  .kanban-card .kc-chips{ display:flex; flex-wrap:wrap; gap:5px; margin-bottom:7px; }
+  .kanban-card .kc-agente{ font-size:11px; color:var(--text-faint); margin-bottom:8px; }
+
+  /* Chips de meta-informação e urgência — usados nos cards de contêiner (Packing List, Kanban, Arquivo) */
+  .meta-chip{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:var(--text-muted); background:var(--surface-alt); border:1px solid var(--border); border-radius:20px; padding:3px 9px; white-space:nowrap; }
+  .urg-chip{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; border-radius:20px; padding:3px 9px; border:1px solid transparent; white-space:nowrap; }
+  .urg-chip.urg-red{ background:#fee2e2; color:#b91c1c; border-color:#fecaca; }
+  .urg-chip.urg-yellow{ background:#fef9c3; color:#92400e; border-color:#fde047; }
+  .urg-chip.urg-green{ background:#dcfce7; color:#166534; border-color:#bbf7d0; }
+  .urg-chip.urg-neutro{ background:var(--surface-alt); color:var(--text-faint); border-color:var(--border); }
+  .pl-container-card .plc-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+  .pl-container-card .plc-valor{ font-size:17px; font-weight:800; color:var(--accent-dark); background:var(--accent-soft); padding:3px 10px; border-radius:8px; }
+  .arq-card .arq-docs-ok{ font-size:11px; color:#166534; margin-top:8px; font-weight:600; }
+  .arq-card .arq-docs-pend{ font-size:11px; color:#b45309; margin-top:8px; font-weight:700; }
+
+  /* ======================= DASHBOARD ======================= */
+  .dash-kpis{ display:grid; grid-template-columns: repeat(4, 1fr); gap:14px; margin-bottom:20px; }
+  @media (max-width: 1100px){ .dash-kpis{ grid-template-columns: repeat(2, 1fr); } }
+  .dash-kpi{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; box-shadow:var(--shadow); }
+  .dash-kpi .dash-kpi-label{ font-size:11px; text-transform:uppercase; letter-spacing:.5px; font-weight:700; color:var(--text-faint); margin-bottom:6px; }
+  .dash-kpi .dash-kpi-value{ font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:800; color:var(--text); line-height:1.1; }
+  .dash-kpi .dash-kpi-sub{ font-size:11.5px; color:var(--text-muted); margin-top:4px; }
+  .dash-kpi.alerta .dash-kpi-value{ color:#b91c1c; }
+  .dash-section{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px 20px; margin-bottom:16px; }
+  .dash-section-title{ font-family:'Barlow Condensed',sans-serif; font-size:17px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:7px; }
+  .dash-grid-2{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+  @media (max-width: 1000px){ .dash-grid-2{ grid-template-columns: 1fr; } }
+  .dash-pend-item{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+  .dash-pend-item:last-child{ border-bottom:none; }
+  .dash-pend-item:hover{ background:var(--surface-alt); }
+  .dash-pend-item .dash-pend-label{ font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px; }
+  .dash-pend-item .dash-pend-count{ font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; background:var(--warn-soft); color:#92400e; border:1px solid #fde68a; border-radius:20px; padding:2px 10px; }
+  .dash-empty-pend{ text-align:center; padding:18px 10px; color:#166534; font-size:13px; font-weight:600; }
+  .dash-status-row{ display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border); }
+  .dash-status-row:last-child{ border-bottom:none; }
+  .dash-status-row .dash-status-nome{ font-size:13px; font-weight:600; }
+  .dash-status-row .dash-status-count{ font-family:'JetBrains Mono',monospace; font-weight:700; background:var(--surface-alt); border:1px solid var(--border); border-radius:20px; padding:2px 10px; font-size:12px; }
+  .dash-status-row .dash-status-proximo{ font-size:11px; color:var(--text-faint); margin-top:2px; }
+  .dash-empresa-card{ border-radius:10px; padding:14px 16px; }
+  .dash-empresa-card.logbox{ background:#eff6ff; border:1px solid #bfdbfe; }
+  .dash-empresa-card.mti{ background:#fefce8; border:1px solid #fef08a; }
+  .dash-empresa-card .dash-empresa-nome{ font-weight:800; font-size:14px; margin-bottom:8px; }
+  .dash-empresa-card .dash-empresa-linha{ display:flex; justify-content:space-between; font-size:12.5px; padding:3px 0; }
+  .dash-chegado-row{ display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+  .dash-chegado-row:last-child{ border-bottom:none; }
+  .dash-chegado-row:hover{ background:var(--surface-alt); }
 
   ::-webkit-scrollbar{ height:10px; width:10px; }
   ::-webkit-scrollbar-thumb{ background: var(--border-strong); border-radius:10px; }
@@ -387,7 +433,7 @@
 <nav id="sidebar">
   <div class="sidebar-brand">HUB IMPORTAÇÃO<span>LogBox</span></div>
 
-  <div class="nav-item top-level built" data-view="dashboard" data-label="Dashboard" onclick="irPara('dashboard', false, 'Dashboard')">
+  <div class="nav-item top-level built" data-view="dashboard" data-label="Dashboard" onclick="irPara('dashboard', true, 'Dashboard')">
     <span class="label">Dashboard</span><span class="soon-dot"></span>
   </div>
 
@@ -451,7 +497,7 @@
 
     <!-- ============ DASHBOARD (placeholder de propósito, vem por último) ============ -->
     <div class="view" id="view-dashboard">
-      <div class="placeholder-box"><div class="ico">📊</div><h3>Dashboard</h3><p>Construído por último, de propósito — ele vai reunir dado de todos os outros módulos assim que estiverem prontos.</p></div>
+      <div id="dashboardContent"><div class="empty-state">Carregando painel…</div></div>
     </div>
 
     <!-- ============ GENERIC PLACEHOLDER (módulos ainda não construídos) ============ -->
@@ -492,6 +538,13 @@
           <legend>Responsáveis (Compradores)</legend>
           <div class="tag-list" id="cfg_responsaveis_list"></div>
           <div class="tag-add-row"><input type="text" id="cfg_responsavel_novo" placeholder="Novo responsável..."><button class="btn btn-ghost btn-sm" onclick="cfgAddTag('responsaveis')">+ Adicionar</button></div>
+        </fieldset>
+      </div>
+      <div class="table-wrap" style="padding:22px; overflow:visible; margin-top:16px;">
+        <fieldset style="margin:0;">
+          <legend>🚚 Agentes de Carga</legend>
+          <div class="tag-list" id="cfg_agentes_list"></div>
+          <div class="tag-add-row"><input type="text" id="cfg_agente_novo" placeholder="Novo agente de carga..."><button class="btn btn-ghost btn-sm" onclick="cfgAddTag('agentes_carga')">+ Adicionar</button></div>
         </fieldset>
       </div>
     </div>
@@ -1287,6 +1340,7 @@ function irPara(viewId, built, label){
   }
   if (viewId === "dashboard"){
     document.getElementById("view-dashboard").classList.add("active");
+    loadDashboard();
     return;
   }
   const el = document.getElementById("view-" + viewId);
@@ -1352,6 +1406,7 @@ async function loadConfig(){
   document.getElementById("cfg_cenario").value = CONFIG.cenario || "medio";
   renderTagList("cfg_marcas_list", CONFIG.marcas || [], "marcas");
   renderTagList("cfg_responsaveis_list", CONFIG.responsaveis || [], "responsaveis");
+  renderTagList("cfg_agentes_list", CONFIG.agentes_carga || [], "agentes_carga");
   renderHistoricoCotacoes();
 }
 
@@ -1380,6 +1435,11 @@ window.cfgRemoverHistorico = async function(i){
   toast("Removido do histórico.");
 };
 
+const CFG_TAG_META = {
+  marcas: { listId: "cfg_marcas_list", inputId: "cfg_marca_nova", singular: "marca", cascade: true },
+  responsaveis: { listId: "cfg_responsaveis_list", inputId: "cfg_responsavel_novo", singular: "responsável", cascade: true },
+  agentes_carga: { listId: "cfg_agentes_list", inputId: "cfg_agente_novo", singular: "agente de carga", cascade: false }
+};
 function renderTagList(containerId, arr, campo){
   const el = document.getElementById(containerId);
   el.innerHTML = arr.map((v,i) => `
@@ -1387,24 +1447,26 @@ function renderTagList(containerId, arr, campo){
   `).join("") || `<span style="color:var(--text-faint); font-size:12.5px;">Nenhum ainda</span>`;
 }
 window.cfgEditTag = function(campo, i){
+  const meta = CFG_TAG_META[campo];
   const atual = CONFIG[campo][i];
   abrirOverlayDinamico("cfgEditTagOverlay", `
     <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
-      <h2 class="modal-title" style="margin:0;">Renomear ${campo === "marcas" ? "marca" : "responsável"}</h2>
+      <h2 class="modal-title" style="margin:0;">Renomear ${meta.singular}</h2>
       <button onclick="document.getElementById('cfgEditTagOverlay').remove()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
     </div>
     <div style="padding:20px 24px;">
       <div class="field"><label>Nome atual: ${escapeHtml(atual)}</label><input type="text" id="cfgEditTagInput" value="${escapeHtml(atual)}"></div>
-      <div style="font-size:12px; color:var(--text-faint); margin-top:10px;">Isso atualiza automaticamente todos os produtos, lotes e pedidos que já usam "${escapeHtml(atual)}".</div>
+      ${meta.cascade ? `<div style="font-size:12px; color:var(--text-faint); margin-top:10px;">Isso atualiza automaticamente todos os produtos, lotes e pedidos que já usam "${escapeHtml(atual)}".</div>` : ""}
     </div>
     <div style="padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px;">
       <button class="btn btn-ghost" onclick="document.getElementById('cfgEditTagOverlay').remove()">Cancelar</button>
-      <button class="btn btn-primary" onclick="cfgSalvarEditTag('${campo}', ${i})">Salvar e Atualizar Tudo</button>
+      <button class="btn btn-primary" onclick="cfgSalvarEditTag('${campo}', ${i})">Salvar${meta.cascade ? " e Atualizar Tudo" : ""}</button>
     </div>
   `, 460);
   setTimeout(() => document.getElementById("cfgEditTagInput")?.focus(), 50);
 };
 window.cfgSalvarEditTag = async function(campo, i){
+  const meta = CFG_TAG_META[campo];
   const atual = CONFIG[campo][i];
   const novo = document.getElementById("cfgEditTagInput").value.trim();
   if (!novo){ toast("Nome não pode ficar vazio.", "error"); return; }
@@ -1418,8 +1480,12 @@ window.cfgSalvarEditTag = async function(campo, i){
   const { error } = await db.from("imp_config").update({ [campo]: arr }).eq("id", CONFIG.id);
   if (error){ toast("Erro ao renomear.", "error"); return; }
   CONFIG[campo] = arr;
-  renderTagList(campo === "marcas" ? "cfg_marcas_list" : "cfg_responsaveis_list", CONFIG[campo], campo);
+  renderTagList(meta.listId, CONFIG[campo], campo);
   document.getElementById("cfgEditTagOverlay")?.remove();
+  if (!meta.cascade){
+    toast(`Renomeado.`);
+    return;
+  }
   toast("Renomeado — atualizando registros que usavam esse nome...");
   try{
     if (campo === "marcas"){
@@ -1438,24 +1504,26 @@ window.cfgSalvarEditTag = async function(campo, i){
   }
 };
 window.cfgAddTag = async function(campo){
-  const inputId = campo === "marcas" ? "cfg_marca_nova" : "cfg_responsavel_novo";
-  const input = document.getElementById(inputId);
+  const meta = CFG_TAG_META[campo];
+  const input = document.getElementById(meta.inputId);
   const val = input.value.trim();
   if (!val) return;
   if (!CONFIG[campo]) CONFIG[campo] = [];
+  if (CONFIG[campo].some(v => v.toLowerCase() === val.toLowerCase())){ toast("Já existe um valor com esse nome.", "error"); return; }
   CONFIG[campo].push(val);
   input.value = "";
-  renderTagList(campo === "marcas" ? "cfg_marcas_list" : "cfg_responsaveis_list", CONFIG[campo], campo);
+  renderTagList(meta.listId, CONFIG[campo], campo);
   const { error } = await db.from("imp_config").update({ [campo]: CONFIG[campo] }).eq("id", CONFIG.id);
   if (error){ toast("Erro ao salvar.", "error"); return; }
-  toast(campo === "marcas" ? "Marca adicionada." : "Responsável adicionado.");
+  toast(`${meta.singular.charAt(0).toUpperCase()}${meta.singular.slice(1)} adicionado(a).`);
 };
 window.cfgRemoveTag = async function(campo, idx){
+  const meta = CFG_TAG_META[campo];
   CONFIG[campo].splice(idx, 1);
-  renderTagList(campo === "marcas" ? "cfg_marcas_list" : "cfg_responsaveis_list", CONFIG[campo], campo);
+  renderTagList(meta.listId, CONFIG[campo], campo);
   const { error } = await db.from("imp_config").update({ [campo]: CONFIG[campo] }).eq("id", CONFIG.id);
   if (error){ toast("Erro ao salvar.", "error"); return; }
-  toast(campo === "marcas" ? "Marca removida." : "Responsável removido.");
+  toast(`${meta.singular.charAt(0).toUpperCase()}${meta.singular.slice(1)} removido(a).`);
 };
 window.salvarConfig = async function(){
   const rmb_usd = parseNum(document.getElementById("cfg_rmb_usd").value);
@@ -3506,6 +3574,38 @@ function etaInfo(etaStr){
   if (diffDias === 0) return " · chega hoje";
   return ` · atrasado há ${Math.abs(diffDias)} dia${Math.abs(diffDias) > 1 ? "s" : ""}`;
 }
+function fmtDate(dateStr){
+  return dateStr ? new Date(dateStr + "T00:00:00").toLocaleDateString("pt-BR") : "—";
+}
+// urgência por ETA: vermelho ≤7 dias, amarelo 8–15, verde 16+ — usado nos cards de contêiner
+function urgenciaInfo(etaStr){
+  if (!etaStr) return { cls: "urg-neutro", label: "sem ETA" };
+  const eta = new Date(etaStr + "T00:00:00");
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const diffDias = Math.round((eta - hoje) / 86400000);
+  let cls = "urg-green";
+  if (diffDias <= 7) cls = "urg-red";
+  else if (diffDias <= 15) cls = "urg-yellow";
+  let label;
+  if (diffDias > 0) label = `${diffDias}d`;
+  else if (diffDias === 0) label = "hoje";
+  else label = `atraso ${Math.abs(diffDias)}d`;
+  return { cls, label, diffDias };
+}
+function docsFaltando(container){
+  if (!container) return [];
+  if (container.fonte === "mti"){
+    const f = [];
+    if (!container.doc_nf_url) f.push("NF");
+    if (!(container.doc_boletos && container.doc_boletos.length)) f.push("Boletos");
+    return f;
+  }
+  const f = [];
+  if (!container.doc_comercial_invoice_url) f.push("Comercial Invoice");
+  if (!container.doc_duimp_url) f.push("DUIMP");
+  if (!container.doc_chave_acesso_url) f.push("Chave de Acesso");
+  return f;
+}
 
 function renderPackingList(fonte){
   // ---- seção "disponíveis pra importar" (vive na tela de Planejamento) ----
@@ -3555,17 +3655,23 @@ function renderPackingList(fonte){
     const totalRmb = itens.reduce((s, it) => s + (Number(it.valor_rmb) || 0), 0);
     const totalCbm = itens.reduce((s, it) => s + (Number(it.cbm_total) || 0), 0);
     const pend = plContainerPendentes(c);
+    const urg = urgenciaInfo(c.eta);
     return `<div class="pl-container-card" onclick="abrirContainerDetalhe('${fonte}','${c.id}')">
       <div class="plc-head">
         <div class="plc-nome">${escapeHtml(c.nome)}</div>
         ${pend > 0 ? `<span class="badge-status" style="background:var(--warn-soft); color:#92400e; border-color:#fde68a;">⚠ ${pend}</span>` : `<span class="badge-status" style="background:var(--success-soft); color:#166534; border-color:#bbf7d0;">✓ ok</span>`}
       </div>
-      <div class="plc-meta">
-        ETD ${c.etd ? new Date(c.etd + "T00:00:00").toLocaleDateString("pt-BR") : "—"} · ETA ${c.eta ? new Date(c.eta + "T00:00:00").toLocaleDateString("pt-BR") : "—"}${etaInfo(c.eta)}<br>
-        ${itens.length} ${itens.length === 1 ? "item" : "itens"} · CBM ${fmtN(totalCbm, 2)}
+      <div class="plc-chips">
+        <span class="meta-chip">📅 ETD ${fmtDate(c.etd)}</span>
+        <span class="meta-chip">📅 ETA ${fmtDate(c.eta)}</span>
+        <span class="urg-chip ${urg.cls}">⏳ ${urg.label}</span>
       </div>
-      <div class="plc-foot">
-        <span class="mono" style="font-weight:700;">¥ ${fmtN(totalRmb, 2)}</span>
+      <div class="plc-chips" style="margin-top:6px;">
+        <span class="meta-chip">📦 ${itens.length} ${itens.length === 1 ? "item" : "itens"}</span>
+        <span class="meta-chip">📐 CBM ${fmtN(totalCbm, 2)}</span>
+      </div>
+      <div class="plc-foot" style="margin-top:10px;">
+        <span class="mono plc-valor">¥ ${fmtN(totalRmb, 2)}</span>
       </div>
     </div>`;
   }).join("");
@@ -3581,8 +3687,9 @@ function renderArquivo(){
   if (filtroEmpresa) arquivados = arquivados.filter(c => c.fonte === filtroEmpresa);
 
   const totalRmbOf = c => (c.imp_container_itens || []).reduce((s, it) => s + (Number(it.valor_rmb) || 0), 0);
+  const valorOrdenacaoOf = c => (c.valor_container !== null && c.valor_container !== undefined) ? Number(c.valor_container) : totalRmbOf(c);
   if (ordenar === "nome") arquivados.sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
-  else if (ordenar === "valor") arquivados.sort((a, b) => totalRmbOf(b) - totalRmbOf(a));
+  else if (ordenar === "valor") arquivados.sort((a, b) => valorOrdenacaoOf(b) - valorOrdenacaoOf(a));
   else arquivados.sort((a, b) => (b.chegou_em || "").localeCompare(a.chegou_em || ""));
 
   if (!arquivados.length){
@@ -3591,17 +3698,22 @@ function renderArquivo(){
   }
   grid.innerHTML = arquivados.map(c => {
     const itens = c.imp_container_itens || [];
-    const totalRmb = totalRmbOf(c);
     const totalCbm = itens.reduce((s, it) => s + (Number(it.cbm_total) || 0), 0);
+    const moeda = c.fonte === "mti" ? "R$" : "US$";
+    const valorHtml = (c.valor_container !== null && c.valor_container !== undefined)
+      ? `${moeda} ${fmtN(c.valor_container, 2)}`
+      : `<span style="color:#d97706; font-size:14px; font-weight:700;">valor pendente</span>`;
+    const falt = docsFaltando(c);
     return `<div class="arq-card" onclick="abrirContainerDetalhe('${c.fonte}','${c.id}')">
       <div class="arq-head">
         <div class="arq-nome">${escapeHtml(c.nome)}</div>
         <span class="tag-emp ${c.fonte === "mti" ? "mti" : "logbox"}">${c.fonte.toUpperCase()}</span>
       </div>
-      <div class="arq-data-label">Chegou em</div>
+      <div class="arq-data-label">📅 Chegou em</div>
       <div class="arq-data">${new Date(c.chegou_em).toLocaleDateString("pt-BR")}</div>
-      <div class="arq-meta">${itens.length} ${itens.length === 1 ? "item" : "itens"} · CBM ${fmtN(totalCbm, 2)}</div>
-      <div class="arq-valor">¥ ${fmtN(totalRmb, 2)}</div>
+      <div class="arq-meta">📦 ${itens.length} ${itens.length === 1 ? "item" : "itens"} · 📐 CBM ${fmtN(totalCbm, 2)}</div>
+      <div class="arq-valor">${valorHtml}</div>
+      ${falt.length ? `<div class="arq-docs-pend">📄 documentos incompletos</div>` : `<div class="arq-docs-ok">📄 documentos ok</div>`}
     </div>`;
   }).join("");
 }
@@ -3639,10 +3751,16 @@ function renderKanban(){
     if (!listEl) return;
     if (!lista.length){ listEl.innerHTML = `<div class="kanban-empty">Nenhum contêiner aqui.</div>`; return; }
     const idx = KB_STATUSES.indexOf(status);
-    listEl.innerHTML = lista.map(c => `
-      <div class="kanban-card" draggable="true" ondragstart="kbDragStart(event,'${c.fonte}','${c.id}')" ondragend="kbDragEnd(event)" onclick="abrirContainerDetalhe('${c.fonte}','${c.id}')">
+    listEl.innerHTML = lista.map(c => {
+      const urg = urgenciaInfo(c.eta);
+      return `
+      <div class="kanban-card" draggable="true" ondragstart="kbDragStart(event,'${c.fonte}','${c.id}')" ondragend="kbDragEnd(event)" onclick="abrirKanbanDetalhe('${c.fonte}','${c.id}')">
         <div class="kc-nome">${escapeHtml(c.nome)}</div>
-        <div class="kc-meta">ETA ${c.eta ? new Date(c.eta + "T00:00:00").toLocaleDateString("pt-BR") : "—"}${etaInfo(c.eta)}</div>
+        <div class="kc-chips">
+          <span class="meta-chip">📅 ETA ${fmtDate(c.eta)}</span>
+          <span class="urg-chip ${urg.cls}">⏳ ${urg.label}</span>
+        </div>
+        ${c.agente_carga ? `<div class="kc-agente">🚚 ${escapeHtml(c.agente_carga)}</div>` : ""}
         <div class="kc-foot">
           <span class="tag-emp ${c.fonte === "mti" ? "mti" : "logbox"}">${c.fonte.toUpperCase()}</span>
           <div class="kanban-arrows">
@@ -3650,7 +3768,8 @@ function renderKanban(){
             <button class="kanban-arrow" title="Mover pra ${idx < KB_STATUSES.length - 1 ? KB_LABELS[KB_STATUSES[idx + 1]] : ""}" onclick="event.stopPropagation(); kbMover('${c.fonte}','${c.id}',${idx + 1})" ${idx === KB_STATUSES.length - 1 ? "disabled" : ""}>›</button>
           </div>
         </div>
-      </div>`).join("");
+      </div>`;
+    }).join("");
   });
 }
 
@@ -3745,13 +3864,14 @@ window.plImportarSelecionados = async function(fonte){
       fonte, nome: s.codigo, etd: s.etd_sugerido, eta: null, origem_staging_id: s.id
     }).select().single();
     if (eC || !novoContainer){ toast(`Erro ao importar ${s.codigo}.`, "error"); continue; }
-    const payloads = (s.itens || []).map(it => {
+    const payloads = (s.itens || []).map((it, idx) => {
       const skuMatch = plMatchSku(it.modelo, fonte);
       if (!skuMatch) pendCount++;
       return {
         container_id: novoContainer.id,
         modelo_original: it.modelo,
         sku: skuMatch,
+        ordem: idx,
         qty_ctn: numOrNull(it.qty_ctn), ctns: numOrNull(it.ctns), qtd_total: numOrNull(it.qtd_total),
         preco_unit_rmb: numOrNull(it.preco_unit_rmb), valor_rmb: numOrNull(it.valor_rmb),
         compr_cm: numOrNull(it.compr_cm), larg_cm: numOrNull(it.larg_cm), alt_cm: numOrNull(it.alt_cm),
@@ -3803,21 +3923,105 @@ window.salvarNovoContainer = async function(){
 };
 
 /* ---------- Detalhe do contêiner ---------- */
+let KB_DETALHE = null; // { fonte, containerId } — contêiner aberto na view de detalhe do Kanban (mais enxuta, só muda a tabela de itens)
+function detalheAtualState(){ return KB_DETALHE || PL_DETALHE; }
+function refrescarDetalheSeAberto(){
+  if (KB_DETALHE) renderKanbanContainerDetalhe();
+  else if (PL_DETALHE) renderContainerDetalhe();
+}
+async function refrescarTelasContainer(fonte){
+  await loadPackingList(fonte);
+  if (typeof renderArquivo === "function") renderArquivo();
+  if (typeof renderKanban === "function") renderKanban();
+}
+window.fecharDetalheOverlay = function(){
+  document.getElementById("plDetalheOverlay")?.remove();
+  PL_DETALHE = null;
+  KB_DETALHE = null;
+};
+
 window.abrirContainerDetalhe = function(fonte, containerId){
   const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
   if (!container){ toast("Contêiner não encontrado.", "error"); return; }
+  KB_DETALHE = null;
   PL_DETALHE = { fonte, containerId };
   renderContainerDetalhe();
 };
+window.abrirKanbanDetalhe = function(fonte, containerId){
+  const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
+  if (!container){ toast("Contêiner não encontrado.", "error"); return; }
+  PL_DETALHE = null;
+  KB_DETALHE = { fonte, containerId };
+  renderKanbanContainerDetalhe();
+};
+
+function containerDetalheHeaderHtml(container, fonte){
+  const moedaLabel = fonte === "mti" ? "R$" : "US$";
+  const agentes = (CONFIG?.agentes_carga || []).slice();
+  if (container.agente_carga && !agentes.includes(container.agente_carga)) agentes.push(container.agente_carga);
+  const agenteOptionsHtml = `<option value="">—</option>` +
+    agentes.map(a => `<option value="${escapeHtml(a)}" ${container.agente_carga === a ? "selected" : ""}>${escapeHtml(a)}</option>`).join("") +
+    `<option value="__novo__">+ Cadastrar novo agente...</option>`;
+  const falt = docsFaltando(container);
+  return `
+    <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:flex-start; flex-shrink:0;">
+      <div style="flex:1;">
+        <div class="field-grid cols-3" style="margin-bottom:10px;">
+          <div class="field"><label>Nome</label><input type="text" id="pld_nome" value="${escapeHtml(container.nome)}"></div>
+          <div class="field"><label>ETD</label><input type="date" id="pld_etd" value="${container.etd || ""}"></div>
+          <div class="field"><label>ETA</label><input type="date" id="pld_eta" value="${container.eta || ""}"></div>
+        </div>
+        <div class="field-grid cols-3" style="margin-bottom:0;">
+          <div class="field"><label>Valor do Contêiner (${moedaLabel})</label><input type="text" inputmode="decimal" id="pld_valor_container" class="mono-field" value="${container.valor_container ?? ""}" placeholder="0,00"></div>
+          <div class="field"><label>Valor do Frete (US$)</label><input type="text" inputmode="decimal" id="pld_frete_usd" class="mono-field" value="${container.valor_frete_usd ?? ""}" placeholder="0,00"></div>
+          <div class="field"><label>Agente de Carga</label><select id="pld_agente" onchange="pldAgenteChange(this)">${agenteOptionsHtml}</select></div>
+        </div>
+      </div>
+      <button onclick="fecharDetalheOverlay()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px; margin-left:14px; flex-shrink:0;">×</button>
+    </div>
+    <div style="padding:12px 24px 0; flex-shrink:0;">
+      <div class="field"><label>Observações</label><input type="text" id="pld_obs" value="${escapeHtml(container.observacoes || "")}"></div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:9px 14px; margin:12px 0;">
+        <div style="font-size:12.5px; color:var(--text-muted);">📄 Documentos: ${falt.length ? `<span style="color:#b45309; font-weight:700;">faltando ${falt.join(", ")}</span>` : `<span style="color:#166534; font-weight:700;">completos</span>`}</div>
+        <button class="btn btn-ghost btn-sm" onclick="abrirDocumentosPopup('${fonte}','${container.id}', false)">Gerenciar documentos</button>
+      </div>
+    </div>`;
+}
+function containerDetalheTotaisHtml(itens){
+  const totalRmb = itens.reduce((s, it) => s + (Number(it.valor_rmb) || 0), 0);
+  const totalCbm = itens.reduce((s, it) => s + (Number(it.cbm_total) || 0), 0);
+  const totalPesoBruto = itens.reduce((s, it) => s + (Number(it.peso_bruto_total) || 0), 0);
+  return `<div style="padding:0 24px; flex-shrink:0;">
+    <div style="display:flex; gap:20px; margin:0 0 14px; font-size:12.5px; color:var(--text-muted);">
+      <span><b class="mono">¥ ${fmtN(totalRmb, 2)}</b> total</span>
+      <span><b class="mono">${fmtN(totalCbm, 2)}</b> CBM</span>
+      <span><b class="mono">${fmtN(totalPesoBruto, 1)}</b> kg brutos</span>
+      <span><b class="mono">${itens.length}</b> ${itens.length === 1 ? "item" : "itens"}</span>
+    </div>
+  </div>`;
+}
+function containerDetalheFooterHtml(container, fonte, containerId){
+  return `
+    <div style="padding:14px 24px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; gap:10px; flex-wrap:wrap;">
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" onclick="plConfirmarExcluirContainer()">🗑 Excluir Contêiner</button>
+        ${container.chegou_em
+          ? `<button class="btn btn-ghost btn-sm" onclick="plDesfazerChegada('${fonte}','${containerId}')">↩ Desfazer chegada (chegou em ${new Date(container.chegou_em).toLocaleDateString("pt-BR")})</button>`
+          : `<button class="btn btn-ghost btn-sm" onclick="abrirDocumentosPopup('${fonte}','${containerId}', true)">✅ Marcar como chegou</button>`}
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-ghost btn-sm" onclick="abrirNovoItemContainer()">+ Adicionar Produto</button>
+        <button class="btn btn-primary btn-sm" onclick="plSalvarDetalhe()">💾 Salvar Alterações</button>
+      </div>
+    </div>`;
+}
+
 function renderContainerDetalhe(){
   if (!PL_DETALHE) return;
   const { fonte, containerId } = PL_DETALHE;
   const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
   if (!container) return;
-  const itens = (container.imp_container_itens || []).slice().sort((a, b) => (a.modelo_original || "").localeCompare(b.modelo_original || ""));
-  const totalRmb = itens.reduce((s, it) => s + (Number(it.valor_rmb) || 0), 0);
-  const totalCbm = itens.reduce((s, it) => s + (Number(it.cbm_total) || 0), 0);
-  const totalPesoBruto = itens.reduce((s, it) => s + (Number(it.peso_bruto_total) || 0), 0);
+  const itens = (container.imp_container_itens || []).slice().sort((a, b) => (Number(a.ordem) || 0) - (Number(b.ordem) || 0));
 
   const prodNomePorSku = {};
   (PL_PRODUTOS[fonte] || []).forEach(p => { prodNomePorSku[p.sku] = p.nome_produto; });
@@ -3837,77 +4041,246 @@ function renderContainerDetalhe(){
     </div>`).join("") || `<div class="empty-state">Nenhum produto neste contêiner ainda.</div>`;
 
   abrirOverlayDinamico("plDetalheOverlay", `
-    <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:flex-start; flex-shrink:0;">
-      <div style="flex:1;">
-        <div class="field-grid cols-3" style="margin-bottom:0;">
-          <div class="field"><label>Nome</label><input type="text" id="pld_nome" value="${escapeHtml(container.nome)}"></div>
-          <div class="field"><label>ETD</label><input type="date" id="pld_etd" value="${container.etd || ""}"></div>
-          <div class="field"><label>ETA</label><input type="date" id="pld_eta" value="${container.eta || ""}"></div>
-        </div>
-      </div>
-      <button onclick="document.getElementById('plDetalheOverlay').remove(); PL_DETALHE=null;" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px; margin-left:14px; flex-shrink:0;">×</button>
-    </div>
-    <div style="padding:12px 24px 0; flex-shrink:0;">
-      <div class="field"><label>Observações</label><input type="text" id="pld_obs" value="${escapeHtml(container.observacoes || "")}"></div>
-      <div style="display:flex; gap:20px; margin:14px 0; font-size:12.5px; color:var(--text-muted);">
-        <span><b class="mono">¥ ${fmtN(totalRmb, 2)}</b> total</span>
-        <span><b class="mono">${fmtN(totalCbm, 2)}</b> CBM</span>
-        <span><b class="mono">${fmtN(totalPesoBruto, 1)}</b> kg brutos</span>
-        <span><b class="mono">${itens.length}</b> ${itens.length === 1 ? "item" : "itens"}</span>
-      </div>
-    </div>
+    ${containerDetalheHeaderHtml(container, fonte)}
+    ${containerDetalheTotaisHtml(itens)}
     <div style="overflow:auto; flex:1; padding:0 24px;">
       <div class="pl-item-row head"><div>Modelo</div><div>SKU</div><div>Qtd/Cx</div><div>Caixas</div><div>Qtd Total</div><div>Valor RMB</div><div>CBM</div><div>Peso Bruto</div></div>
       ${rows}
     </div>
-    <div style="padding:14px 24px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; gap:10px; flex-wrap:wrap;">
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <button class="btn btn-ghost btn-sm" onclick="plConfirmarExcluirContainer()">🗑 Excluir Contêiner</button>
-        ${container.chegou_em
-          ? `<button class="btn btn-ghost btn-sm" onclick="plDesfazerChegada('${fonte}','${containerId}')">↩ Desfazer chegada (chegou em ${new Date(container.chegou_em).toLocaleDateString("pt-BR")})</button>`
-          : `<button class="btn btn-ghost btn-sm" onclick="plMarcarChegou('${fonte}','${containerId}')">✅ Marcar como chegou</button>`}
-      </div>
-      <div style="display:flex; gap:10px;">
-        <button class="btn btn-ghost btn-sm" onclick="abrirNovoItemContainer()">+ Adicionar Produto</button>
-        <button class="btn btn-primary btn-sm" onclick="plSalvarDetalhe()">💾 Salvar Alterações</button>
-      </div>
-    </div>
+    ${containerDetalheFooterHtml(container, fonte, containerId)}
   `, 1080);
 }
-window.plMarcarChegou = async function(fonte, containerId){
+
+function renderKanbanContainerDetalhe(){
+  if (!KB_DETALHE) return;
+  const { fonte, containerId } = KB_DETALHE;
+  const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
+  if (!container) return;
+  const itens = (container.imp_container_itens || []).slice().sort((a, b) => (Number(a.ordem) || 0) - (Number(b.ordem) || 0));
+
+  const prodNomePorSku = {};
+  (PL_PRODUTOS[fonte] || []).forEach(p => { prodNomePorSku[p.sku] = p.nome_produto; });
+
+  const porSku = {};
+  const semSku = [];
+  itens.forEach(it => {
+    const modeloLabel = (it.sku && prodNomePorSku[it.sku]) || String(it.modelo_original || "").split("\n")[0];
+    if (it.sku){
+      if (!porSku[it.sku]) porSku[it.sku] = { sku: it.sku, modelo: modeloLabel, qtd_total: 0, valor_rmb: 0 };
+      porSku[it.sku].qtd_total += Number(it.qtd_total) || 0;
+      porSku[it.sku].valor_rmb += Number(it.valor_rmb) || 0;
+    } else {
+      semSku.push({ sku: "", modelo: modeloLabel, qtd_total: Number(it.qtd_total) || 0, valor_rmb: Number(it.valor_rmb) || 0 });
+    }
+  });
+  const consolidados = [...Object.values(porSku), ...semSku];
+  const rows = consolidados.map(r => `
+    <div class="pl-item-row" style="grid-template-columns: 2fr 1fr 110px 130px;">
+      <div>${escapeHtml(r.modelo)}</div>
+      <div>${r.sku ? `<span class="pir-sku-ok">${escapeHtml(r.sku)}</span>` : `<span style="color:#d97706; font-weight:700;">⚠ sem SKU</span>`}</div>
+      <div class="mono">${fmtN(r.qtd_total, 0)}</div>
+      <div class="mono">¥ ${fmtN(r.valor_rmb, 2)}</div>
+    </div>`).join("") || `<div class="empty-state">Nenhum produto neste contêiner ainda.</div>`;
+
+  abrirOverlayDinamico("plDetalheOverlay", `
+    ${containerDetalheHeaderHtml(container, fonte)}
+    ${containerDetalheTotaisHtml(itens)}
+    <div style="overflow:auto; flex:1; padding:0 24px;">
+      <div class="pl-item-row head" style="grid-template-columns: 2fr 1fr 110px 130px;"><div>Modelo</div><div>SKU</div><div>Qtd Total</div><div>Valor RMB</div></div>
+      ${rows}
+    </div>
+    ${containerDetalheFooterHtml(container, fonte, containerId)}
+  `, 1080);
+}
+
+window.pldAgenteChange = function(sel){
+  if (sel.value === "__novo__") abrirNovoAgentePopup();
+};
+window.abrirNovoAgentePopup = function(){
+  abrirOverlayDinamico("cfgNovoAgenteOverlay", `
+    <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <h2 class="modal-title" style="margin:0;">Novo agente de carga</h2>
+      <button onclick="document.getElementById('cfgNovoAgenteOverlay').remove(); refrescarDetalheSeAberto();" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
+    </div>
+    <div style="padding:20px 24px;">
+      <div class="field"><label>Nome do agente</label><input type="text" id="novoAgenteInput" placeholder="Ex: Fulano Frete Internacional"></div>
+    </div>
+    <div style="padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn btn-ghost" onclick="document.getElementById('cfgNovoAgenteOverlay').remove(); refrescarDetalheSeAberto();">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarNovoAgenteDetalhe()">Salvar</button>
+    </div>
+  `, 420);
+  setTimeout(() => document.getElementById("novoAgenteInput")?.focus(), 50);
+};
+window.salvarNovoAgenteDetalhe = async function(){
+  const val = document.getElementById("novoAgenteInput").value.trim();
+  if (!val) return;
+  if (!CONFIG.agentes_carga) CONFIG.agentes_carga = [];
+  if (!CONFIG.agentes_carga.some(a => a.toLowerCase() === val.toLowerCase())) CONFIG.agentes_carga.push(val);
+  const { error } = await db.from("imp_config").update({ agentes_carga: CONFIG.agentes_carga }).eq("id", CONFIG.id);
+  if (error){ toast("Erro ao salvar agente.", "error"); return; }
+  document.getElementById("cfgNovoAgenteOverlay")?.remove();
+  toast("Agente cadastrado.");
+  const state = detalheAtualState();
+  if (state){
+    const container = PL_CONTAINERS[state.fonte].find(c => c.id === state.containerId);
+    if (container) container.agente_carga = val;
+  }
+  refrescarDetalheSeAberto();
+  if (document.getElementById("cfg_agentes_list")) renderTagList("cfg_agentes_list", CONFIG.agentes_carga, "agentes_carga");
+};
+
+/* ---------- Documentos de chegada (LOGBOX: Comercial Invoice/DUIMP/Chave de Acesso · MTI: NF/Boletos) ---------- */
+let DOCS_POPUP_FINALIZAR = false;
+window.abrirDocumentosPopup = function(fonte, containerId, finalizarChegada){
+  DOCS_POPUP_FINALIZAR = !!finalizarChegada;
+  renderDocumentosPopupBody(fonte, containerId);
+};
+function renderDocumentosPopupBody(fonte, containerId){
+  const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
+  if (!container) return;
+  const campoHtml = (campo, label) => {
+    const url = container[campo];
+    return `<div class="field" style="margin-bottom:14px;">
+      <label>${label}</label>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        ${url ? `<a href="${url}" target="_blank" class="btn btn-ghost btn-sm">📄 Ver PDF</a><button class="btn-icon" title="Remover" onclick="docsRemoverArquivo('${fonte}','${containerId}','${campo}')">🗑</button>` : `<span style="color:var(--text-faint); font-size:12px;">Nenhum enviado</span>`}
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer; margin:0;">📎 ${url ? "Substituir" : "Enviar"} PDF<input type="file" accept="application/pdf" style="display:none;" onchange="docsUploadArquivo(event,'${fonte}','${containerId}','${campo}')"></label>
+      </div>
+    </div>`;
+  };
+  let camposHtml;
+  if (fonte === "mti"){
+    const boletos = container.doc_boletos || [];
+    camposHtml = campoHtml("doc_nf_url", "NF") + `
+      <div class="field">
+        <label>Boletos (${boletos.length})</label>
+        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
+          ${boletos.map((b,i) => `
+            <div style="display:flex; align-items:center; gap:8px;">
+              <a href="${b.url}" target="_blank" class="btn btn-ghost btn-sm">📄 ${escapeHtml(b.nome || ("Boleto " + (i+1)))}</a>
+              <button class="btn-icon" title="Remover" onclick="docsRemoverBoleto('${fonte}','${containerId}',${i})">🗑</button>
+            </div>`).join("") || `<span style="color:var(--text-faint); font-size:12px;">Nenhum boleto enviado</span>`}
+        </div>
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer; margin:0;">📎 + Adicionar boleto<input type="file" accept="application/pdf" style="display:none;" onchange="docsUploadBoleto(event,'${fonte}','${containerId}')"></label>
+      </div>`;
+  } else {
+    camposHtml = campoHtml("doc_comercial_invoice_url", "Comercial Invoice") + campoHtml("doc_duimp_url", "DUIMP") + campoHtml("doc_chave_acesso_url", "Chave de Acesso");
+  }
+  const falt = docsFaltando(container);
+  abrirOverlayDinamico("docsPopupOverlay", `
+    <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <h2 class="modal-title" style="margin:0;">📄 Documentos — ${escapeHtml(container.nome)}</h2>
+      <button onclick="document.getElementById('docsPopupOverlay').remove()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
+    </div>
+    <div style="padding:20px 24px;">
+      ${camposHtml}
+      ${falt.length ? `<div style="margin-top:6px; font-size:12px; color:#b45309; font-weight:600;">⚠ Faltando: ${falt.join(", ")}</div>` : `<div style="margin-top:6px; font-size:12px; color:#166534; font-weight:600;">✅ Todos os documentos enviados</div>`}
+    </div>
+    <div style="padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn btn-ghost" onclick="document.getElementById('docsPopupOverlay').remove()">${DOCS_POPUP_FINALIZAR ? "Cancelar" : "Fechar"}</button>
+      ${DOCS_POPUP_FINALIZAR ? `<button class="btn btn-primary" onclick="docsFinalizarChegada('${fonte}','${containerId}')">✅ Marcar como chegou</button>` : ""}
+    </div>
+  `, 520);
+}
+window.docsUploadArquivo = async function(evt, fonte, containerId, campo){
+  const file = evt.target.files[0];
+  if (!file) return;
+  toast("Enviando arquivo…");
+  const path = `${fonte}/${containerId}/${campo}-${Date.now()}-${file.name}`;
+  const { error: upErr } = await db.storage.from("container-docs").upload(path, file, { upsert: true, contentType: "application/pdf" });
+  if (upErr){ toast("Erro ao enviar arquivo: " + upErr.message, "error"); return; }
+  const { data: pub } = db.storage.from("container-docs").getPublicUrl(path);
+  const { error } = await db.from("imp_containers").update({ [campo]: pub.publicUrl }).eq("id", containerId);
+  if (error){ toast("Erro ao salvar documento.", "error"); return; }
+  const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
+  if (container) container[campo] = pub.publicUrl;
+  toast("Documento enviado.");
+  renderDocumentosPopupBody(fonte, containerId);
+  await refrescarTelasContainer(fonte);
+  refrescarDetalheSeAberto();
+};
+window.docsRemoverArquivo = async function(fonte, containerId, campo){
+  const { error } = await db.from("imp_containers").update({ [campo]: null }).eq("id", containerId);
+  if (error){ toast("Erro ao remover.", "error"); return; }
+  const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
+  if (container) container[campo] = null;
+  toast("Documento removido.");
+  renderDocumentosPopupBody(fonte, containerId);
+  await refrescarTelasContainer(fonte);
+  refrescarDetalheSeAberto();
+};
+window.docsUploadBoleto = async function(evt, fonte, containerId){
+  const file = evt.target.files[0];
+  if (!file) return;
+  toast("Enviando boleto…");
+  const path = `${fonte}/${containerId}/boleto-${Date.now()}-${file.name}`;
+  const { error: upErr } = await db.storage.from("container-docs").upload(path, file, { upsert: true, contentType: "application/pdf" });
+  if (upErr){ toast("Erro ao enviar boleto: " + upErr.message, "error"); return; }
+  const { data: pub } = db.storage.from("container-docs").getPublicUrl(path);
+  const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
+  const boletos = [...(container?.doc_boletos || []), { nome: file.name, url: pub.publicUrl }];
+  const { error } = await db.from("imp_containers").update({ doc_boletos: boletos }).eq("id", containerId);
+  if (error){ toast("Erro ao salvar boleto.", "error"); return; }
+  if (container) container.doc_boletos = boletos;
+  toast("Boleto adicionado.");
+  renderDocumentosPopupBody(fonte, containerId);
+  await refrescarTelasContainer(fonte);
+  refrescarDetalheSeAberto();
+};
+window.docsRemoverBoleto = async function(fonte, containerId, idx){
+  const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
+  const boletos = (container?.doc_boletos || []).slice();
+  boletos.splice(idx, 1);
+  const { error } = await db.from("imp_containers").update({ doc_boletos: boletos }).eq("id", containerId);
+  if (error){ toast("Erro ao remover boleto.", "error"); return; }
+  if (container) container.doc_boletos = boletos;
+  toast("Boleto removido.");
+  renderDocumentosPopupBody(fonte, containerId);
+  await refrescarTelasContainer(fonte);
+  refrescarDetalheSeAberto();
+};
+window.docsFinalizarChegada = async function(fonte, containerId){
   const { error } = await db.from("imp_containers").update({ chegou_em: new Date().toISOString() }).eq("id", containerId);
   if (error){ toast("Erro ao marcar chegada.", "error"); return; }
   toast("Contêiner marcado como chegado — foi pro Arquivo dos Contêineres.");
+  document.getElementById("docsPopupOverlay")?.remove();
   document.getElementById("plDetalheOverlay")?.remove();
-  PL_DETALHE = null;
-  await loadPackingList(fonte);
+  PL_DETALHE = null; KB_DETALHE = null;
+  await refrescarTelasContainer(fonte);
 };
 window.plDesfazerChegada = async function(fonte, containerId){
   const { error } = await db.from("imp_containers").update({ chegou_em: null }).eq("id", containerId);
   if (error){ toast("Erro ao desfazer chegada.", "error"); return; }
   toast("Chegada desfeita — o contêiner voltou pra Packing List.");
   document.getElementById("plDetalheOverlay")?.remove();
-  PL_DETALHE = null;
-  await loadPackingList(fonte);
+  PL_DETALHE = null; KB_DETALHE = null;
+  await refrescarTelasContainer(fonte);
 };
 window.plSalvarDetalhe = async function(){
-  if (!PL_DETALHE) return;
-  const { fonte, containerId } = PL_DETALHE;
+  const state = detalheAtualState();
+  if (!state) return;
+  const { fonte, containerId } = state;
   const nome = document.getElementById("pld_nome").value.trim();
   if (!nome){ toast("Nome não pode ficar vazio.", "error"); return; }
   const etd = document.getElementById("pld_etd").value || null;
   const eta = document.getElementById("pld_eta").value || null;
   const observacoes = document.getElementById("pld_obs").value.trim();
-  const { error } = await db.from("imp_containers").update({ nome, etd, eta, observacoes, atualizado_em: new Date().toISOString() }).eq("id", containerId);
+  const valor_container = parseNum(document.getElementById("pld_valor_container").value);
+  const valor_frete_usd = parseNum(document.getElementById("pld_frete_usd").value);
+  const agenteSel = document.getElementById("pld_agente").value;
+  const agente_carga = (agenteSel && agenteSel !== "__novo__") ? agenteSel : (PL_CONTAINERS[fonte].find(c => c.id === containerId)?.agente_carga || null);
+  const { error } = await db.from("imp_containers").update({ nome, etd, eta, observacoes, valor_container, valor_frete_usd, agente_carga, atualizado_em: new Date().toISOString() }).eq("id", containerId);
   if (error){ toast("Erro ao salvar.", "error"); return; }
   toast("Contêiner atualizado.");
   document.getElementById("plDetalheOverlay")?.remove();
-  PL_DETALHE = null;
-  await loadPackingList(fonte);
+  PL_DETALHE = null; KB_DETALHE = null;
+  await refrescarTelasContainer(fonte);
 };
 window.plConfirmarExcluirContainer = function(){
-  if (!PL_DETALHE) return;
-  const { fonte, containerId } = PL_DETALHE;
+  const state = detalheAtualState();
+  if (!state) return;
+  const { fonte, containerId } = state;
   const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
   pedirConfirmacao("Excluir contêiner", `Excluir "${container?.nome || ""}" e todos os seus itens?`, "Essa ação não pode ser desfeita.", async () => {
     await db.from("imp_container_itens").delete().eq("container_id", containerId);
@@ -3915,8 +4288,8 @@ window.plConfirmarExcluirContainer = function(){
     if (error){ toast("Erro ao excluir.", "error"); return; }
     toast("Contêiner excluído.");
     document.getElementById("plDetalheOverlay")?.remove();
-    PL_DETALHE = null;
-    await loadPackingList(fonte);
+    PL_DETALHE = null; KB_DETALHE = null;
+    await refrescarTelasContainer(fonte);
   });
 };
 
@@ -3928,11 +4301,12 @@ window.abrirNovoItemContainer = function(){
   document.getElementById("modalNovoItemContainerOverlay").classList.add("open");
 };
 window.niBuscarProduto = function(){
-  if (!PL_DETALHE) return;
+  const state = detalheAtualState();
+  if (!state) return;
   const q = document.getElementById("ni_busca").value.trim().toLowerCase();
   const dropdown = document.getElementById("niBuscaDropdown");
   if (!q || q.length < 2){ dropdown.style.display = "none"; return; }
-  const matches = PL_PRODUTOS[PL_DETALHE.fonte].filter(p => (p.sku || "").toLowerCase().includes(q) || (p.nome_produto || "").toLowerCase().includes(q)).slice(0, 20);
+  const matches = PL_PRODUTOS[state.fonte].filter(p => (p.sku || "").toLowerCase().includes(q) || (p.nome_produto || "").toLowerCase().includes(q)).slice(0, 20);
   if (!matches.length){ dropdown.innerHTML = `<div style="color:var(--text-faint);">Nenhum produto encontrado.</div>`; dropdown.style.display = "block"; return; }
   dropdown.innerHTML = matches.map(p => `<div onclick='niSelecionarProduto(${JSON.stringify(p).replace(/'/g, "&apos;")})'><span class="mono" style="font-weight:700;">${escapeHtml(p.sku)}</span> — ${escapeHtml(p.nome_produto || "")}</div>`).join("");
   dropdown.style.display = "block";
@@ -3948,7 +4322,8 @@ document.addEventListener("click", (e) => {
   if (dropdown && !e.target.closest("#ni_busca") && !e.target.closest("#niBuscaDropdown")) dropdown.style.display = "none";
 });
 window.salvarNovoItemContainer = async function(){
-  if (!PL_DETALHE) return;
+  const state = detalheAtualState();
+  if (!state) return;
   const modelo = document.getElementById("ni_modelo").value.trim();
   if (!modelo){ document.getElementById("err_ni_modelo").textContent = "Modelo é obrigatório."; return; }
   const sku = document.getElementById("ni_sku").value.trim() || null;
@@ -3959,17 +4334,17 @@ window.salvarNovoItemContainer = async function(){
   const valor_rmb = parseNum(document.getElementById("ni_valor_rmb").value) ?? ((preco_unit_rmb && qtd_total) ? preco_unit_rmb * qtd_total : null);
   const cbm_total = parseNum(document.getElementById("ni_cbm_total").value);
   const peso_bruto_total = parseNum(document.getElementById("ni_peso_bruto_total").value);
+  const containerAtual = PL_CONTAINERS[state.fonte].find(c => c.id === state.containerId);
+  const maxOrdem = (containerAtual?.imp_container_itens || []).reduce((m, it) => Math.max(m, Number(it.ordem) || 0), 0);
   const { error } = await db.from("imp_container_itens").insert({
-    container_id: PL_DETALHE.containerId, modelo_original: modelo, sku,
+    container_id: state.containerId, modelo_original: modelo, sku, ordem: maxOrdem + 1,
     qty_ctn, ctns, qtd_total, preco_unit_rmb, valor_rmb, cbm_total, peso_bruto_total
   });
   if (error){ toast("Erro ao adicionar produto.", "error"); return; }
   toast("Produto adicionado ao contêiner.");
   document.getElementById("modalNovoItemContainerOverlay").classList.remove("open");
-  const fonte = PL_DETALHE.fonte, containerId = PL_DETALHE.containerId;
-  await loadPackingList(fonte);
-  PL_DETALHE = { fonte, containerId };
-  renderContainerDetalhe();
+  await refrescarTelasContainer(state.fonte);
+  refrescarDetalheSeAberto();
 };
 
 /* ---------- Pendências de SKU (visão agregada por fonte) ---------- */
@@ -4049,11 +4424,160 @@ window.plVincularSku = async function(fonte, itemId, sku){
   document.getElementById("plResolverSkuOverlay")?.remove();
   document.getElementById("plPendenciasOverlay")?.remove();
   await loadPackingList(fonte);
-  if (PL_DETALHE && PL_DETALHE.fonte === fonte) renderContainerDetalhe();
+  const stateAtual = detalheAtualState();
+  if (stateAtual && stateAtual.fonte === fonte) refrescarDetalheSeAberto();
 };
 
+/* ======================= DASHBOARD ======================= */
+async function loadDashboard(){
+  const el = document.getElementById("dashboardContent");
+  if (el) el.innerHTML = `<div class="empty-state">Carregando painel…</div>`;
+
+  const [contRes, cfgRes, prodRes, linkRes] = await Promise.all([
+    db.from("imp_containers").select("*, imp_container_itens(*)"),
+    CONFIG ? Promise.resolve({ data: CONFIG }) : db.from("imp_config").select("*").limit(1).maybeSingle(),
+    db.from(TABLE_PRODUTOS).select("sku").eq("ativo", true),
+    db.from("imp_estoque_link").select("sku_hub")
+  ]);
+  if (contRes.error){ toast("Erro ao carregar painel.", "error"); return; }
+  const containers = contRes.data || [];
+  const cfg = cfgRes.data || CONFIG || {};
+  const rmbUsd = Number(cfg.rmb_usd) || 7;
+
+  const ativos = containers.filter(c => !c.chegou_em);
+  const arquivados = containers.filter(c => c.chegou_em);
+
+  const somaItens = (lista, campo) => lista.reduce((s, c) => s + (c.imp_container_itens || []).reduce((s2, it) => s2 + (Number(it[campo]) || 0), 0), 0);
+  const totalRmbTransito = somaItens(ativos, "valor_rmb");
+  const totalCbmTransito = somaItens(ativos, "cbm_total");
+  const totalUsdTransito = totalRmbTransito / rmbUsd;
+  const logboxAtivos = ativos.filter(c => c.fonte === "logbox");
+  const mtiAtivos = ativos.filter(c => c.fonte === "mti");
+
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const chegando7 = ativos.filter(c => {
+    if (!c.eta) return false;
+    const diff = Math.round((new Date(c.eta + "T00:00:00") - hoje) / 86400000);
+    return diff >= 0 && diff <= 7;
+  });
+  const atrasados = ativos.filter(c => c.eta && new Date(c.eta + "T00:00:00") < hoje);
+
+  const containersComSkuPendente = ativos.map(c => ({ c, pend: (c.imp_container_itens || []).filter(it => !it.sku).length })).filter(x => x.pend > 0);
+  const totalSkuPendente = containersComSkuPendente.reduce((s, x) => s + x.pend, 0);
+  const containersDocIncompleto = arquivados.filter(c => docsFaltando(c).length > 0);
+
+  const skusAtivos = new Set((prodRes.data || []).map(p => p.sku));
+  const skusVinculados = new Set((linkRes.data || []).map(r => r.sku_hub));
+  let semVinculoEstoque = 0;
+  skusAtivos.forEach(s => { if (!skusVinculados.has(s)) semVinculoEstoque++; });
+
+  const statusInfo = KB_STATUSES.map(st => {
+    const lista = ativos.filter(c => (c.status_embarque || "em_rota") === st).sort((a, b) => {
+      if (!a.eta && !b.eta) return 0; if (!a.eta) return 1; if (!b.eta) return -1; return a.eta.localeCompare(b.eta);
+    });
+    return { status: st, label: KB_LABELS[st], count: lista.length, proximo: lista[0] || null };
+  });
+
+  const ultimosChegados = arquivados.slice().sort((a, b) => (b.chegou_em || "").localeCompare(a.chegou_em || "")).slice(0, 5);
+
+  renderDashboard({
+    ativos, logboxAtivos, mtiAtivos, totalRmbTransito, totalUsdTransito, totalCbmTransito,
+    chegando7, atrasados, containersComSkuPendente, totalSkuPendente, containersDocIncompleto,
+    semVinculoEstoque, statusInfo, ultimosChegados
+  });
+}
+
+function renderDashboard(d){
+  const el = document.getElementById("dashboardContent");
+  if (!el) return;
+
+  const kpisHtml = `
+    <div class="dash-kpis">
+      <div class="dash-kpi">
+        <div class="dash-kpi-label">📦 Contêineres em trânsito</div>
+        <div class="dash-kpi-value">${d.ativos.length}</div>
+        <div class="dash-kpi-sub">${d.logboxAtivos.length} LOGBOX · ${d.mtiAtivos.length} MTI</div>
+      </div>
+      <div class="dash-kpi">
+        <div class="dash-kpi-label">💰 Valor em trânsito</div>
+        <div class="dash-kpi-value">¥ ${fmtN(d.totalRmbTransito, 0)}</div>
+        <div class="dash-kpi-sub">≈ US$ ${fmtN(d.totalUsdTransito, 0)}</div>
+      </div>
+      <div class="dash-kpi">
+        <div class="dash-kpi-label">📐 CBM em trânsito</div>
+        <div class="dash-kpi-value">${fmtN(d.totalCbmTransito, 1)}</div>
+        <div class="dash-kpi-sub">soma dos contêineres ativos</div>
+      </div>
+      <div class="dash-kpi ${d.atrasados.length ? "alerta" : ""}">
+        <div class="dash-kpi-label">⏳ Chegando em 7 dias</div>
+        <div class="dash-kpi-value">${d.chegando7.length}</div>
+        <div class="dash-kpi-sub">${d.atrasados.length ? `⚠ ${d.atrasados.length} atrasado${d.atrasados.length > 1 ? "s" : ""}` : "nenhum atrasado"}</div>
+      </div>
+    </div>`;
+
+  const pendItens = [];
+  if (d.totalSkuPendente > 0) pendItens.push(`<div class="dash-pend-item" onclick="irPara('ph-pl-logbox', true, 'Packing List LOGBOX')"><div class="dash-pend-label">🔗 SKUs sem vínculo no Packing List</div><span class="dash-pend-count">${d.totalSkuPendente}</span></div>`);
+  if (d.containersDocIncompleto.length > 0) pendItens.push(`<div class="dash-pend-item" onclick="irPara('ph-arquivo', true, 'Arquivo dos Contêineres')"><div class="dash-pend-label">📄 Contêineres com documento incompleto</div><span class="dash-pend-count">${d.containersDocIncompleto.length}</span></div>`);
+  if (d.semVinculoEstoque > 0) pendItens.push(`<div class="dash-pend-item" onclick="irPara('v-estoquefuturo', true, 'Estoque Futuro')"><div class="dash-pend-label">📊 SKUs sem vínculo no Estoque Futuro</div><span class="dash-pend-count">${d.semVinculoEstoque}</span></div>`);
+
+  const pendHtml = `
+    <div class="dash-section">
+      <div class="dash-section-title">⚠ Central de Pendências</div>
+      ${pendItens.length ? pendItens.join("") : `<div class="dash-empty-pend">🎉 Nada pendente no momento</div>`}
+    </div>`;
+
+  const statusHtml = `
+    <div class="dash-section">
+      <div class="dash-section-title">🚢 Contêineres por status</div>
+      ${d.statusInfo.map(s => `
+        <div class="dash-status-row">
+          <div>
+            <div class="dash-status-nome">${s.label}</div>
+            ${s.proximo ? `<div class="dash-status-proximo">Próximo: ${escapeHtml(s.proximo.nome)} · ETA ${fmtDate(s.proximo.eta)}</div>` : `<div class="dash-status-proximo">Nenhum contêiner aqui</div>`}
+          </div>
+          <span class="dash-status-count">${s.count}</span>
+        </div>`).join("")}
+    </div>`;
+
+  const valorEmpresa = lista => lista.reduce((s, c) => s + (c.imp_container_itens || []).reduce((s2, it) => s2 + (Number(it.valor_rmb) || 0), 0), 0);
+  const cbmEmpresa = lista => lista.reduce((s, c) => s + (c.imp_container_itens || []).reduce((s2, it) => s2 + (Number(it.cbm_total) || 0), 0), 0);
+  const empresaHtml = `
+    <div class="dash-section">
+      <div class="dash-section-title">🏢 Resumo por empresa</div>
+      <div class="dash-grid-2">
+        <div class="dash-empresa-card logbox">
+          <div class="dash-empresa-nome">LOGBOX</div>
+          <div class="dash-empresa-linha"><span>Contêineres ativos</span><b>${d.logboxAtivos.length}</b></div>
+          <div class="dash-empresa-linha"><span>Valor total</span><b class="mono">¥ ${fmtN(valorEmpresa(d.logboxAtivos), 0)}</b></div>
+          <div class="dash-empresa-linha"><span>CBM total</span><b class="mono">${fmtN(cbmEmpresa(d.logboxAtivos), 1)}</b></div>
+        </div>
+        <div class="dash-empresa-card mti">
+          <div class="dash-empresa-nome">MTI</div>
+          <div class="dash-empresa-linha"><span>Contêineres ativos</span><b>${d.mtiAtivos.length}</b></div>
+          <div class="dash-empresa-linha"><span>Valor total</span><b class="mono">¥ ${fmtN(valorEmpresa(d.mtiAtivos), 0)}</b></div>
+          <div class="dash-empresa-linha"><span>CBM total</span><b class="mono">${fmtN(cbmEmpresa(d.mtiAtivos), 1)}</b></div>
+        </div>
+      </div>
+    </div>`;
+
+  const ultimosHtml = `
+    <div class="dash-section">
+      <div class="dash-section-title">✅ Últimos chegados</div>
+      ${d.ultimosChegados.length ? d.ultimosChegados.map(c => {
+        const moeda = c.fonte === "mti" ? "R$" : "US$";
+        const valorTxt = (c.valor_container !== null && c.valor_container !== undefined) ? `${moeda} ${fmtN(c.valor_container, 2)}` : `<span style="color:#d97706;">valor pendente</span>`;
+        return `<div class="dash-chegado-row" onclick="abrirContainerDetalhe('${c.fonte}','${c.id}')">
+          <div><b>${escapeHtml(c.nome)}</b> <span class="tag-emp ${c.fonte === "mti" ? "mti" : "logbox"}" style="margin-left:6px;">${c.fonte.toUpperCase()}</span><div class="dash-status-proximo">Chegou em ${new Date(c.chegou_em).toLocaleDateString("pt-BR")}</div></div>
+          <span class="mono">${valorTxt}</span>
+        </div>`;
+      }).join("") : `<div class="empty-state">Nenhum contêiner chegou ainda.</div>`}
+    </div>`;
+
+  el.innerHTML = kpisHtml + pendHtml + `<div class="dash-grid-2">${statusHtml}${empresaHtml}</div>` + ultimosHtml;
+}
+
 /* ======================= INIT ======================= */
-irPara("dashboard", false, "Dashboard");
+irPara("dashboard", true, "Dashboard");
 </script>
 </body>
 </html>
