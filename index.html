@@ -848,6 +848,9 @@
         </select>
       </div>
       <div class="lote-grid" id="arquivoGrid"><div class="empty-state">Carregando…</div></div>
+
+      <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted); margin:28px 0 12px;">💰 Containers Pagos</div>
+      <div class="lote-grid" id="arqPagosGrid"><div class="empty-state">Carregando…</div></div>
     </div>
 
     <!-- ============ STATUS DOS CONTÊINERES (KANBAN) ============ -->
@@ -855,6 +858,7 @@
       <div class="toolbar">
         <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted);">🚢 Contêineres no mar — arraste o card ou use as setas pra mover</div>
         <div class="spacer"></div>
+        <div id="kbAlertaEtdEta"></div>
       </div>
       <div class="kanban-board" id="kanbanBoard">
         <div class="kanban-col" data-status="booking" ondragover="kbDragOver(event)" ondragleave="kbDragLeave(event)" ondrop="kbDrop(event,'booking')">
@@ -3542,7 +3546,7 @@ async function loadPackingList(fonte){
   setConn(true);
   PL_CONTAINERS[fonte] = contData || [];
 
-  const { data: prodData } = await db.from(TABLE_PRODUTOS).select("id,sku,nome_produto,marca,empresa").contains("empresa", [PL_EMPRESA[fonte]]).eq("ativo", true);
+  const { data: prodData } = await db.from(TABLE_PRODUTOS).select("id,sku,nome_produto,marca,empresa,nome_ingles,ncm").contains("empresa", [PL_EMPRESA[fonte]]).eq("ativo", true);
   PL_PRODUTOS[fonte] = prodData || [];
 
   const { data: aliasData } = await db.from("imp_sku_aliases").select("modelo_original,sku").eq("fonte", fonte);
@@ -3653,9 +3657,7 @@ function renderPackingList(fonte){
   grid.innerHTML = containers.map(c => {
     const itens = c.imp_container_itens || [];
     const totalRmb = itens.reduce((s, it) => s + (Number(it.valor_rmb) || 0), 0);
-    const totalCbm = itens.reduce((s, it) => s + (Number(it.cbm_total) || 0), 0);
     const pend = plContainerPendentes(c);
-    const urg = urgenciaInfo(c.eta);
     return `<div class="pl-container-card" onclick="abrirContainerDetalhe('${fonte}','${c.id}')">
       <div class="plc-head">
         <div class="plc-nome">${escapeHtml(c.nome)}</div>
@@ -3664,22 +3666,79 @@ function renderPackingList(fonte){
       <div class="plc-chips">
         <span class="meta-chip">📅 ETD ${fmtDate(c.etd)}</span>
         <span class="meta-chip">📅 ETA ${fmtDate(c.eta)}</span>
-        <span class="urg-chip ${urg.cls}">⏳ ${urg.label}</span>
       </div>
       <div class="plc-chips" style="margin-top:6px;">
         <span class="meta-chip">📦 ${itens.length} ${itens.length === 1 ? "item" : "itens"}</span>
-        <span class="meta-chip">📐 CBM ${fmtN(totalCbm, 2)}</span>
       </div>
       <div class="plc-foot" style="margin-top:10px;">
         <span class="mono plc-valor">¥ ${fmtN(totalRmb, 2)}</span>
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); abrirInfoBL('${fonte}','${c.id}')">📄 Info B/L</button>
       </div>
     </div>`;
   }).join("");
 }
 
+/* ---------- Info B/L — consolidação da packing list do contêiner ---------- */
+window.abrirInfoBL = function(fonte, containerId){
+  const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
+  if (!container) return;
+  const itens = container.imp_container_itens || [];
+  const totalCaixas = itens.reduce((s, it) => s + (Number(it.ctns) || 0), 0);
+  const totalPesoBruto = itens.reduce((s, it) => s + (Number(it.peso_bruto_total) || 0), 0);
+  const totalCbm = itens.reduce((s, it) => s + (Number(it.cbm_total) || 0), 0);
+
+  const prodPorSku = {};
+  (PL_PRODUTOS[fonte] || []).forEach(p => { if (p.sku) prodPorSku[(p.sku || "").trim().toUpperCase()] = p; });
+
+  const grupos = new Map(); // chave "nomeIngles||ncm4" -> {nomeIngles, ncm4}
+  let semDados = 0;
+  itens.forEach(it => {
+    const skuKey = (it.sku || "").trim().toUpperCase();
+    const prod = skuKey ? prodPorSku[skuKey] : null;
+    const nomeIngles = prod?.nome_ingles ? String(prod.nome_ingles).trim() : "";
+    const ncmFull = prod?.ncm ? String(prod.ncm).trim() : "";
+    const ncm4 = ncmFull ? ncmFull.replace(/\D/g, "").slice(0, 4) : "";
+    if (!it.sku || !prod || !nomeIngles || !ncm4){ semDados++; return; }
+    const chave = `${nomeIngles.toUpperCase()}||${ncm4}`;
+    if (!grupos.has(chave)) grupos.set(chave, { nomeIngles, ncm4 });
+  });
+  const listaGrupos = [...grupos.values()].sort((a, b) => a.nomeIngles.localeCompare(b.nomeIngles, "pt-BR"));
+
+  const linhasHtml = listaGrupos.length
+    ? listaGrupos.map(g => `<div style="padding:9px 0; border-bottom:1px solid var(--border); font-size:13.5px;"><span style="font-weight:700;">${escapeHtml(g.nomeIngles.toUpperCase())}</span>: <span class="mono" style="font-weight:700; color:var(--accent-dark);">${escapeHtml(g.ncm4)}</span></div>`).join("")
+    : `<div class="empty-state">Nenhum NCM consolidado ainda.</div>`;
+
+  abrirOverlayDinamico("infoBlOverlay", `
+    <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+      <h2 class="modal-title" style="margin:0;">📄 Info B/L — ${escapeHtml(container.nome)}</h2>
+      <button onclick="document.getElementById('infoBlOverlay').remove()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
+    </div>
+    <div style="padding:20px 24px; overflow:auto; flex:1;">
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:18px;">
+        <div style="background:var(--surface-alt); border-radius:10px; padding:12px; text-align:center;">
+          <div style="font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-faint); font-weight:700;">Qtde de Caixas</div>
+          <div class="mono" style="font-size:20px; font-weight:800; margin-top:4px;">${fmtN(totalCaixas, 0)}</div>
+        </div>
+        <div style="background:var(--surface-alt); border-radius:10px; padding:12px; text-align:center;">
+          <div style="font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-faint); font-weight:700;">Peso Bruto (kg)</div>
+          <div class="mono" style="font-size:20px; font-weight:800; margin-top:4px;">${fmtN(totalPesoBruto, 1)}</div>
+        </div>
+        <div style="background:var(--surface-alt); border-radius:10px; padding:12px; text-align:center;">
+          <div style="font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-faint); font-weight:700;">CBM</div>
+          <div class="mono" style="font-size:20px; font-weight:800; margin-top:4px;">${fmtN(totalCbm, 2)}</div>
+        </div>
+      </div>
+      <div style="font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-faint); margin-bottom:6px;">NCMs do contêiner</div>
+      ${linhasHtml}
+      ${semDados > 0 ? `<div style="margin-top:14px; font-size:12px; color:#b45309; font-weight:600;">⚠ ${semDados} ${semDados === 1 ? "item não entrou" : "itens não entraram"} na lista por falta de SKU vinculado, NCM ou nome em inglês cadastrado no produto.</div>` : ""}
+    </div>
+  `, 560);
+};
+
 function renderArquivo(){
   const grid = document.getElementById("arquivoGrid");
-  if (!grid) return;
+  const gridPagos = document.getElementById("arqPagosGrid");
+  if (!grid && !gridPagos) return;
   const filtroEmpresa = document.getElementById("arqFiltroEmpresa")?.value || "";
   const ordenar = document.getElementById("arqOrdenar")?.value || "chegada";
 
@@ -3688,15 +3747,16 @@ function renderArquivo(){
 
   const totalRmbOf = c => (c.imp_container_itens || []).reduce((s, it) => s + (Number(it.valor_rmb) || 0), 0);
   const valorOrdenacaoOf = c => (c.valor_container !== null && c.valor_container !== undefined) ? Number(c.valor_container) : totalRmbOf(c);
-  if (ordenar === "nome") arquivados.sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
-  else if (ordenar === "valor") arquivados.sort((a, b) => valorOrdenacaoOf(b) - valorOrdenacaoOf(a));
-  else arquivados.sort((a, b) => (b.chegou_em || "").localeCompare(a.chegou_em || ""));
+  const ordenarFn = (a, b) => {
+    if (ordenar === "nome") return (a.nome || "").localeCompare(b.nome || "", "pt-BR");
+    if (ordenar === "valor") return valorOrdenacaoOf(b) - valorOrdenacaoOf(a);
+    return (b.chegou_em || "").localeCompare(a.chegou_em || "");
+  };
 
-  if (!arquivados.length){
-    grid.innerHTML = `<div class="empty-state">${filtroEmpresa ? "Nenhum contêiner arquivado dessa empresa." : "Nenhum contêiner chegou ainda. Quando você marcar um como chegado, ele aparece aqui."}</div>`;
-    return;
-  }
-  grid.innerHTML = arquivados.map(c => {
+  const naoPagos = arquivados.filter(c => !c.cambio_fechado).sort(ordenarFn);
+  const pagos = arquivados.filter(c => c.cambio_fechado).sort(ordenarFn);
+
+  const cardHtml = (c, pago) => {
     const itens = c.imp_container_itens || [];
     const totalCbm = itens.reduce((s, it) => s + (Number(it.cbm_total) || 0), 0);
     const moeda = c.fonte === "mti" ? "R$" : "US$";
@@ -3704,6 +3764,17 @@ function renderArquivo(){
       ? `${moeda} ${fmtN(c.valor_container, 2)}`
       : `<span style="color:#d97706; font-size:14px; font-weight:700;">valor pendente</span>`;
     const falt = docsFaltando(c);
+    const cambioLinha = pago
+      ? `<div style="margin-top:10px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <span style="font-size:11.5px; font-weight:700; color:#166534;">💰 Câmbio fechado${c.doc_comprovante_cambio_url ? "" : " · <span style='color:#b45309;'>comprovante pendente</span>"}</span>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); toggleCambioFechado('${c.fonte}','${c.id}', false)">↩ Desmarcar</button>
+        </div>
+        <div style="margin-top:6px;">
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); abrirCambioComprovantePopup('${c.fonte}','${c.id}')">📎 ${c.doc_comprovante_cambio_url ? "Ver / substituir comprovante" : "Enviar comprovante"}</button>
+        </div>`
+      : `<label style="margin-top:10px; display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; cursor:pointer;" onclick="event.stopPropagation();">
+          <input type="checkbox" onclick="event.stopPropagation()" onchange="toggleCambioFechado('${c.fonte}','${c.id}', this.checked)"> Câmbio fechado
+        </label>`;
     return `<div class="arq-card" onclick="abrirContainerDetalhe('${c.fonte}','${c.id}')">
       <div class="arq-head">
         <div class="arq-nome">${escapeHtml(c.nome)}</div>
@@ -3714,16 +3785,97 @@ function renderArquivo(){
       <div class="arq-meta">📦 ${itens.length} ${itens.length === 1 ? "item" : "itens"} · 📐 CBM ${fmtN(totalCbm, 2)}</div>
       <div class="arq-valor">${valorHtml}</div>
       ${falt.length ? `<div class="arq-docs-pend">📄 documentos incompletos</div>` : `<div class="arq-docs-ok">📄 documentos ok</div>`}
+      ${cambioLinha}
     </div>`;
-  }).join("");
+  };
+
+  if (grid){
+    grid.innerHTML = naoPagos.length
+      ? naoPagos.map(c => cardHtml(c, false)).join("")
+      : `<div class="empty-state">${arquivados.length ? "Todos os contêineres arquivados já têm câmbio fechado." : (filtroEmpresa ? "Nenhum contêiner arquivado dessa empresa." : "Nenhum contêiner chegou ainda. Quando você marcar um como chegado, ele aparece aqui.")}</div>`;
+  }
+  if (gridPagos){
+    gridPagos.innerHTML = pagos.length
+      ? pagos.map(c => cardHtml(c, true)).join("")
+      : `<div class="empty-state">Nenhum contêiner com câmbio fechado ainda.</div>`;
+  }
 }
 
 async function loadArquivo(){
   const grid = document.getElementById("arquivoGrid");
+  const gridPagos = document.getElementById("arqPagosGrid");
   if (grid) grid.innerHTML = `<div class="empty-state">Carregando…</div>`;
+  if (gridPagos) gridPagos.innerHTML = `<div class="empty-state">Carregando…</div>`;
   await Promise.all([loadPackingList("logbox"), loadPackingList("mti")]);
   renderArquivo();
 }
+
+/* ---------- Câmbio fechado / Containers Pagos ---------- */
+window.toggleCambioFechado = async function(fonte, containerId, marcado){
+  const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
+  const { error } = await db.from("imp_containers").update({ cambio_fechado: marcado }).eq("id", containerId);
+  if (error){ toast("Erro ao atualizar câmbio.", "error"); return; }
+  if (container) container.cambio_fechado = marcado;
+  renderArquivo();
+  if (marcado){
+    toast("Câmbio marcado como fechado — contêiner movido para Containers Pagos.");
+    abrirCambioComprovantePopup(fonte, containerId);
+  } else {
+    toast("Câmbio desmarcado — contêiner voltou pra lista principal.");
+  }
+};
+window.abrirCambioComprovantePopup = function(fonte, containerId){
+  renderCambioPopupBody(fonte, containerId);
+};
+function renderCambioPopupBody(fonte, containerId){
+  const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
+  if (!container) return;
+  const url = container.doc_comprovante_cambio_url;
+  abrirOverlayDinamico("cambioPopupOverlay", `
+    <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <h2 class="modal-title" style="margin:0;">💰 Comprovante de câmbio — ${escapeHtml(container.nome)}</h2>
+      <button onclick="document.getElementById('cambioPopupOverlay').remove()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
+    </div>
+    <div style="padding:20px 24px;">
+      <div class="field">
+        <label>Comprovante do câmbio (PDF)</label>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          ${url ? `<a href="${url}" target="_blank" class="btn btn-ghost btn-sm">📄 Ver PDF</a><button class="btn-icon" title="Remover" onclick="cambioRemoverComprovante('${fonte}','${containerId}')">🗑</button>` : `<span style="color:var(--text-faint); font-size:12px;">Nenhum enviado</span>`}
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer; margin:0;">📎 ${url ? "Substituir" : "Enviar"} PDF<input type="file" accept="application/pdf" style="display:none;" onchange="cambioUploadComprovante(event,'${fonte}','${containerId}')"></label>
+        </div>
+      </div>
+      ${url ? `<div style="margin-top:10px; font-size:12px; color:#166534; font-weight:600;">✅ Comprovante enviado</div>` : `<div style="margin-top:10px; font-size:12px; color:#b45309; font-weight:600;">⚠ Você pode deixar o câmbio marcado como fechado mesmo sem enviar o comprovante agora — é só enviar depois aqui.</div>`}
+    </div>
+    <div style="padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="document.getElementById('cambioPopupOverlay').remove()">Fechar</button>
+    </div>
+  `, 480);
+}
+window.cambioUploadComprovante = async function(evt, fonte, containerId){
+  const file = evt.target.files[0];
+  if (!file) return;
+  toast("Enviando comprovante…");
+  const path = `${fonte}/${containerId}/comprovante-cambio-${Date.now()}-${file.name}`;
+  const { error: upErr } = await db.storage.from("container-docs").upload(path, file, { upsert: true, contentType: "application/pdf" });
+  if (upErr){ toast("Erro ao enviar comprovante: " + upErr.message, "error"); return; }
+  const { data: pub } = db.storage.from("container-docs").getPublicUrl(path);
+  const { error } = await db.from("imp_containers").update({ doc_comprovante_cambio_url: pub.publicUrl }).eq("id", containerId);
+  if (error){ toast("Erro ao salvar comprovante.", "error"); return; }
+  const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
+  if (container) container.doc_comprovante_cambio_url = pub.publicUrl;
+  toast("Comprovante enviado.");
+  renderCambioPopupBody(fonte, containerId);
+  renderArquivo();
+};
+window.cambioRemoverComprovante = async function(fonte, containerId){
+  const { error } = await db.from("imp_containers").update({ doc_comprovante_cambio_url: null }).eq("id", containerId);
+  if (error){ toast("Erro ao remover.", "error"); return; }
+  const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
+  if (container) container.doc_comprovante_cambio_url = null;
+  toast("Comprovante removido.");
+  renderCambioPopupBody(fonte, containerId);
+  renderArquivo();
+};
 
 /* ======================= STATUS DOS CONTÊINERES (KANBAN) ======================= */
 const KB_STATUSES = ["booking", "em_rota", "desembaraco"];
@@ -3738,6 +3890,15 @@ async function loadStatusContainers(){
 
 function renderKanban(){
   const ativos = [...PL_CONTAINERS.logbox, ...PL_CONTAINERS.mti].filter(c => !c.chegou_em);
+
+  const semEtdEta = ativos.filter(c => !c.etd || !c.eta);
+  const alertaEl = document.getElementById("kbAlertaEtdEta");
+  if (alertaEl){
+    alertaEl.innerHTML = semEtdEta.length
+      ? `<div class="pl-pend-badge" onclick="kbAbrirAlertaEtdEta()">⚠ ${semEtdEta.length} contêiner${semEtdEta.length > 1 ? "es" : ""} sem ETD ou ETA</div>`
+      : "";
+  }
+
   KB_STATUSES.forEach(status => {
     const lista = ativos.filter(c => (c.status_embarque || "em_rota") === status).sort((a, b) => {
       if (!a.eta && !b.eta) return 0;
@@ -3773,6 +3934,26 @@ function renderKanban(){
   });
 }
 
+window.kbAbrirAlertaEtdEta = function(){
+  const ativos = [...PL_CONTAINERS.logbox, ...PL_CONTAINERS.mti].filter(c => !c.chegou_em && (!c.etd || !c.eta));
+  const rows = ativos.map(c => {
+    const faltando = [!c.etd ? "ETD" : null, !c.eta ? "ETA" : null].filter(Boolean).join(" e ");
+    return `<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--border);">
+      <div style="min-width:0;">
+        <div style="font-weight:600; font-size:13.5px;">${escapeHtml(c.nome)}</div>
+        <div style="font-size:11.5px; color:var(--text-faint);">Faltando: ${faltando} · <span class="tag-emp ${c.fonte === "mti" ? "mti" : "logbox"}" style="font-size:9.5px;">${c.fonte.toUpperCase()}</span></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('kbAlertaEtdEtaOverlay').remove(); abrirKanbanDetalhe('${c.fonte}','${c.id}')">✏️ Editar</button>
+    </div>`;
+  }).join("") || `<div class="empty-state">Nenhuma pendência 🎉</div>`;
+  abrirOverlayDinamico("kbAlertaEtdEtaOverlay", `
+    <div style="padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+      <div style="font-size:15px; font-weight:800;">⚠ Contêineres sem ETD ou ETA</div>
+      <button onclick="document.getElementById('kbAlertaEtdEtaOverlay').remove()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
+    </div>
+    <div style="padding:6px 20px; overflow:auto; flex:1;">${rows}</div>
+  `, 620);
+};
 window.kbMover = async function(fonte, containerId, novoIdx){
   if (novoIdx < 0 || novoIdx >= KB_STATUSES.length) return;
   await kbAtualizarStatus(fonte, containerId, KB_STATUSES[novoIdx]);
