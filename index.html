@@ -392,7 +392,7 @@
   .arq-card .arq-docs-pend{ font-size:11px; color:#b45309; margin-top:8px; font-weight:700; }
 
   /* ======================= DASHBOARD ======================= */
-  .dash-kpis{ display:grid; grid-template-columns: repeat(4, 1fr); gap:14px; margin-bottom:20px; }
+  .dash-kpis{ display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:20px; }
   @media (max-width: 1100px){ .dash-kpis{ grid-template-columns: repeat(2, 1fr); } }
   .dash-kpi{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; box-shadow:var(--shadow); }
   .dash-kpi .dash-kpi-label{ font-size:11px; text-transform:uppercase; letter-spacing:.5px; font-weight:700; color:var(--text-faint); margin-bottom:6px; }
@@ -437,6 +437,10 @@
     <span class="label">Dashboard</span><span class="soon-dot"></span>
   </div>
 
+  <div class="nav-item top-level built" data-view="fabricas" data-label="Fábricas" onclick="irPara('fabricas', true, 'Fábricas')">
+    <span class="label">🏭 Fábricas</span><span class="soon-dot"></span>
+  </div>
+
   <div class="nav-group">
     <div class="nav-group-label">Planejamento</div>
     <div class="nav-item built" data-view="v-config" onclick="irPara('v-config', true, 'Configurações')"><span class="label">Configurações</span><span class="soon-dot"></span></div>
@@ -467,7 +471,7 @@
 
   <div class="nav-group">
     <div class="nav-group-label">Financeiro</div>
-    <div class="nav-item" data-view="ph-prevcustos" onclick="irPara('ph-prevcustos', false, 'Previsão dos Custos')"><span class="label">Previsão dos Custos</span><span class="soon-dot"></span></div>
+    <div class="nav-item built" data-view="ph-prevcustos" onclick="irPara('ph-prevcustos', true, 'Previsão dos Custos')"><span class="label">Previsão dos Custos</span><span class="soon-dot"></span></div>
     <div class="nav-item" data-view="ph-nfe" onclick="irPara('ph-nfe', false, 'Apoio NFe')"><span class="label">Apoio NFe</span><span class="soon-dot"></span></div>
     <div class="nav-item" data-view="ph-fechcontainer" onclick="irPara('ph-fechcontainer', false, 'Fechamento Container')"><span class="label">Fechamento Container</span><span class="soon-dot"></span></div>
     <div class="nav-item" data-view="ph-precificacaocontainer" onclick="irPara('ph-precificacaocontainer', false, 'Precificação Container')"><span class="label">Precificação Container</span><span class="soon-dot"></span></div>
@@ -498,6 +502,52 @@
     <!-- ============ DASHBOARD (placeholder de propósito, vem por último) ============ -->
     <div class="view" id="view-dashboard">
       <div id="dashboardContent"><div class="empty-state">Carregando painel…</div></div>
+    </div>
+
+    <!-- ============ FÁBRICAS ============ -->
+    <div class="view" id="view-fabricas">
+      <div class="toolbar">
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted);">🏭 Fábricas</div>
+        <div class="spacer"></div>
+        <select id="fabFiltroComprador" onchange="renderFabricas()"><option value="">Todos os compradores</option></select>
+        <select id="fabFiltroPagamento" onchange="renderFabricas()"><option value="">Todos os pagamentos</option></select>
+        <select id="fabOrdenar" onchange="renderFabricas()">
+          <option value="nome">Fábrica (A–Z)</option>
+          <option value="comprador">Comprador (A–Z)</option>
+          <option value="pagamento">Pagamento (A–Z)</option>
+        </select>
+        <button class="btn btn-primary" onclick="abrirNovaFabrica()">+ Nova Fábrica</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fábrica</th><th>Comprador</th><th>Pagamento</th><th class="num">Inicial %</th><th class="num">Finalização %</th><th class="num">30 Dias %</th><th class="num">60 Dias %</th><th></th></tr></thead>
+          <tbody id="fabTbody"><tr><td colspan="8" class="empty-state">Carregando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ============ PREVISÃO DOS CUSTOS (LOGBOX) ============ -->
+    <div class="view" id="view-ph-prevcustos">
+      <div id="prevCustosKpis" class="dash-kpis" style="margin-bottom:16px;"></div>
+      <div class="toolbar">
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted);">💵 Previsão dos Custos — LOGBOX</div>
+        <div class="spacer"></div>
+        <select id="pcFiltroPagos" onchange="renderPrevisaoCustos()">
+          <option value="todos">Todos</option>
+          <option value="nao_pagos">Apenas não pagos</option>
+          <option value="pagos">Apenas pagos</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Container</th><th>Status</th><th>Status Valor</th><th class="num">Valor USD</th><th>Data de Chegada ou Previsão</th>
+            <th class="num">Estim. Dólar</th><th class="num">% Prev. IMP+Desp.</th><th class="num">Prev. IMP+Desp. (R$)</th><th class="num">Real IMP+Desp. (R$)</th>
+            <th class="num">Prev. Câmbio (R$)</th><th class="num">Real Câmbio (R$)</th>
+          </tr></thead>
+          <tbody id="pcTbody"><tr><td colspan="11" class="empty-state">Carregando…</td></tr></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- ============ GENERIC PLACEHOLDER (módulos ainda não construídos) ============ -->
@@ -545,6 +595,13 @@
           <legend>🚚 Agentes de Carga</legend>
           <div class="tag-list" id="cfg_agentes_list"></div>
           <div class="tag-add-row"><input type="text" id="cfg_agente_novo" placeholder="Novo agente de carga..."><button class="btn btn-ghost btn-sm" onclick="cfgAddTag('agentes_carga')">+ Adicionar</button></div>
+        </fieldset>
+      </div>
+      <div class="table-wrap" style="padding:22px; overflow:visible; margin-top:16px;">
+        <fieldset style="margin:0;">
+          <legend>💳 Formas de Pagamento</legend>
+          <div class="tag-list" id="cfg_pagamentos_list"></div>
+          <div class="tag-add-row"><input type="text" id="cfg_pagamento_novo" placeholder="Nova forma de pagamento..."><button class="btn btn-ghost btn-sm" onclick="cfgAddTag('formas_pagamento')">+ Adicionar</button></div>
         </fieldset>
       </div>
     </div>
@@ -788,6 +845,9 @@
         <button class="btn btn-ghost" onclick="abrirNovoContainer('logbox')">+ Novo Contêiner</button>
       </div>
       <div class="lote-grid" id="plContainersGrid_logbox"><div class="empty-state">Carregando…</div></div>
+
+      <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted); margin:28px 0 12px;">✅ Contêineres com Invoice confirmada</div>
+      <div class="lote-grid" id="plContainersGridInvoice_logbox"><div class="empty-state">Carregando…</div></div>
     </div>
 
     <!-- ============ PACKING LIST — MTI ============ -->
@@ -1364,6 +1424,8 @@ function irPara(viewId, built, label){
     if (viewId === "ph-planejamento-mti") loadPackingList("mti");
     if (viewId === "ph-status") loadStatusContainers();
     if (viewId === "ph-arquivo") loadArquivo();
+    if (viewId === "fabricas") loadFabricas();
+    if (viewId === "ph-prevcustos") loadPrevisaoCustos();
   } else {
     if (viewId === "v-precificacoes") { document.getElementById("precif-lista").style.display=""; document.getElementById("precif-editor").style.display="none"; }
     if (viewId === "v-pedidos") { document.getElementById("pedidos-lista").style.display=""; document.getElementById("pedido-detalhe").style.display="none"; renderPedStatCards(); renderPedidos(); }
@@ -1374,6 +1436,8 @@ function irPara(viewId, built, label){
     if (viewId === "ph-planejamento-mti") loadPackingList("mti");
     if (viewId === "ph-status") loadStatusContainers();
     if (viewId === "ph-arquivo") loadArquivo();
+    if (viewId === "fabricas") loadFabricas();
+    if (viewId === "ph-prevcustos") loadPrevisaoCustos();
   }
 }
 
@@ -1411,6 +1475,7 @@ async function loadConfig(){
   renderTagList("cfg_marcas_list", CONFIG.marcas || [], "marcas");
   renderTagList("cfg_responsaveis_list", CONFIG.responsaveis || [], "responsaveis");
   renderTagList("cfg_agentes_list", CONFIG.agentes_carga || [], "agentes_carga");
+  renderTagList("cfg_pagamentos_list", CONFIG.formas_pagamento || [], "formas_pagamento");
   renderHistoricoCotacoes();
 }
 
@@ -1442,7 +1507,8 @@ window.cfgRemoverHistorico = async function(i){
 const CFG_TAG_META = {
   marcas: { listId: "cfg_marcas_list", inputId: "cfg_marca_nova", singular: "marca", cascade: true },
   responsaveis: { listId: "cfg_responsaveis_list", inputId: "cfg_responsavel_novo", singular: "responsável", cascade: true },
-  agentes_carga: { listId: "cfg_agentes_list", inputId: "cfg_agente_novo", singular: "agente de carga", cascade: false }
+  agentes_carga: { listId: "cfg_agentes_list", inputId: "cfg_agente_novo", singular: "agente de carga", cascade: false },
+  formas_pagamento: { listId: "cfg_pagamentos_list", inputId: "cfg_pagamento_novo", singular: "forma de pagamento", cascade: false }
 };
 function renderTagList(containerId, arr, campo){
   const el = document.getElementById(containerId);
@@ -1641,6 +1707,257 @@ window.confirmarExcluirNCM = function(id, ncm){
     toast("NCM excluído.");
     loadNCMs();
   });
+};
+
+/* ============================================================ */
+/* ======================= FÁBRICAS ============================= */
+/* ============================================================ */
+let FABRICAS = [];
+
+function fabPopularFiltros(){
+  const compradores = (CONFIG?.responsaveis || []).slice().sort((a,b) => a.localeCompare(b, "pt-BR"));
+  const pagamentos = (CONFIG?.formas_pagamento || []).slice().sort((a,b) => a.localeCompare(b, "pt-BR"));
+  const selComprador = document.getElementById("fabFiltroComprador");
+  const selPagamento = document.getElementById("fabFiltroPagamento");
+  if (selComprador){
+    const atual = selComprador.value;
+    selComprador.innerHTML = `<option value="">Todos os compradores</option>` + compradores.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+    selComprador.value = atual;
+  }
+  if (selPagamento){
+    const atual = selPagamento.value;
+    selPagamento.innerHTML = `<option value="">Todos os pagamentos</option>` + pagamentos.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
+    selPagamento.value = atual;
+  }
+}
+async function loadFabricas(){
+  const tbody = document.getElementById("fabTbody");
+  if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="empty-state">Carregando…</td></tr>`;
+  if (!CONFIG){ const { data } = await db.from("imp_config").select("*").limit(1).maybeSingle(); CONFIG = data; }
+  fabPopularFiltros();
+  const { data, error } = await db.from("imp_fabricas").select("*").order("ordem").order("criado_em");
+  if (error){ toast("Erro ao carregar fábricas.", "error"); return; }
+  FABRICAS = data || [];
+  renderFabricas();
+}
+function renderFabricas(){
+  const tbody = document.getElementById("fabTbody");
+  if (!tbody) return;
+  const filtroComprador = document.getElementById("fabFiltroComprador")?.value || "";
+  const filtroPagamento = document.getElementById("fabFiltroPagamento")?.value || "";
+  const ordenar = document.getElementById("fabOrdenar")?.value || "nome";
+  let lista = FABRICAS.slice();
+  if (filtroComprador) lista = lista.filter(f => f.comprador === filtroComprador);
+  if (filtroPagamento) lista = lista.filter(f => f.pagamento === filtroPagamento);
+  if (ordenar === "comprador") lista.sort((a,b) => (a.comprador||"").localeCompare(b.comprador||"", "pt-BR"));
+  else if (ordenar === "pagamento") lista.sort((a,b) => (a.pagamento||"").localeCompare(b.pagamento||"", "pt-BR"));
+  else lista.sort((a,b) => (a.nome||"").localeCompare(b.nome||"", "pt-BR"));
+  if (!lista.length){ tbody.innerHTML = `<tr><td colspan="8" class="empty-state">${FABRICAS.length ? "Nenhuma fábrica encontrada com esse filtro." : "Nenhuma fábrica cadastrada ainda."}</td></tr>`; return; }
+  const pct = v => (v === null || v === undefined) ? "—" : `${fmtN(v, 1)}%`;
+  tbody.innerHTML = lista.map(f => `
+    <tr>
+      <td>${escapeHtml(f.nome)}</td>
+      <td>${f.comprador ? escapeHtml(f.comprador) : "—"}</td>
+      <td>${f.pagamento ? escapeHtml(f.pagamento) : "—"}</td>
+      <td class="num mono">${pct(f.inicial)}</td>
+      <td class="num mono">${pct(f.finalizacao)}</td>
+      <td class="num mono">${pct(f.dias_30)}</td>
+      <td class="num mono">${pct(f.dias_60)}</td>
+      <td class="actions-cell">
+        <button class="btn-icon" title="Editar" onclick="abrirEditarFabrica('${f.id}')">✎</button>
+        <button class="btn-icon" title="Excluir" onclick="confirmarExcluirFabrica('${f.id}','${escapeHtml(f.nome).replace(/'/g,"&apos;")}')">🗑</button>
+      </td>
+    </tr>
+  `).join("");
+}
+let editingFabricaId = null;
+function fabricaPopupHtml(f){
+  const compradores = (CONFIG?.responsaveis || []);
+  const pagamentos = (CONFIG?.formas_pagamento || []);
+  return `
+    <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <h2 class="modal-title" style="margin:0;">${f ? "Editar Fábrica" : "Nova Fábrica"}</h2>
+      <button onclick="document.getElementById('fabricaPopupOverlay').remove()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
+    </div>
+    <div style="padding:20px 24px;">
+      <div class="field" style="margin-bottom:14px;"><label>Fábrica</label><input type="text" id="fab_nome" value="${f ? escapeHtml(f.nome) : ""}" placeholder="Nome da fábrica"></div>
+      <div class="field-error" id="err_fab_nome"></div>
+      <div class="field-grid cols-2" style="margin-bottom:14px;">
+        <div class="field"><label>Comprador</label><select id="fab_comprador"><option value="">—</option>${compradores.map(c => `<option value="${escapeHtml(c)}" ${f && f.comprador === c ? "selected" : ""}>${escapeHtml(c)}</option>`).join("")}</select></div>
+        <div class="field"><label>Pagamento</label><select id="fab_pagamento"><option value="">—</option>${pagamentos.map(p => `<option value="${escapeHtml(p)}" ${f && f.pagamento === p ? "selected" : ""}>${escapeHtml(p)}</option>`).join("")}</select></div>
+      </div>
+      <div class="field-grid cols-4">
+        <div class="field"><label>Inicial %</label><input type="text" inputmode="decimal" id="fab_inicial" class="mono-field" value="${f?.inicial ?? ""}" placeholder="0,0"></div>
+        <div class="field"><label>Finalização %</label><input type="text" inputmode="decimal" id="fab_finalizacao" class="mono-field" value="${f?.finalizacao ?? ""}" placeholder="0,0"></div>
+        <div class="field"><label>30 Dias %</label><input type="text" inputmode="decimal" id="fab_dias30" class="mono-field" value="${f?.dias_30 ?? ""}" placeholder="0,0"></div>
+        <div class="field"><label>60 Dias %</label><input type="text" inputmode="decimal" id="fab_dias60" class="mono-field" value="${f?.dias_60 ?? ""}" placeholder="0,0"></div>
+      </div>
+    </div>
+    <div style="padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn btn-ghost" onclick="document.getElementById('fabricaPopupOverlay').remove()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarFabrica()">Salvar</button>
+    </div>`;
+}
+window.abrirNovaFabrica = function(){
+  editingFabricaId = null;
+  abrirOverlayDinamico("fabricaPopupOverlay", fabricaPopupHtml(null), 560);
+  setTimeout(() => document.getElementById("fab_nome")?.focus(), 50);
+};
+window.abrirEditarFabrica = function(id){
+  const f = FABRICAS.find(x => String(x.id) === String(id));
+  if (!f) return;
+  editingFabricaId = id;
+  abrirOverlayDinamico("fabricaPopupOverlay", fabricaPopupHtml(f), 560);
+};
+window.salvarFabrica = async function(){
+  const nome = document.getElementById("fab_nome").value.trim();
+  if (!nome){ document.getElementById("err_fab_nome").textContent = "Nome é obrigatório."; return; }
+  const payload = {
+    nome,
+    comprador: document.getElementById("fab_comprador").value || null,
+    pagamento: document.getElementById("fab_pagamento").value || null,
+    inicial: parseNum(document.getElementById("fab_inicial").value),
+    finalizacao: parseNum(document.getElementById("fab_finalizacao").value),
+    dias_30: parseNum(document.getElementById("fab_dias30").value),
+    dias_60: parseNum(document.getElementById("fab_dias60").value),
+    atualizado_em: new Date().toISOString()
+  };
+  let error;
+  if (editingFabricaId){ ({ error } = await db.from("imp_fabricas").update(payload).eq("id", editingFabricaId)); }
+  else { ({ error } = await db.from("imp_fabricas").insert(payload)); }
+  if (error){ toast("Erro ao salvar fábrica.", "error"); return; }
+  toast("Fábrica salva.");
+  document.getElementById("fabricaPopupOverlay")?.remove();
+  await loadFabricas();
+};
+window.confirmarExcluirFabrica = function(id, nome){
+  pedirConfirmacao("Excluir Fábrica", `Excluir "${nome}"?`, "Essa ação não pode ser desfeita.", async () => {
+    const { error } = await db.from("imp_fabricas").delete().eq("id", id);
+    if (error){ toast("Erro ao excluir fábrica.", "error"); return; }
+    toast("Fábrica excluída.");
+    await loadFabricas();
+  });
+};
+
+/* ============================================================ */
+/* ======================= PREVISÃO DOS CUSTOS (LOGBOX) ========== */
+/* ============================================================ */
+let PC_CONTAINERS = [];
+
+async function loadPrevisaoCustos(){
+  const tbody = document.getElementById("pcTbody");
+  if (tbody) tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Carregando…</td></tr>`;
+  const { data, error } = await db.from("imp_containers").select("*").eq("fonte", "logbox");
+  if (error){ toast("Erro ao carregar previsão de custos.", "error"); return; }
+  PC_CONTAINERS = data || [];
+  renderPrevisaoCustos();
+}
+function pcStatusLabel(c){
+  if (c.chegou_em) return "Chegou";
+  return KB_LABELS[c.status_embarque || "em_rota"] || "Em Rota";
+}
+function pcStatusValor(c){
+  return c.invoice_confirmada ? "Valor Invoice" : "Prévia";
+}
+function pcPrevisaoCambio(c){
+  if (c.valor_container === null || c.valor_container === undefined || c.estimativa_dolar === null || c.estimativa_dolar === undefined) return null;
+  return Number(c.valor_container) * Number(c.estimativa_dolar);
+}
+function pcPrevisaoImpDespesas(c){
+  const cambio = pcPrevisaoCambio(c);
+  if (cambio === null || c.perc_imp_despesas === null || c.perc_imp_despesas === undefined) return null;
+  return cambio * (Number(c.perc_imp_despesas) / 100);
+}
+function renderPrevisaoCustos(){
+  const tbody = document.getElementById("pcTbody");
+  const kpisEl = document.getElementById("prevCustosKpis");
+  if (!tbody) return;
+  const filtro = document.getElementById("pcFiltroPagos")?.value || "todos";
+  let lista = PC_CONTAINERS.slice();
+  if (filtro === "pagos") lista = lista.filter(c => c.cambio_fechado);
+  else if (filtro === "nao_pagos") lista = lista.filter(c => !c.cambio_fechado);
+  lista.sort((a, b) => {
+    const da = a.chegou_em || a.eta_galpao_estimado || "";
+    const dbb = b.chegou_em || b.eta_galpao_estimado || "";
+    return dbb.localeCompare(da);
+  });
+
+  if (!lista.length){
+    tbody.innerHTML = `<tr><td colspan="11" class="empty-state">${PC_CONTAINERS.length ? "Nenhum contêiner com esse filtro." : "Nenhum contêiner LOGBOX cadastrado ainda."}</td></tr>`;
+  } else {
+    tbody.innerHTML = lista.map(c => {
+      const cambio = pcPrevisaoCambio(c);
+      const impDesp = pcPrevisaoImpDespesas(c);
+      const dataChegadaHtml = c.chegou_em
+        ? fmtDate(String(c.chegou_em).slice(0, 10))
+        : (c.eta_galpao_estimado ? `<span style="color:var(--text-faint);">${fmtDate(c.eta_galpao_estimado)} (estim.)</span>` : "—");
+      return `<tr>
+        <td>${escapeHtml(c.nome)}</td>
+        <td>${pcStatusLabel(c)}</td>
+        <td>${pcStatusValor(c)}</td>
+        <td class="num mono">${c.valor_container !== null && c.valor_container !== undefined ? "US$ " + fmtN(c.valor_container, 2) : "—"}</td>
+        <td>${dataChegadaHtml}</td>
+        <td class="num"><input type="text" inputmode="decimal" class="mono-field" style="width:70px; text-align:right;" value="${c.estimativa_dolar ?? ""}" onchange="pcSalvarCampo('${c.id}','estimativa_dolar', this.value)"></td>
+        <td class="num"><input type="text" inputmode="decimal" class="mono-field" style="width:60px; text-align:right;" value="${c.perc_imp_despesas ?? ""}" onchange="pcSalvarCampo('${c.id}','perc_imp_despesas', this.value)"></td>
+        <td class="num mono">${impDesp !== null ? fmtN(impDesp, 2) : "—"}</td>
+        <td class="num"><input type="text" inputmode="decimal" class="mono-field" style="width:90px; text-align:right;" value="${c.real_imp_despesas ?? ""}" onchange="pcSalvarCampo('${c.id}','real_imp_despesas', this.value)"></td>
+        <td class="num mono">${cambio !== null ? fmtN(cambio, 2) : "—"}</td>
+        <td class="num"><input type="text" inputmode="decimal" class="mono-field" style="width:90px; text-align:right;" value="${c.real_cambio ?? ""}" onchange="pcSalvarCampo('${c.id}','real_cambio', this.value)"></td>
+      </tr>`;
+    }).join("");
+  }
+
+  const naoPagos = PC_CONTAINERS.filter(c => !c.cambio_fechado);
+  const pagos = PC_CONTAINERS.filter(c => c.cambio_fechado);
+  const somaImpDespPrevisto = naoPagos.reduce((s, c) => s + (pcPrevisaoImpDespesas(c) || 0), 0);
+  const somaCambioPrevisto = naoPagos.reduce((s, c) => s + (pcPrevisaoCambio(c) || 0), 0);
+  const somaImpDespReal = pagos.reduce((s, c) => s + (Number(c.real_imp_despesas) || 0), 0);
+  const somaCambioReal = pagos.reduce((s, c) => s + (Number(c.real_cambio) || 0), 0);
+  const naoPagosChegados = naoPagos.filter(c => c.chegou_em).sort((a, b) => String(a.chegou_em).localeCompare(String(b.chegou_em)));
+  const proximo = naoPagosChegados[0] || null;
+
+  if (kpisEl){
+    kpisEl.innerHTML = `
+      <div class="dash-kpi">
+        <div class="dash-kpi-label">📋 Prévia IMP+Despesas em Aberto</div>
+        <div class="dash-kpi-value">R$ ${fmtN(somaImpDespPrevisto, 0)}</div>
+        <div class="dash-kpi-sub">${naoPagos.length} contêiner(es) não pagos</div>
+      </div>
+      <div class="dash-kpi">
+        <div class="dash-kpi-label">💱 Prévia Câmbio em Aberto</div>
+        <div class="dash-kpi-value">R$ ${fmtN(somaCambioPrevisto, 0)}</div>
+        <div class="dash-kpi-sub">${naoPagos.length} contêiner(es) não pagos</div>
+      </div>
+      <div class="dash-kpi">
+        <div class="dash-kpi-label">✅ IMP+Despesas Já Pagos</div>
+        <div class="dash-kpi-value">R$ ${fmtN(somaImpDespReal, 0)}</div>
+        <div class="dash-kpi-sub">${pagos.length} contêiner(es) pagos</div>
+      </div>
+      <div class="dash-kpi">
+        <div class="dash-kpi-label">✅ Câmbio Já Pago</div>
+        <div class="dash-kpi-value">R$ ${fmtN(somaCambioReal, 0)}</div>
+        <div class="dash-kpi-sub">${pagos.length} contêiner(es) pagos</div>
+      </div>
+      <div class="dash-kpi">
+        <div class="dash-kpi-label">💰 Contêineres Pagos</div>
+        <div class="dash-kpi-value">${pagos.length}</div>
+        <div class="dash-kpi-sub">de ${PC_CONTAINERS.length} no total</div>
+      </div>
+      <div class="dash-kpi">
+        <div class="dash-kpi-label">⏭ Próximo Contêiner a Pagar</div>
+        <div class="dash-kpi-value" style="font-size:19px;">${proximo ? escapeHtml(proximo.nome) : "—"}</div>
+        <div class="dash-kpi-sub">${proximo ? "chegou em " + fmtDate(String(proximo.chegou_em).slice(0, 10)) : "nenhum pendente"}</div>
+      </div>
+    `;
+  }
+}
+window.pcSalvarCampo = async function(containerId, campo, valorStr){
+  const valor = parseNum(valorStr);
+  const { error } = await db.from("imp_containers").update({ [campo]: valor }).eq("id", containerId);
+  if (error){ toast("Erro ao salvar.", "error"); return; }
+  const c = PC_CONTAINERS.find(x => String(x.id) === String(containerId));
+  if (c) c[campo] = valor;
+  renderPrevisaoCustos();
 };
 
 /* ============================================================ */
@@ -3595,6 +3912,23 @@ function sanitizeFileName(name){
   const extLimpa = ext.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "pdf";
   return `${baseLimpa || "arquivo"}.${extLimpa}`;
 }
+// soma dias úteis (pula sáb/dom, sem calendário de feriado) a uma data "YYYY-MM-DD"
+function addBusinessDays(dateStr, dias){
+  if (!dateStr) return null;
+  let d = new Date(dateStr + "T00:00:00");
+  let restantes = dias;
+  while (restantes > 0){
+    d.setDate(d.getDate() + 1);
+    const diaSemana = d.getDay(); // 0=domingo, 6=sábado
+    if (diaSemana !== 0 && diaSemana !== 6) restantes--;
+  }
+  return d.toISOString().slice(0, 10);
+}
+// estimativa de chegada no galpão: ETA + dias úteis por fonte (LOGBOX 4, MTI 7)
+function calcEtaGalpaoEstimado(etaStr, fonte){
+  if (!etaStr) return null;
+  return addBusinessDays(etaStr, fonte === "mti" ? 7 : 4);
+}
 // urgência por ETA: vermelho ≤7 dias, amarelo 8–15, verde 16+ — usado nos cards de contêiner
 function urgenciaInfo(etaStr){
   if (!etaStr) return { cls: "urg-neutro", label: "sem ETA" };
@@ -3657,6 +3991,7 @@ function renderPackingList(fonte){
 
   // ---- grid de contêineres importados e ainda não chegados, ordenado por ETA (mais próximo primeiro) ----
   const grid = document.getElementById(`plContainersGrid_${fonte}`);
+  const gridInvoice = document.getElementById(`plContainersGridInvoice_${fonte}`);
   if (!grid) return;
   const containers = ativos.slice().sort((a, b) => {
     if (!a.eta && !b.eta) return 0;
@@ -3664,14 +3999,18 @@ function renderPackingList(fonte){
     if (!b.eta) return -1;
     return a.eta.localeCompare(b.eta);
   });
-  if (!containers.length){
-    grid.innerHTML = `<div class="empty-state">Nenhum contêiner ativo. Importe em Planejamento ${PL_EMPRESA[fonte]} ou crie um manualmente.</div>`;
-    return;
-  }
-  grid.innerHTML = containers.map(c => {
+
+  const cardHtml = (c) => {
     const itens = c.imp_container_itens || [];
     const totalRmb = itens.reduce((s, it) => s + (Number(it.valor_rmb) || 0), 0);
     const pend = plContainerPendentes(c);
+    const invoiceLinha = fonte === "logbox"
+      ? (c.invoice_confirmada
+          ? `<div style="margin-top:10px; font-size:11.5px; font-weight:700; color:#166534;">✅ Invoice confirmada</div>`
+          : `<label style="margin-top:10px; display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; cursor:pointer;" onclick="event.stopPropagation();">
+              <input type="checkbox" onclick="event.stopPropagation()" onchange="plToggleInvoiceConfirmada('${fonte}','${c.id}', this.checked)"> Já tenho a Invoice
+            </label>`)
+      : "";
     return `<div class="pl-container-card" onclick="abrirContainerDetalhe('${fonte}','${c.id}')">
       <div class="plc-head">
         <div class="plc-nome">${escapeHtml(c.nome)}</div>
@@ -3683,14 +4022,94 @@ function renderPackingList(fonte){
       </div>
       <div class="plc-chips" style="margin-top:6px;">
         <span class="meta-chip">📦 ${itens.length} ${itens.length === 1 ? "item" : "itens"}</span>
+        <span class="meta-chip" id="estGalpaoWrap_pl_${c.id}">🏭 Estim. galpão: ${fmtDate(c.eta_galpao_estimado)}<span style="cursor:pointer; margin-left:4px;" title="Editar estimativa" onclick="event.stopPropagation(); estimativaGalpaoEditar('pl','${fonte}','${c.id}')">✏️</span></span>
       </div>
       <div class="plc-foot" style="margin-top:10px;">
         <span class="mono plc-valor">¥ ${fmtN(totalRmb, 2)}</span>
         <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); abrirInfoBL('${fonte}','${c.id}')">📄 Info B/L</button>
       </div>
+      ${invoiceLinha}
     </div>`;
-  }).join("");
+  };
+
+  if (fonte === "logbox" && gridInvoice){
+    const previa = containers.filter(c => !c.invoice_confirmada);
+    const confirmados = containers.filter(c => c.invoice_confirmada);
+    grid.innerHTML = previa.length
+      ? previa.map(cardHtml).join("")
+      : `<div class="empty-state">${containers.length ? "Todos os contêineres já têm Invoice confirmada." : `Nenhum contêiner ativo. Importe em Planejamento ${PL_EMPRESA[fonte]} ou crie um manualmente.`}</div>`;
+    gridInvoice.innerHTML = confirmados.length
+      ? confirmados.map(cardHtml).join("")
+      : `<div class="empty-state">Nenhum contêiner com Invoice confirmada ainda.</div>`;
+    return;
+  }
+
+  if (!containers.length){
+    grid.innerHTML = `<div class="empty-state">Nenhum contêiner ativo. Importe em Planejamento ${PL_EMPRESA[fonte]} ou crie um manualmente.</div>`;
+    return;
+  }
+  grid.innerHTML = containers.map(cardHtml).join("");
 }
+window.plToggleInvoiceConfirmada = async function(fonte, containerId, marcado){
+  if (!marcado){
+    const { error } = await db.from("imp_containers").update({ invoice_confirmada: false }).eq("id", containerId);
+    if (error){ toast("Erro ao atualizar.", "error"); return; }
+    const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
+    if (container) container.invoice_confirmada = false;
+    renderPackingList(fonte);
+    return;
+  }
+  plAbrirInvoicePopup(fonte, containerId);
+};
+window.plAbrirInvoicePopup = function(fonte, containerId){
+  const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
+  if (!container) return;
+  abrirOverlayDinamico("plInvoicePopupOverlay", `
+    <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <h2 class="modal-title" style="margin:0;">✅ Invoice confirmada — ${escapeHtml(container.nome)}</h2>
+      <button onclick="document.getElementById('plInvoicePopupOverlay').remove(); renderPackingList('${fonte}');" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
+    </div>
+    <div style="padding:20px 24px;">
+      <div class="field"><label>Valor Invoice real (US$)</label><input type="text" inputmode="decimal" id="pl_invoice_valor" class="mono-field" value="${container.valor_container ?? ""}" placeholder="0,00"></div>
+      <div class="field-error" id="err_pl_invoice_valor"></div>
+    </div>
+    <div style="padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn btn-ghost" onclick="document.getElementById('plInvoicePopupOverlay').remove(); renderPackingList('${fonte}');">Cancelar</button>
+      <button class="btn btn-primary" onclick="plConfirmarInvoice('${fonte}','${containerId}')">Confirmar</button>
+    </div>
+  `, 440);
+  setTimeout(() => document.getElementById("pl_invoice_valor")?.focus(), 50);
+};
+window.plConfirmarInvoice = async function(fonte, containerId){
+  const valor = parseNum(document.getElementById("pl_invoice_valor").value);
+  if (valor === null || valor === undefined){ document.getElementById("err_pl_invoice_valor").textContent = "Informe o valor."; return; }
+  const { error } = await db.from("imp_containers").update({ valor_container: valor, invoice_confirmada: true }).eq("id", containerId);
+  if (error){ toast("Erro ao confirmar invoice.", "error"); return; }
+  const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
+  if (container){ container.valor_container = valor; container.invoice_confirmada = true; }
+  toast("Invoice confirmada — contêiner movido pra seção de Invoice confirmada.");
+  document.getElementById("plInvoicePopupOverlay")?.remove();
+  renderPackingList(fonte);
+};
+window.estimativaGalpaoEditar = function(origem, fonte, containerId){
+  const wrap = document.getElementById(`estGalpaoWrap_${origem}_${containerId}`);
+  const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
+  if (!wrap || !container) return;
+  const val = container.eta_galpao_estimado || "";
+  wrap.innerHTML = `<input type="date" class="mono-field" style="font-size:12px; padding:2px 5px; width:130px;" value="${val}" onclick="event.stopPropagation()" onchange="estimativaGalpaoSalvar(event,'${fonte}','${containerId}')">`;
+  wrap.querySelector("input")?.focus();
+};
+window.estimativaGalpaoSalvar = async function(evt, fonte, containerId){
+  evt.stopPropagation();
+  const novaData = evt.target.value || null;
+  const { error } = await db.from("imp_containers").update({ eta_galpao_estimado: novaData, eta_galpao_manual: true }).eq("id", containerId);
+  if (error){ toast("Erro ao salvar estimativa.", "error"); return; }
+  const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
+  if (container){ container.eta_galpao_estimado = novaData; container.eta_galpao_manual = true; }
+  toast("Estimativa de chegada atualizada.");
+  if (typeof renderPackingList === "function") renderPackingList(fonte);
+  if (typeof renderKanban === "function") renderKanban();
+};
 
 /* ---------- Info B/L — consolidação da packing list do contêiner ---------- */
 window.abrirInfoBL = function(fonte, containerId){
@@ -3779,9 +4198,8 @@ function renderArquivo(){
       : `<span style="color:#d97706; font-size:14px; font-weight:700;">valor pendente</span>`;
     const falt = docsFaltando(c);
     const cambioLinha = pago
-      ? `<div style="margin-top:10px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+      ? `<div style="margin-top:10px;">
           <span style="font-size:11.5px; font-weight:700; color:#166534;">💰 Câmbio fechado${c.doc_comprovante_cambio_url ? "" : " · <span style='color:#b45309;'>comprovante pendente</span>"}</span>
-          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); toggleCambioFechado('${c.fonte}','${c.id}', false)">↩ Desmarcar</button>
         </div>
         <div style="margin-top:6px;">
           <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); abrirCambioComprovantePopup('${c.fonte}','${c.id}')">📎 ${c.doc_comprovante_cambio_url ? "Ver / substituir comprovante" : "Enviar comprovante"}</button>
@@ -3795,7 +4213,10 @@ function renderArquivo(){
         <span class="tag-emp ${c.fonte === "mti" ? "mti" : "logbox"}">${c.fonte.toUpperCase()}</span>
       </div>
       <div class="arq-data-label">📅 Chegou em</div>
-      <div class="arq-data">${new Date(c.chegou_em).toLocaleDateString("pt-BR")}</div>
+      <div class="arq-data" id="arqDataWrap_${c.id}" style="display:flex; align-items:center; gap:6px;">
+        <span>${fmtDate(c.chegou_em ? String(c.chegou_em).slice(0,10) : null)}</span>
+        <button class="btn-icon" style="width:22px; height:22px; font-size:12px;" title="Editar data" onclick="event.stopPropagation(); arqEditarDataChegada('${c.fonte}','${c.id}')">✏️</button>
+      </div>
       <div class="arq-meta">📦 ${itens.length} ${itens.length === 1 ? "item" : "itens"} · 📐 CBM ${fmtN(totalCbm, 2)}</div>
       <div class="arq-valor">${valorHtml}</div>
       ${falt.length ? `<div class="arq-docs-pend">📄 documentos incompletos</div>` : `<div class="arq-docs-ok">📄 documentos ok</div>`}
@@ -3824,6 +4245,27 @@ async function loadArquivo(){
   renderArquivo();
 }
 
+/* ---------- Editar data de recebimento direto no card do Arquivo ---------- */
+window.arqEditarDataChegada = function(fonte, containerId){
+  const wrap = document.getElementById(`arqDataWrap_${containerId}`);
+  const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
+  if (!wrap || !container) return;
+  const val = container.chegou_em ? String(container.chegou_em).slice(0, 10) : "";
+  wrap.innerHTML = `<input type="date" class="mono-field" style="font-size:13px; padding:3px 6px; width:140px;" value="${val}" onclick="event.stopPropagation()" onchange="arqSalvarDataChegada(event,'${fonte}','${containerId}')">`;
+  wrap.querySelector("input")?.focus();
+};
+window.arqSalvarDataChegada = async function(evt, fonte, containerId){
+  evt.stopPropagation();
+  const novaData = evt.target.value;
+  if (!novaData) return;
+  const { error } = await db.from("imp_containers").update({ chegou_em: novaData }).eq("id", containerId);
+  if (error){ toast("Erro ao salvar data.", "error"); return; }
+  const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
+  if (container) container.chegou_em = novaData;
+  toast("Data de chegada atualizada.");
+  renderArquivo();
+};
+
 /* ---------- Câmbio fechado / Containers Pagos ---------- */
 window.toggleCambioFechado = async function(fonte, containerId, marcado){
   const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
@@ -3837,6 +4279,10 @@ window.toggleCambioFechado = async function(fonte, containerId, marcado){
   } else {
     toast("Câmbio desmarcado — contêiner voltou pra lista principal.");
   }
+};
+window.detalheDesmarcarCambio = async function(fonte, containerId){
+  await toggleCambioFechado(fonte, containerId, false);
+  refrescarDetalheSeAberto();
 };
 window.abrirCambioComprovantePopup = function(fonte, containerId){
   renderCambioPopupBody(fonte, containerId);
@@ -3934,6 +4380,9 @@ function renderKanban(){
         <div class="kc-chips">
           <span class="meta-chip">📅 ETA ${fmtDate(c.eta)}</span>
           <span class="urg-chip ${urg.cls}">⏳ ${urg.label}</span>
+        </div>
+        <div class="kc-chips">
+          <span class="meta-chip" id="estGalpaoWrap_kb_${c.id}">🏭 Estim. galpão: ${fmtDate(c.eta_galpao_estimado)}<span style="cursor:pointer; margin-left:4px;" title="Editar estimativa" onclick="event.stopPropagation(); estimativaGalpaoEditar('kb','${c.fonte}','${c.id}')">✏️</span></span>
         </div>
         ${c.agente_carga ? `<div class="kc-agente">🚚 ${escapeHtml(c.agente_carga)}</div>` : ""}
         <div class="kc-foot">
@@ -4109,7 +4558,8 @@ window.salvarNovoContainer = async function(){
   const etd = document.getElementById("nc_etd").value || null;
   const eta = document.getElementById("nc_eta").value || null;
   const observacoes = document.getElementById("nc_obs").value.trim();
-  const { data: novo, error } = await db.from("imp_containers").insert({ fonte, nome, etd, eta, observacoes }).select().single();
+  const eta_galpao_estimado = calcEtaGalpaoEstimado(eta, fonte);
+  const { data: novo, error } = await db.from("imp_containers").insert({ fonte, nome, etd, eta, observacoes, eta_galpao_estimado }).select().single();
   if (error){ toast("Erro ao criar contêiner.", "error"); return; }
   document.getElementById("modalNovoContainerOverlay").classList.remove("open");
   toast("Contêiner criado.");
@@ -4203,6 +4653,7 @@ function containerDetalheFooterHtml(container, fonte, containerId){
         ${container.chegou_em
           ? `<button class="btn btn-ghost btn-sm" onclick="plDesfazerChegada('${fonte}','${containerId}')">↩ Desfazer chegada (chegou em ${new Date(container.chegou_em).toLocaleDateString("pt-BR")})</button>`
           : `<button class="btn btn-ghost btn-sm" onclick="abrirDocumentosPopup('${fonte}','${containerId}', true)">✅ Marcar como chegou</button>`}
+        ${container.cambio_fechado ? `<button class="btn btn-ghost btn-sm" onclick="detalheDesmarcarCambio('${fonte}','${containerId}')">↩ Desmarcar câmbio fechado</button>` : ""}
       </div>
       <div style="display:flex; gap:10px;">
         <button class="btn btn-ghost btn-sm" onclick="abrirNovoItemContainer()">+ Adicionar Produto</button>
@@ -4363,12 +4814,14 @@ function renderDocumentosPopupBody(fonte, containerId){
     camposHtml = campoHtml("doc_comercial_invoice_url", "Comercial Invoice") + campoHtml("doc_duimp_url", "DUIMP") + campoHtml("doc_chave_acesso_url", "Chave de Acesso");
   }
   const falt = docsFaltando(container);
+  const hojeStr = new Date().toISOString().slice(0, 10);
   abrirOverlayDinamico("docsPopupOverlay", `
     <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
       <h2 class="modal-title" style="margin:0;">📄 Documentos — ${escapeHtml(container.nome)}</h2>
       <button onclick="document.getElementById('docsPopupOverlay').remove()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
     </div>
     <div style="padding:20px 24px;">
+      ${DOCS_POPUP_FINALIZAR ? `<div class="field" style="margin-bottom:14px;"><label>Data de Recebimento no Galpão</label><input type="date" id="docs_data_recebimento" value="${container.chegou_em ? container.chegou_em.slice(0,10) : hojeStr}"></div>` : ""}
       ${camposHtml}
       ${falt.length ? `<div style="margin-top:6px; font-size:12px; color:#b45309; font-weight:600;">⚠ Faltando: ${falt.join(", ")}</div>` : `<div style="margin-top:6px; font-size:12px; color:#166534; font-weight:600;">✅ Todos os documentos enviados</div>`}
     </div>
@@ -4436,7 +4889,8 @@ window.docsRemoverBoleto = async function(fonte, containerId, idx){
   refrescarDetalheSeAberto();
 };
 window.docsFinalizarChegada = async function(fonte, containerId){
-  const { error } = await db.from("imp_containers").update({ chegou_em: new Date().toISOString() }).eq("id", containerId);
+  const dataRecebimento = document.getElementById("docs_data_recebimento")?.value || new Date().toISOString().slice(0, 10);
+  const { error } = await db.from("imp_containers").update({ chegou_em: dataRecebimento }).eq("id", containerId);
   if (error){ toast("Erro ao marcar chegada.", "error"); return; }
   toast("Contêiner marcado como chegado — foi pro Arquivo dos Contêineres.");
   document.getElementById("docsPopupOverlay")?.remove();
@@ -4464,8 +4918,13 @@ window.plSalvarDetalhe = async function(){
   const valor_container = parseNum(document.getElementById("pld_valor_container").value);
   const valor_frete_usd = parseNum(document.getElementById("pld_frete_usd").value);
   const agenteSel = document.getElementById("pld_agente").value;
-  const agente_carga = (agenteSel && agenteSel !== "__novo__") ? agenteSel : (PL_CONTAINERS[fonte].find(c => c.id === containerId)?.agente_carga || null);
-  const { error } = await db.from("imp_containers").update({ nome, etd, eta, observacoes, valor_container, valor_frete_usd, agente_carga, atualizado_em: new Date().toISOString() }).eq("id", containerId);
+  const containerAtual = PL_CONTAINERS[fonte].find(c => c.id === containerId);
+  const agente_carga = (agenteSel && agenteSel !== "__novo__") ? agenteSel : (containerAtual?.agente_carga || null);
+  const updatePayload = { nome, etd, eta, observacoes, valor_container, valor_frete_usd, agente_carga, atualizado_em: new Date().toISOString() };
+  if (!containerAtual?.eta_galpao_manual && eta !== containerAtual?.eta){
+    updatePayload.eta_galpao_estimado = calcEtaGalpaoEstimado(eta, fonte);
+  }
+  const { error } = await db.from("imp_containers").update(updatePayload).eq("id", containerId);
   if (error){ toast("Erro ao salvar.", "error"); return; }
   toast("Contêiner atualizado.");
   document.getElementById("plDetalheOverlay")?.remove();
@@ -4656,6 +5115,11 @@ async function loadDashboard(){
     return diff >= 0 && diff <= 7;
   });
   const atrasados = ativos.filter(c => c.eta && new Date(c.eta + "T00:00:00") < hoje);
+  const chegandoGalpao7 = ativos.filter(c => {
+    if (!c.eta_galpao_estimado) return false;
+    const diff = Math.round((new Date(c.eta_galpao_estimado + "T00:00:00") - hoje) / 86400000);
+    return diff >= 0 && diff <= 7;
+  });
 
   const containersComSkuPendente = ativos.map(c => ({ c, pend: (c.imp_container_itens || []).filter(it => !it.sku).length })).filter(x => x.pend > 0);
   const totalSkuPendente = containersComSkuPendente.reduce((s, x) => s + x.pend, 0);
@@ -4677,7 +5141,7 @@ async function loadDashboard(){
 
   renderDashboard({
     ativos, logboxAtivos, mtiAtivos, totalRmbTransito, totalUsdTransito, totalCbmTransito,
-    chegando7, atrasados, containersComSkuPendente, totalSkuPendente, containersDocIncompleto,
+    chegando7, atrasados, chegandoGalpao7, containersComSkuPendente, totalSkuPendente, containersDocIncompleto,
     semVinculoEstoque, statusInfo, ultimosChegados
   });
 }
@@ -4707,6 +5171,11 @@ function renderDashboard(d){
         <div class="dash-kpi-label">⏳ Chegando em 7 dias</div>
         <div class="dash-kpi-value">${d.chegando7.length}</div>
         <div class="dash-kpi-sub">${d.atrasados.length ? `⚠ ${d.atrasados.length} atrasado${d.atrasados.length > 1 ? "s" : ""}` : "nenhum atrasado"}</div>
+      </div>
+      <div class="dash-kpi">
+        <div class="dash-kpi-label">🏭 Chegando no galpão (7 dias)</div>
+        <div class="dash-kpi-value">${d.chegandoGalpao7.length}</div>
+        <div class="dash-kpi-sub">estimativa de chegada no seu galpão</div>
       </div>
     </div>`;
 
