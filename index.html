@@ -171,7 +171,7 @@
   fieldset legend{ font-size: 12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color: var(--accent); margin-bottom: 10px; padding:0; }
   .field-grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap: 12px 16px; }
   .field-grid.cols-3{ grid-template-columns: repeat(3, 1fr); }
-  .field-grid.cols-4{ grid-template-columns: repeat(4, 1fr); }
+  .field-grid.cols-4{ grid-template-columns: repeat(4, minmax(0,1fr)); }
   .field{ display:flex; flex-direction:column; gap:5px; }
   .field label{ font-size:12px; font-weight:600; color: var(--text-muted); }
   .field input, .field select{ padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border-strong); font-size: 14px; font-family:'Inter',sans-serif; color: var(--text); background: var(--surface); }
@@ -402,6 +402,51 @@
   .dash-section{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px 20px; margin-bottom:16px; }
   .dash-section-title{ font-family:'Barlow Condensed',sans-serif; font-size:17px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:7px; }
   .dash-grid-2{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+  input.mono-field{ font-family:'JetBrains Mono',monospace; }
+
+  /* ============ FÁBRICAS — cards ilustrados ============ */
+  .fab-toolbar-count{ font-size:11.5px; color:var(--text-faint); font-weight:600; margin-left:2px; }
+  .fab-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap:16px; }
+  .fab-card{ position:relative; background:var(--surface); border:1px solid var(--border); border-top:4px solid var(--fab-accent, var(--accent)); border-radius:14px; padding:18px 18px 16px; box-shadow:var(--shadow); transition: transform .12s, box-shadow .12s; }
+  .fab-card:hover{ transform: translateY(-2px); box-shadow: 0 4px 10px rgba(15,23,42,.07), 0 14px 30px rgba(15,23,42,.10); }
+  .fab-card-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:12px; }
+  .fab-card-icon{ width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:20px; background: var(--fab-accent-soft, var(--accent-soft)); flex-shrink:0; }
+  .fab-card-actions{ display:flex; gap:4px; opacity:0; transition:opacity .12s; }
+  .fab-card:hover .fab-card-actions{ opacity:1; }
+  .fab-card-nome{ font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; color:var(--text); line-height:1.15; margin-bottom:9px; }
+  .fab-card-tags{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:15px; }
+  .fab-tag{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700; padding:4px 11px; border-radius:20px; }
+  .fab-tag-comprador{ background:var(--surface-alt); color:var(--text-muted); border:1px solid var(--border-strong); }
+  .fab-gauges{ display:flex; justify-content:space-between; gap:4px; padding-top:14px; border-top:1px dashed var(--border); }
+  .fab-gauge-wrap{ display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; }
+  .fab-gauge{ width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .fab-gauge-inner{ width:35px; height:35px; border-radius:50%; background:var(--surface); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--text); }
+  .fab-gauge-label{ font-size:9px; text-transform:uppercase; letter-spacing:.3px; font-weight:700; color:var(--text-faint); text-align:center; }
+  .fab-empty-hint{ grid-column: 1/-1; }
+
+  /* ============ PREVISÃO DE CUSTOS — visual rico ============ */
+  .pc-kpis{ display:grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap:14px; margin-bottom:18px; }
+  .pc-kpi{ position:relative; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px 16px 20px; box-shadow:var(--shadow); overflow:hidden; }
+  .pc-kpi::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:5px; background: var(--pc-color, var(--accent)); }
+  .pc-kpi-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; font-weight:700; color:var(--text-faint); margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+  .pc-kpi-value{ font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:800; color:var(--text); line-height:1.1; }
+  .pc-kpi-sub{ font-size:11px; color:var(--text-muted); margin-top:4px; }
+
+  .pc-status-pill{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:20px; white-space:nowrap; }
+  .pc-status-pill.st-booking{ background:var(--accent-soft); color:var(--accent-dark); }
+  .pc-status-pill.st-em_rota{ background:var(--warn-soft); color:#92400e; }
+  .pc-status-pill.st-desembaraco{ background:#f5f3ff; color:#6d28d9; }
+  .pc-status-pill.st-chegou{ background:var(--success-soft); color:#166534; }
+
+  .pc-valor-pill{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:20px; white-space:nowrap; }
+  .pc-valor-pill.previa{ background:var(--warn-soft); color:#92400e; }
+  .pc-valor-pill.invoice{ background:var(--success-soft); color:#166534; }
+
+  table.pc-table tbody tr.pc-row-pago{ background: var(--success-soft); }
+  table.pc-table tbody tr.pc-row-pago td:first-child{ border-left:3px solid var(--success); }
+  table.pc-table tbody tr:not(.pc-row-pago) td:first-child{ border-left:3px solid var(--warn); }
+  .pc-calc-chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:600; padding:3px 9px; border-radius:6px; background:var(--accent-soft); color:var(--accent-dark); }
+  .pc-table input.real-field.filled{ background:var(--success-soft); border-color:#bbf7d0; color:#166534; font-weight:700; }
   @media (max-width: 1000px){ .dash-grid-2{ grid-template-columns: 1fr; } }
   .dash-pend-item{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); cursor:pointer; }
   .dash-pend-item:last-child{ border-bottom:none; }
@@ -507,7 +552,7 @@
     <!-- ============ FÁBRICAS ============ -->
     <div class="view" id="view-fabricas">
       <div class="toolbar">
-        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted);">🏭 Fábricas</div>
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted); display:flex; align-items:center;">🏭 Fábricas<span class="fab-toolbar-count" id="fabContador"></span></div>
         <div class="spacer"></div>
         <select id="fabFiltroComprador" onchange="renderFabricas()"><option value="">Todos os compradores</option></select>
         <select id="fabFiltroPagamento" onchange="renderFabricas()"><option value="">Todos os pagamentos</option></select>
@@ -518,17 +563,12 @@
         </select>
         <button class="btn btn-primary" onclick="abrirNovaFabrica()">+ Nova Fábrica</button>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Fábrica</th><th>Comprador</th><th>Pagamento</th><th class="num">Inicial %</th><th class="num">Finalização %</th><th class="num">30 Dias %</th><th class="num">60 Dias %</th><th></th></tr></thead>
-          <tbody id="fabTbody"><tr><td colspan="8" class="empty-state">Carregando…</td></tr></tbody>
-        </table>
-      </div>
+      <div class="fab-grid" id="fabGrid"><div class="fab-empty-hint empty-state">Carregando…</div></div>
     </div>
 
     <!-- ============ PREVISÃO DOS CUSTOS (LOGBOX) ============ -->
     <div class="view" id="view-ph-prevcustos">
-      <div id="prevCustosKpis" class="dash-kpis" style="margin-bottom:16px;"></div>
+      <div id="prevCustosKpis" class="pc-kpis"></div>
       <div class="toolbar">
         <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted);">💵 Previsão dos Custos — LOGBOX</div>
         <div class="spacer"></div>
@@ -539,7 +579,7 @@
         </select>
       </div>
       <div class="table-wrap">
-        <table>
+        <table class="pc-table">
           <thead><tr>
             <th>Container</th><th>Status</th><th>Status Valor</th><th class="num">Valor USD</th><th>Data de Chegada ou Previsão</th>
             <th class="num">Estim. Dólar</th><th class="num">% Prev. IMP+Desp.</th><th class="num">Prev. IMP+Desp. (R$)</th><th class="num">Real IMP+Desp. (R$)</th>
@@ -1713,6 +1753,22 @@ window.confirmarExcluirNCM = function(id, ncm){
 /* ======================= FÁBRICAS ============================= */
 /* ============================================================ */
 let FABRICAS = [];
+const PALETA_CORES = [
+  { solid: "#2563eb", soft: "#eff6ff" },
+  { solid: "#7c3aed", soft: "#f5f3ff" },
+  { solid: "#ea580c", soft: "#fff7ed" },
+  { solid: "#0d9488", soft: "#f0fdfa" },
+  { solid: "#db2777", soft: "#fdf2f8" },
+  { solid: "#16a34a", soft: "#f0fdf4" },
+  { solid: "#d97706", soft: "#fffbeb" },
+  { solid: "#0891b2", soft: "#ecfeff" }
+];
+function corPorTexto(txt){
+  const s = String(txt || "");
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 997;
+  return PALETA_CORES[Math.abs(h) % PALETA_CORES.length];
+}
 
 function fabPopularFiltros(){
   const compradores = (CONFIG?.responsaveis || []).slice().sort((a,b) => a.localeCompare(b, "pt-BR"));
@@ -1740,9 +1796,22 @@ async function loadFabricas(){
   FABRICAS = data || [];
   renderFabricas();
 }
+function fabGauge(label, valor, cor){
+  const temValor = valor !== null && valor !== undefined && valor !== "";
+  const pct = temValor ? Math.max(0, Math.min(100, Number(valor))) : 0;
+  const bg = temValor ? `conic-gradient(${cor} ${pct}%, var(--border) 0)` : `var(--border)`;
+  return `
+    <div class="fab-gauge-wrap">
+      <div class="fab-gauge" style="background:${bg}">
+        <div class="fab-gauge-inner">${temValor ? fmtN(valor, 0) + "%" : "—"}</div>
+      </div>
+      <div class="fab-gauge-label">${label}</div>
+    </div>`;
+}
 function renderFabricas(){
-  const tbody = document.getElementById("fabTbody");
-  if (!tbody) return;
+  const grid = document.getElementById("fabGrid");
+  const contador = document.getElementById("fabContador");
+  if (!grid) return;
   const filtroComprador = document.getElementById("fabFiltroComprador")?.value || "";
   const filtroPagamento = document.getElementById("fabFiltroPagamento")?.value || "";
   const ordenar = document.getElementById("fabOrdenar")?.value || "nome";
@@ -1752,23 +1821,33 @@ function renderFabricas(){
   if (ordenar === "comprador") lista.sort((a,b) => (a.comprador||"").localeCompare(b.comprador||"", "pt-BR"));
   else if (ordenar === "pagamento") lista.sort((a,b) => (a.pagamento||"").localeCompare(b.pagamento||"", "pt-BR"));
   else lista.sort((a,b) => (a.nome||"").localeCompare(b.nome||"", "pt-BR"));
-  if (!lista.length){ tbody.innerHTML = `<tr><td colspan="8" class="empty-state">${FABRICAS.length ? "Nenhuma fábrica encontrada com esse filtro." : "Nenhuma fábrica cadastrada ainda."}</td></tr>`; return; }
-  const pct = v => (v === null || v === undefined) ? "—" : `${fmtN(v, 1)}%`;
-  tbody.innerHTML = lista.map(f => `
-    <tr>
-      <td>${escapeHtml(f.nome)}</td>
-      <td>${f.comprador ? escapeHtml(f.comprador) : "—"}</td>
-      <td>${f.pagamento ? escapeHtml(f.pagamento) : "—"}</td>
-      <td class="num mono">${pct(f.inicial)}</td>
-      <td class="num mono">${pct(f.finalizacao)}</td>
-      <td class="num mono">${pct(f.dias_30)}</td>
-      <td class="num mono">${pct(f.dias_60)}</td>
-      <td class="actions-cell">
-        <button class="btn-icon" title="Editar" onclick="abrirEditarFabrica('${f.id}')">✎</button>
-        <button class="btn-icon" title="Excluir" onclick="confirmarExcluirFabrica('${f.id}','${escapeHtml(f.nome).replace(/'/g,"&apos;")}')">🗑</button>
-      </td>
-    </tr>
-  `).join("");
+  if (contador) contador.textContent = FABRICAS.length ? `· ${FABRICAS.length} cadastrada${FABRICAS.length === 1 ? "" : "s"}` : "";
+  if (!lista.length){ grid.innerHTML = `<div class="fab-empty-hint empty-state">${FABRICAS.length ? "Nenhuma fábrica encontrada com esse filtro." : "Nenhuma fábrica cadastrada ainda. Clique em “+ Nova Fábrica” pra começar."}</div>`; return; }
+  grid.innerHTML = lista.map(f => {
+    const corComprador = corPorTexto("cmp_" + (f.comprador || f.nome));
+    const corPagamento = corPorTexto("pag_" + (f.pagamento || ""));
+    return `
+    <div class="fab-card" style="--fab-accent:${corComprador.solid}; --fab-accent-soft:${corComprador.soft};">
+      <div class="fab-card-head">
+        <div class="fab-card-icon">🏭</div>
+        <div class="fab-card-actions">
+          <button class="btn-icon" title="Editar" onclick="abrirEditarFabrica('${f.id}')">✎</button>
+          <button class="btn-icon" title="Excluir" onclick="confirmarExcluirFabrica('${f.id}','${escapeHtml(f.nome).replace(/'/g,"&apos;")}')">🗑</button>
+        </div>
+      </div>
+      <div class="fab-card-nome">${escapeHtml(f.nome)}</div>
+      <div class="fab-card-tags">
+        <span class="fab-tag fab-tag-comprador">👤 ${f.comprador ? escapeHtml(f.comprador) : "sem comprador"}</span>
+        ${f.pagamento ? `<span class="fab-tag" style="background:${corPagamento.soft}; color:${corPagamento.solid};">💳 ${escapeHtml(f.pagamento)}</span>` : ""}
+      </div>
+      <div class="fab-gauges">
+        ${fabGauge("Inicial", f.inicial, "#2563eb")}
+        ${fabGauge("Finalização", f.finalizacao, "#7c3aed")}
+        ${fabGauge("30 Dias", f.dias_30, "#ea580c")}
+        ${fabGauge("60 Dias", f.dias_60, "#0d9488")}
+      </div>
+    </div>`;
+  }).join("");
 }
 let editingFabricaId = null;
 function fabricaPopupHtml(f){
@@ -1856,6 +1935,15 @@ function pcStatusLabel(c){
   if (c.chegou_em) return "Chegou";
   return KB_LABELS[c.status_embarque || "em_rota"] || "Em Rota";
 }
+function pcStatusClasse(c){
+  if (c.chegou_em) return "st-chegou";
+  return "st-" + (c.status_embarque || "em_rota");
+}
+function pcStatusIcone(c){
+  if (c.chegou_em) return "✅";
+  const map = { booking: "📦", em_rota: "🚢", desembaraco: "🛃" };
+  return map[c.status_embarque || "em_rota"] || "🚢";
+}
 function pcStatusValor(c){
   return c.invoice_confirmada ? "Valor Invoice" : "Prévia";
 }
@@ -1879,7 +1967,10 @@ function renderPrevisaoCustos(){
   lista.sort((a, b) => {
     const da = a.chegou_em || a.eta_galpao_estimado || "";
     const dbb = b.chegou_em || b.eta_galpao_estimado || "";
-    return dbb.localeCompare(da);
+    if (!da && !dbb) return 0;
+    if (!da) return 1;
+    if (!dbb) return -1;
+    return da.localeCompare(dbb); // mais antigos em cima
   });
 
   if (!lista.length){
@@ -1891,18 +1982,21 @@ function renderPrevisaoCustos(){
       const dataChegadaHtml = c.chegou_em
         ? fmtDate(String(c.chegou_em).slice(0, 10))
         : (c.eta_galpao_estimado ? `<span style="color:var(--text-faint);">${fmtDate(c.eta_galpao_estimado)} (estim.)</span>` : "—");
-      return `<tr>
-        <td>${escapeHtml(c.nome)}</td>
-        <td>${pcStatusLabel(c)}</td>
-        <td>${pcStatusValor(c)}</td>
+      const valorPill = c.invoice_confirmada
+        ? `<span class="pc-valor-pill invoice">✅ Valor Invoice</span>`
+        : `<span class="pc-valor-pill previa">⏳ Prévia</span>`;
+      return `<tr class="${c.cambio_fechado ? "pc-row-pago" : ""}">
+        <td style="font-weight:700;">${escapeHtml(c.nome)}</td>
+        <td><span class="pc-status-pill ${pcStatusClasse(c)}">${pcStatusIcone(c)} ${pcStatusLabel(c)}</span></td>
+        <td>${valorPill}</td>
         <td class="num mono">${c.valor_container !== null && c.valor_container !== undefined ? "US$ " + fmtN(c.valor_container, 2) : "—"}</td>
         <td>${dataChegadaHtml}</td>
         <td class="num"><input type="text" inputmode="decimal" class="mono-field" style="width:70px; text-align:right;" value="${c.estimativa_dolar ?? ""}" onchange="pcSalvarCampo('${c.id}','estimativa_dolar', this.value)"></td>
         <td class="num"><input type="text" inputmode="decimal" class="mono-field" style="width:60px; text-align:right;" value="${c.perc_imp_despesas ?? ""}" onchange="pcSalvarCampo('${c.id}','perc_imp_despesas', this.value)"></td>
-        <td class="num mono">${impDesp !== null ? fmtN(impDesp, 2) : "—"}</td>
-        <td class="num"><input type="text" inputmode="decimal" class="mono-field" style="width:90px; text-align:right;" value="${c.real_imp_despesas ?? ""}" onchange="pcSalvarCampo('${c.id}','real_imp_despesas', this.value)"></td>
-        <td class="num mono">${cambio !== null ? fmtN(cambio, 2) : "—"}</td>
-        <td class="num"><input type="text" inputmode="decimal" class="mono-field" style="width:90px; text-align:right;" value="${c.real_cambio ?? ""}" onchange="pcSalvarCampo('${c.id}','real_cambio', this.value)"></td>
+        <td class="num">${impDesp !== null ? `<span class="pc-calc-chip">${fmtN(impDesp, 2)}</span>` : `<span style="color:var(--text-faint);">—</span>`}</td>
+        <td class="num"><input type="text" inputmode="decimal" class="mono-field real-field${(c.real_imp_despesas !== null && c.real_imp_despesas !== undefined && c.real_imp_despesas !== "") ? " filled" : ""}" style="width:90px; text-align:right;" value="${c.real_imp_despesas ?? ""}" onchange="pcSalvarCampo('${c.id}','real_imp_despesas', this.value)"></td>
+        <td class="num">${cambio !== null ? `<span class="pc-calc-chip">${fmtN(cambio, 2)}</span>` : `<span style="color:var(--text-faint);">—</span>`}</td>
+        <td class="num"><input type="text" inputmode="decimal" class="mono-field real-field${(c.real_cambio !== null && c.real_cambio !== undefined && c.real_cambio !== "") ? " filled" : ""}" style="width:90px; text-align:right;" value="${c.real_cambio ?? ""}" onchange="pcSalvarCampo('${c.id}','real_cambio', this.value)"></td>
       </tr>`;
     }).join("");
   }
@@ -1918,35 +2012,35 @@ function renderPrevisaoCustos(){
 
   if (kpisEl){
     kpisEl.innerHTML = `
-      <div class="dash-kpi">
-        <div class="dash-kpi-label">📋 Prévia IMP+Despesas em Aberto</div>
-        <div class="dash-kpi-value">R$ ${fmtN(somaImpDespPrevisto, 0)}</div>
-        <div class="dash-kpi-sub">${naoPagos.length} contêiner(es) não pagos</div>
+      <div class="pc-kpi" style="--pc-color:#d97706;">
+        <div class="pc-kpi-label">📋 Prévia IMP+Despesas em Aberto</div>
+        <div class="pc-kpi-value">R$ ${fmtN(somaImpDespPrevisto, 0)}</div>
+        <div class="pc-kpi-sub">${naoPagos.length} contêiner(es) não pagos</div>
       </div>
-      <div class="dash-kpi">
-        <div class="dash-kpi-label">💱 Prévia Câmbio em Aberto</div>
-        <div class="dash-kpi-value">R$ ${fmtN(somaCambioPrevisto, 0)}</div>
-        <div class="dash-kpi-sub">${naoPagos.length} contêiner(es) não pagos</div>
+      <div class="pc-kpi" style="--pc-color:#ea580c;">
+        <div class="pc-kpi-label">💱 Prévia Câmbio em Aberto</div>
+        <div class="pc-kpi-value">R$ ${fmtN(somaCambioPrevisto, 0)}</div>
+        <div class="pc-kpi-sub">${naoPagos.length} contêiner(es) não pagos</div>
       </div>
-      <div class="dash-kpi">
-        <div class="dash-kpi-label">✅ IMP+Despesas Já Pagos</div>
-        <div class="dash-kpi-value">R$ ${fmtN(somaImpDespReal, 0)}</div>
-        <div class="dash-kpi-sub">${pagos.length} contêiner(es) pagos</div>
+      <div class="pc-kpi" style="--pc-color:#16a34a;">
+        <div class="pc-kpi-label">✅ IMP+Despesas Já Pagos</div>
+        <div class="pc-kpi-value">R$ ${fmtN(somaImpDespReal, 0)}</div>
+        <div class="pc-kpi-sub">${pagos.length} contêiner(es) pagos</div>
       </div>
-      <div class="dash-kpi">
-        <div class="dash-kpi-label">✅ Câmbio Já Pago</div>
-        <div class="dash-kpi-value">R$ ${fmtN(somaCambioReal, 0)}</div>
-        <div class="dash-kpi-sub">${pagos.length} contêiner(es) pagos</div>
+      <div class="pc-kpi" style="--pc-color:#0d9488;">
+        <div class="pc-kpi-label">✅ Câmbio Já Pago</div>
+        <div class="pc-kpi-value">R$ ${fmtN(somaCambioReal, 0)}</div>
+        <div class="pc-kpi-sub">${pagos.length} contêiner(es) pagos</div>
       </div>
-      <div class="dash-kpi">
-        <div class="dash-kpi-label">💰 Contêineres Pagos</div>
-        <div class="dash-kpi-value">${pagos.length}</div>
-        <div class="dash-kpi-sub">de ${PC_CONTAINERS.length} no total</div>
+      <div class="pc-kpi" style="--pc-color:#2563eb;">
+        <div class="pc-kpi-label">💰 Contêineres Pagos</div>
+        <div class="pc-kpi-value">${pagos.length}</div>
+        <div class="pc-kpi-sub">de ${PC_CONTAINERS.length} no total</div>
       </div>
-      <div class="dash-kpi">
-        <div class="dash-kpi-label">⏭ Próximo Contêiner a Pagar</div>
-        <div class="dash-kpi-value" style="font-size:19px;">${proximo ? escapeHtml(proximo.nome) : "—"}</div>
-        <div class="dash-kpi-sub">${proximo ? "chegou em " + fmtDate(String(proximo.chegou_em).slice(0, 10)) : "nenhum pendente"}</div>
+      <div class="pc-kpi" style="--pc-color:#7c3aed;">
+        <div class="pc-kpi-label">⏭ Próximo Contêiner a Pagar</div>
+        <div class="pc-kpi-value" style="font-size:19px;">${proximo ? escapeHtml(proximo.nome) : "—"}</div>
+        <div class="pc-kpi-sub">${proximo ? "chegou em " + fmtDate(String(proximo.chegou_em).slice(0, 10)) : "nenhum pendente"}</div>
       </div>
     `;
   }
@@ -4374,12 +4468,13 @@ function renderKanban(){
     const idx = KB_STATUSES.indexOf(status);
     listEl.innerHTML = lista.map(c => {
       const urg = urgenciaInfo(c.eta);
+      const esconderAtraso = status === "desembaraco" && urg.diffDias < 0;
       return `
       <div class="kanban-card" draggable="true" ondragstart="kbDragStart(event,'${c.fonte}','${c.id}')" ondragend="kbDragEnd(event)" onclick="abrirKanbanDetalhe('${c.fonte}','${c.id}')">
         <div class="kc-nome">${escapeHtml(c.nome)}</div>
         <div class="kc-chips">
           <span class="meta-chip">📅 ETA ${fmtDate(c.eta)}</span>
-          <span class="urg-chip ${urg.cls}">⏳ ${urg.label}</span>
+          ${esconderAtraso ? "" : `<span class="urg-chip ${urg.cls}">⏳ ${urg.label}</span>`}
         </div>
         <div class="kc-chips">
           <span class="meta-chip" id="estGalpaoWrap_kb_${c.id}">🏭 Estim. galpão: ${fmtDate(c.eta_galpao_estimado)}<span style="cursor:pointer; margin-left:4px;" title="Editar estimativa" onclick="event.stopPropagation(); estimativaGalpaoEditar('kb','${c.fonte}','${c.id}')">✏️</span></span>
