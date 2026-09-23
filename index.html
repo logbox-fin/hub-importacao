@@ -842,6 +842,7 @@
           <div class="ef-grupo-card" data-grupo="logbox" onclick="efSetFiltroGrupo('logbox')">Logbox</div>
           <div class="ef-grupo-card" data-grupo="mti" onclick="efSetFiltroGrupo('mti')">MTI</div>
         </div>
+        <select id="efMarcaFilter" onchange="efSetFiltroMarca(this.value)"><option value="">Todas as marcas</option></select>
         <div class="spacer"></div>
         <button class="btn btn-ghost" onclick="abrirFecharMes()">🔒 Fechar Mês</button>
         <button class="btn btn-primary" onclick="abrirNovoLoteEF()">+ Novo Lote de Entrada</button>
@@ -1449,28 +1450,37 @@ function escapeHtml(str){
   return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 // ============ ORDENAÇÃO ESPECIAL DE PRODUTOS ============
-// Alguns produtos precisam sempre aparecer juntos, numa ordem fixa, mesmo dentro
-// de uma lista ordenada A-Z (ex.: bombas de aquário — sempre BF, BM, BC nessa ordem).
-// Pra adicionar outro grupo, é só incluir mais entradas aqui: sku -> { grupo, pos }.
-const ORDEM_ESPECIAL_SKU = {
-  "VA-BF": { grupo: "bomba_aquario", pos: 1 },
-  "VA-BM": { grupo: "bomba_aquario", pos: 2 },
-  "VA-BC": { grupo: "bomba_aquario", pos: 3 }
-};
+// Algumas famílias de produtos precisam sempre aparecer juntas, numa ordem fixa,
+// mesmo dentro de uma lista ordenada A-Z (ex.: bombas de aquário — cada modelo tem
+// várias variantes de SKU tipo VA-BF1000-110, VA-BF2000-220, VA-BM3500-110 etc.,
+// mas todas as VA-BF* devem vir antes das VA-BM*, que vêm antes das VA-BC*).
+// Pra adicionar outra família, inclua mais entradas aqui — casa por PREFIXO de SKU.
+const ORDEM_ESPECIAL_PREFIXOS = [
+  { prefixo: "VA-BF", grupo: "bomba_aquario", pos: 1 },
+  { prefixo: "VA-BM", grupo: "bomba_aquario", pos: 2 },
+  { prefixo: "VA-BC", grupo: "bomba_aquario", pos: 3 }
+];
+function ordemEspecialDoSku(sku){
+  if (!sku) return null;
+  return ORDEM_ESPECIAL_PREFIXOS.find(cfg => sku.startsWith(cfg.prefixo)) || null;
+}
 // Aplica a ordem especial DEPOIS de qualquer sort normal: descobre em quais
-// posições da lista os itens de cada grupo caíram e realoca só esses itens
-// entre si, na ordem fixa definida acima — o resto da lista não muda de lugar.
+// posições da lista os itens de cada grupo caíram e realoca só esses itens entre
+// si (mantendo a ordem A-Z dentro de cada família) — o resto da lista não muda.
 function aplicarOrdemEspecial(list, getSku){
   const porGrupo = {};
   list.forEach((item, i) => {
-    const sku = getSku(item);
-    const cfg = sku && ORDEM_ESPECIAL_SKU[sku];
+    const cfg = ordemEspecialDoSku(getSku(item));
     if (!cfg) return;
     (porGrupo[cfg.grupo] = porGrupo[cfg.grupo] || []).push(i);
   });
   Object.values(porGrupo).forEach(indices => {
     if (indices.length < 2) return;
-    const ordenado = indices.map(i => list[i]).sort((a, b) => ORDEM_ESPECIAL_SKU[getSku(a)].pos - ORDEM_ESPECIAL_SKU[getSku(b)].pos);
+    const ordenado = indices.map(i => list[i]).sort((a, b) => {
+      const cfgA = ordemEspecialDoSku(getSku(a)), cfgB = ordemEspecialDoSku(getSku(b));
+      if (cfgA.pos !== cfgB.pos) return cfgA.pos - cfgB.pos;
+      return String(getSku(a) || "").localeCompare(String(getSku(b) || ""), "pt-BR");
+    });
     indices.forEach((i, k) => { list[i] = ordenado[k]; });
   });
   return list;
@@ -3086,6 +3096,7 @@ let EF_MEDIA_FIXA = {};   // sku -> valor fixo da Média (usado em todo mês sem
 let EF_LOTES = [];        // [{id, nome, data_prevista, itens:[{sku,quantidade}]}] — entradas manuais
 let EF_FECHAMENTOS = {};  // "sku|YYYY-MM" -> estoque_final_real (mês fechado/travado)
 let EF_FILTRO_GRUPO = ""; // "" | "logbox" | "mti"
+let EF_FILTRO_MARCA = ""; // "" | uma marca específica
 let EF_VINCULO_ALVO = null;
 let EF_FECHAMENTO_ALVO = null;
 window.efSetFiltroGrupo = function(grupo){
@@ -3093,6 +3104,19 @@ window.efSetFiltroGrupo = function(grupo){
   document.querySelectorAll("#efGrupoCards .ef-grupo-card").forEach(c => c.classList.toggle("active", c.dataset.grupo === grupo));
   renderEstoqueFuturo();
 };
+window.efSetFiltroMarca = function(marca){
+  EF_FILTRO_MARCA = marca;
+  renderEstoqueFuturo();
+};
+function efPopularFiltroMarca(){
+  const sel = document.getElementById("efMarcaFilter");
+  if (!sel) return;
+  const marcas = [...new Set(Object.values(EF_PRODMAP).map(p => p.marca).filter(Boolean))].sort((a,b) => a.localeCompare(b, "pt-BR"));
+  const atual = EF_FILTRO_MARCA;
+  sel.innerHTML = `<option value="">Todas as marcas</option>` + marcas.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
+  sel.value = marcas.includes(atual) ? atual : "";
+  if (!marcas.includes(atual)) EF_FILTRO_MARCA = "";
+}
 
 function efMesesList(){
   const hoje = new Date();
@@ -3166,6 +3190,7 @@ async function loadEstoqueFuturo(){
   // 5) contêineres em Packing List (ainda não chegados) — alimentam a Entrada automática
   await Promise.all([loadPackingList("logbox"), loadPackingList("mti")]);
 
+  efPopularFiltroMarca();
   renderEstoqueFuturo();
 }
 function efGetMedia(sku, mesKey){
@@ -3247,7 +3272,8 @@ function renderEstoqueFuturo(){
     </tr>`;
 
   const filtroGrupo = EF_FILTRO_GRUPO;
-  let linhas = EF_GRUPO.filter(g => !filtroGrupo || g.grupos.includes(filtroGrupo));
+  const filtroMarca = EF_FILTRO_MARCA;
+  let linhas = EF_GRUPO.filter(g => (!filtroGrupo || g.grupos.includes(filtroGrupo)) && (!filtroMarca || (EF_PRODMAP[g.sku]?.marca || "") === filtroMarca));
   linhas.sort((a,b) => {
     const ma = (EF_PRODMAP[a.sku]?.marca||"").localeCompare(EF_PRODMAP[b.sku]?.marca||"");
     if (ma !== 0) return ma;
