@@ -364,6 +364,19 @@
   .kanban-col-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding:0 4px; }
   .kanban-col-title{ font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:700; color:var(--text); }
   .kanban-col-count{ font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; color:var(--text-faint); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:2px 9px; }
+  .kb-sku-search-wrap{ position:relative; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .kb-sku-search-box{ position:relative; }
+  .kb-sku-search-input{ width:230px; padding:8px 12px 8px 30px; border-radius:20px; border:1px solid var(--border-strong); font-size:12.5px; box-sizing:border-box; }
+  .kb-sku-search-icon{ position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:12px; pointer-events:none; }
+  .kb-sku-search-suggest{ position:absolute; top:calc(100% + 4px); left:0; width:300px; max-height:260px; overflow:auto; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); z-index:40; display:none; }
+  .kb-sku-search-suggest.open{ display:block; }
+  .kb-sku-suggest-item{ padding:9px 12px; cursor:pointer; font-size:12.5px; border-bottom:1px solid var(--border); }
+  .kb-sku-suggest-item:last-child{ border-bottom:none; }
+  .kb-sku-suggest-item:hover{ background:var(--surface-alt); }
+  .kb-sku-suggest-empty{ padding:10px 12px; font-size:12px; color:var(--text-faint); }
+  .kb-sku-tag{ display:inline-flex; align-items:center; gap:6px; background:var(--accent-soft); color:var(--accent-dark); font-size:11.5px; font-weight:700; padding:4px 6px 4px 10px; border-radius:20px; }
+  .kb-sku-tag button{ background:none; border:none; cursor:pointer; color:inherit; font-size:13px; line-height:1; padding:2px; }
+  .kb-filtro-info{ font-size:11.5px; color:var(--text-muted); margin:-6px 0 12px 2px; }
   .kanban-card{ background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:11px 12px; margin-bottom:10px; box-shadow:var(--shadow); cursor:grab; }
   .kanban-card:active{ cursor:grabbing; }
   .kanban-card.dragging{ opacity:.4; }
@@ -968,9 +981,18 @@
     <div class="view" id="view-ph-status">
       <div class="toolbar">
         <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted);">🚢 Contêineres no mar — arraste o card ou use as setas pra mover</div>
+        <div class="kb-sku-search-wrap">
+          <div class="kb-sku-search-box">
+            <span class="kb-sku-search-icon">🔍</span>
+            <input type="text" id="kbSkuInput" class="kb-sku-search-input" placeholder="Buscar por SKU ou produto..." autocomplete="off" oninput="kbSkuBuscar(this.value)" onfocus="kbSkuBuscar(this.value)">
+            <div id="kbSkuSuggest" class="kb-sku-search-suggest"></div>
+          </div>
+          <div id="kbSkuTags"></div>
+        </div>
         <div class="spacer"></div>
         <div id="kbAlertaEtdEta"></div>
       </div>
+      <div id="kbFiltroInfo" class="kb-filtro-info" style="display:none;"></div>
       <div class="kanban-board" id="kanbanBoard">
         <div class="kanban-col" data-status="booking" ondragover="kbDragOver(event)" ondragleave="kbDragLeave(event)" ondrop="kbDrop(event,'booking')">
           <div class="kanban-col-head"><span class="kanban-col-title">📋 Booking Feito</span><span class="kanban-col-count" id="kbCount_booking">0</span></div>
@@ -1425,6 +1447,33 @@ function fmtR(n){ return n===null||n===undefined||isNaN(n) ? "R$ —" : "R$ " + 
 function escapeHtml(str){
   if (str === null || str === undefined) return "";
   return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+// ============ ORDENAÇÃO ESPECIAL DE PRODUTOS ============
+// Alguns produtos precisam sempre aparecer juntos, numa ordem fixa, mesmo dentro
+// de uma lista ordenada A-Z (ex.: bombas de aquário — sempre BF, BM, BC nessa ordem).
+// Pra adicionar outro grupo, é só incluir mais entradas aqui: sku -> { grupo, pos }.
+const ORDEM_ESPECIAL_SKU = {
+  "VA-BF": { grupo: "bomba_aquario", pos: 1 },
+  "VA-BM": { grupo: "bomba_aquario", pos: 2 },
+  "VA-BC": { grupo: "bomba_aquario", pos: 3 }
+};
+// Aplica a ordem especial DEPOIS de qualquer sort normal: descobre em quais
+// posições da lista os itens de cada grupo caíram e realoca só esses itens
+// entre si, na ordem fixa definida acima — o resto da lista não muda de lugar.
+function aplicarOrdemEspecial(list, getSku){
+  const porGrupo = {};
+  list.forEach((item, i) => {
+    const sku = getSku(item);
+    const cfg = sku && ORDEM_ESPECIAL_SKU[sku];
+    if (!cfg) return;
+    (porGrupo[cfg.grupo] = porGrupo[cfg.grupo] || []).push(i);
+  });
+  Object.values(porGrupo).forEach(indices => {
+    if (indices.length < 2) return;
+    const ordenado = indices.map(i => list[i]).sort((a, b) => ORDEM_ESPECIAL_SKU[getSku(a)].pos - ORDEM_ESPECIAL_SKU[getSku(b)].pos);
+    indices.forEach((i, k) => { list[i] = ordenado[k]; });
+  });
+  return list;
 }
 function maskNcm(value){
   const digits = value.replace(/\D/g, "").slice(0, 8);
@@ -3204,6 +3253,7 @@ function renderEstoqueFuturo(){
     if (ma !== 0) return ma;
     return a.sku.localeCompare(b.sku);
   });
+  linhas = aplicarOrdemEspecial(linhas, g => g.sku);
 
   if (!linhas.length){
     tbody.innerHTML = `<tr><td colspan="${4+meses.length*3}" class="empty-state">Nenhum produto ativo encontrado no Cadastro.</td></tr>`;
@@ -3337,7 +3387,7 @@ window.abrirFecharMes = function(){
 function renderFecharMesModal(){
   const m = EF_FECHAMENTO_ALVO;
   const listaEl = document.getElementById("fecharMesLista");
-  const linhas = EF_GRUPO.slice().sort((a,b) => a.sku.localeCompare(b.sku));
+  const linhas = aplicarOrdemEspecial(EF_GRUPO.slice().sort((a,b) => a.sku.localeCompare(b.sku)), g => g.sku);
   listaEl.innerHTML = linhas.map(g => {
     const serie = efCalcularSerie(g.sku);
     const row = serie.find(r => r.mes.key === m.key);
@@ -3539,6 +3589,7 @@ function getFilteredProdutos(){
     if (va > vb) return sortDir === "asc" ? 1 : -1;
     return 0;
   });
+  if (sortField === "sku" || sortField === "nome_produto") list = aplicarOrdemEspecial(list, p => p.sku);
   return list;
 }
 function renderTableProdutos(){
@@ -4484,15 +4535,33 @@ async function loadStatusContainers(){
   renderKanban();
 }
 
-function renderKanban(){
-  const ativos = [...PL_CONTAINERS.logbox, ...PL_CONTAINERS.mti].filter(c => !c.chegou_em);
+let KB_SKU_FILTRO = []; // [{sku, nome}] — filtro de busca por SKU no Kanban
 
-  const semEtdEta = ativos.filter(c => !c.etd || !c.eta);
+function renderKanban(){
+  const todosAtivos = [...PL_CONTAINERS.logbox, ...PL_CONTAINERS.mti].filter(c => !c.chegou_em);
+
+  const semEtdEta = todosAtivos.filter(c => !c.etd || !c.eta);
   const alertaEl = document.getElementById("kbAlertaEtdEta");
   if (alertaEl){
     alertaEl.innerHTML = semEtdEta.length
       ? `<div class="pl-pend-badge" onclick="kbAbrirAlertaEtdEta()">⚠ ${semEtdEta.length} contêiner${semEtdEta.length > 1 ? "es" : ""} sem ETD ou ETA</div>`
       : "";
+  }
+
+  const skusFiltro = KB_SKU_FILTRO.map(x => x.sku);
+  const ativos = skusFiltro.length
+    ? todosAtivos.filter(c => (c.imp_container_itens || []).some(it => it.sku && skusFiltro.includes(it.sku)))
+    : todosAtivos;
+
+  const infoEl = document.getElementById("kbFiltroInfo");
+  if (infoEl){
+    if (skusFiltro.length){
+      infoEl.style.display = "block";
+      infoEl.innerHTML = `🔍 ${ativos.length} contêiner${ativos.length === 1 ? "" : "es"} encontrado${ativos.length === 1 ? "" : "s"} com ${skusFiltro.length === 1 ? "o SKU selecionado" : "os SKUs selecionados"} · <a href="javascript:void(0)" onclick="kbSkuLimpar()" style="color:var(--accent); font-weight:700; text-decoration:none;">Limpar filtro ✕</a>`;
+    } else {
+      infoEl.style.display = "none";
+      infoEl.innerHTML = "";
+    }
   }
 
   KB_STATUSES.forEach(status => {
@@ -4533,6 +4602,51 @@ function renderKanban(){
     }).join("");
   });
 }
+
+window.kbSkuBuscar = function(q){
+  q = (q || "").trim();
+  const dd = document.getElementById("kbSkuSuggest");
+  if (!dd) return;
+  if (q.length < 2){ dd.classList.remove("open"); dd.innerHTML = ""; return; }
+  db.from(TABLE_PRODUTOS).select("sku,nome_produto").eq("ativo", true).or(`sku.ilike.%${q}%,nome_produto.ilike.%${q}%`).limit(15).then(({ data, error }) => {
+    if (error) return;
+    const jaSelecionados = new Set(KB_SKU_FILTRO.map(x => x.sku));
+    const matches = (data || []).filter(p => !jaSelecionados.has(p.sku));
+    dd.innerHTML = matches.length
+      ? matches.map(p => `<div class="kb-sku-suggest-item" onclick="kbSkuSelecionar('${escapeHtml(p.sku).replace(/'/g, "\\'")}','${escapeHtml(p.nome_produto || "").replace(/'/g, "\\'")}')"><span class="mono" style="font-weight:700;">${escapeHtml(p.sku)}</span>${p.nome_produto ? ` — ${escapeHtml(p.nome_produto)}` : ""}</div>`).join("")
+      : `<div class="kb-sku-suggest-empty">Nenhum produto encontrado.</div>`;
+    dd.classList.add("open");
+  });
+};
+window.kbSkuSelecionar = function(sku, nome){
+  if (!KB_SKU_FILTRO.some(x => x.sku === sku)) KB_SKU_FILTRO.push({ sku, nome });
+  const input = document.getElementById("kbSkuInput");
+  if (input) input.value = "";
+  const dd = document.getElementById("kbSkuSuggest");
+  if (dd){ dd.classList.remove("open"); dd.innerHTML = ""; }
+  kbSkuRenderTags();
+  renderKanban();
+};
+window.kbSkuRemover = function(sku){
+  KB_SKU_FILTRO = KB_SKU_FILTRO.filter(x => x.sku !== sku);
+  kbSkuRenderTags();
+  renderKanban();
+};
+window.kbSkuLimpar = function(){
+  KB_SKU_FILTRO = [];
+  kbSkuRenderTags();
+  renderKanban();
+};
+function kbSkuRenderTags(){
+  const el = document.getElementById("kbSkuTags");
+  if (!el) return;
+  el.innerHTML = KB_SKU_FILTRO.map(x => `<span class="kb-sku-tag">${escapeHtml(x.sku)}<button onclick="kbSkuRemover('${escapeHtml(x.sku).replace(/'/g, "\\'")}')" title="Remover">×</button></span>`).join("");
+}
+document.addEventListener("click", (ev) => {
+  const dd = document.getElementById("kbSkuSuggest");
+  const box = document.querySelector(".kb-sku-search-box");
+  if (dd && box && !box.contains(ev.target)) dd.classList.remove("open");
+});
 
 window.kbAbrirAlertaEtdEta = function(){
   const ativos = [...PL_CONTAINERS.logbox, ...PL_CONTAINERS.mti].filter(c => !c.chegou_em && (!c.etd || !c.eta));
