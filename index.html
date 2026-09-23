@@ -3581,6 +3581,20 @@ function etaInfo(etaStr){
 function fmtDate(dateStr){
   return dateStr ? new Date(dateStr + "T00:00:00").toLocaleDateString("pt-BR") : "—";
 }
+// remove acentos/espaços/caracteres especiais do nome do arquivo antes de usar como chave no Supabase Storage
+function sanitizeFileName(name){
+  const str = String(name || "arquivo.pdf");
+  const pontoIdx = str.lastIndexOf(".");
+  const base = pontoIdx > 0 ? str.slice(0, pontoIdx) : str;
+  const ext = pontoIdx > 0 ? str.slice(pontoIdx + 1) : "pdf";
+  const baseLimpa = base
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-zA-Z0-9_-]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+  const extLimpa = ext.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "pdf";
+  return `${baseLimpa || "arquivo"}.${extLimpa}`;
+}
 // urgência por ETA: vermelho ≤7 dias, amarelo 8–15, verde 16+ — usado nos cards de contêiner
 function urgenciaInfo(etaStr){
   if (!etaStr) return { cls: "urg-neutro", label: "sem ETA" };
@@ -3855,7 +3869,7 @@ window.cambioUploadComprovante = async function(evt, fonte, containerId){
   const file = evt.target.files[0];
   if (!file) return;
   toast("Enviando comprovante…");
-  const path = `${fonte}/${containerId}/comprovante-cambio-${Date.now()}-${file.name}`;
+  const path = `${fonte}/${containerId}/comprovante-cambio-${Date.now()}-${sanitizeFileName(file.name)}`;
   const { error: upErr } = await db.storage.from("container-docs").upload(path, file, { upsert: true, contentType: "application/pdf" });
   if (upErr){ toast("Erro ao enviar comprovante: " + upErr.message, "error"); return; }
   const { data: pub } = db.storage.from("container-docs").getPublicUrl(path);
@@ -4368,7 +4382,7 @@ window.docsUploadArquivo = async function(evt, fonte, containerId, campo){
   const file = evt.target.files[0];
   if (!file) return;
   toast("Enviando arquivo…");
-  const path = `${fonte}/${containerId}/${campo}-${Date.now()}-${file.name}`;
+  const path = `${fonte}/${containerId}/${campo}-${Date.now()}-${sanitizeFileName(file.name)}`;
   const { error: upErr } = await db.storage.from("container-docs").upload(path, file, { upsert: true, contentType: "application/pdf" });
   if (upErr){ toast("Erro ao enviar arquivo: " + upErr.message, "error"); return; }
   const { data: pub } = db.storage.from("container-docs").getPublicUrl(path);
@@ -4395,7 +4409,7 @@ window.docsUploadBoleto = async function(evt, fonte, containerId){
   const file = evt.target.files[0];
   if (!file) return;
   toast("Enviando boleto…");
-  const path = `${fonte}/${containerId}/boleto-${Date.now()}-${file.name}`;
+  const path = `${fonte}/${containerId}/boleto-${Date.now()}-${sanitizeFileName(file.name)}`;
   const { error: upErr } = await db.storage.from("container-docs").upload(path, file, { upsert: true, contentType: "application/pdf" });
   if (upErr){ toast("Erro ao enviar boleto: " + upErr.message, "error"); return; }
   const { data: pub } = db.storage.from("container-docs").getPublicUrl(path);
