@@ -451,6 +451,7 @@
   .pc-calc-chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:13.5px; font-weight:700; padding:4px 11px; border-radius:7px; background:var(--accent-soft); color:var(--accent-dark); letter-spacing:.2px; }
   .pc-table input.pc-input{ text-align:center; font-size:13.5px; font-weight:600; padding:7px 8px; }
   .pc-table input.real-field.filled{ background:var(--success-soft); border-color:#bbf7d0; color:#166534; font-weight:700; }
+  .pc-table input.real-field::placeholder{ color:var(--danger); font-weight:700; opacity:1; letter-spacing:.3px; }
   .pc-perc-wrap{ display:inline-flex; align-items:center; justify-content:center; gap:4px; }
   .pc-perc-sign{ font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:var(--text-muted); }
   .pc-editavel{ cursor:pointer; border-bottom:1px dashed var(--border-strong); padding-bottom:1px; }
@@ -2014,11 +2015,11 @@ function renderPrevisaoCustos(){
         <td class="num" id="pcCell_prev_imp_despesas_manual_${c.id}">${impDesp !== null
           ? `<span class="pc-calc-chip pc-editavel" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_imp_despesas_manual',${impDesp})">${fmtN(impDesp, 2)}</span>`
           : `<span class="pc-editavel" style="color:var(--text-faint);" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_imp_despesas_manual',null)">—</span>`}</td>
-        <td class="num"><input type="text" inputmode="decimal" class="mono-field pc-input real-field${temReal1 ? " filled" : ""}" style="width:100px;" value="${fmtEdit(c.real_imp_despesas)}" onchange="pcSalvarCampo('${c.id}','real_imp_despesas', this.value)"></td>
+        <td class="num"><input type="text" inputmode="decimal" class="mono-field pc-input real-field${temReal1 ? " filled" : ""}" style="width:100px;" placeholder="NÃO PAGO" value="${fmtEdit(c.real_imp_despesas)}" onchange="pcSalvarCampo('${c.id}','real_imp_despesas', this.value)"></td>
         <td class="num" id="pcCell_prev_cambio_manual_${c.id}">${cambio !== null
           ? `<span class="pc-calc-chip pc-editavel" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_cambio_manual',${cambio})">${fmtN(cambio, 2)}</span>`
           : `<span class="pc-editavel" style="color:var(--text-faint);" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_cambio_manual',null)">—</span>`}</td>
-        <td class="num"><input type="text" inputmode="decimal" class="mono-field pc-input real-field${temReal2 ? " filled" : ""}" style="width:100px;" value="${fmtEdit(c.real_cambio)}" onchange="pcSalvarCampo('${c.id}','real_cambio', this.value)"></td>
+        <td class="num"><input type="text" inputmode="decimal" class="mono-field pc-input real-field${temReal2 ? " filled" : ""}" style="width:100px;" placeholder="NÃO PAGO" value="${fmtEdit(c.real_cambio)}" onchange="pcSalvarCampo('${c.id}','real_cambio', this.value)"></td>
       </tr>`;
     }).join("");
   }
@@ -3081,17 +3082,15 @@ async function loadEstoqueFuturo(){
     }
   }
 
-  // 3) saldo do STOKBOX pros SKUs vinculados — fechado no dia 01 do mês atual (não é o saldo ao vivo)
+  // 3) saldo do STOKBOX pros SKUs vinculados — saldo TOTAL ATUAL (ao vivo, somando todos os canais)
   EF_ESTOQUE = {};
   EF_ESTOQUE_SEM_HISTORICO = {};
   const skusStokboxVinculados = [...new Set(Object.values(EF_LINK))];
   if (skusStokboxVinculados.length){
-    const hoje = new Date();
-    const cutoffIso = new Date(hoje.getFullYear(), hoje.getMonth(), 1, 0, 0, 0).toISOString();
-    const { data: saldoData, error: eSaldo } = await db.rpc("ef_saldo_em_data", { p_skus: skusStokboxVinculados, p_cutoff: cutoffIso });
+    const { data: saldoData, error: eSaldo } = await db.from("estoque_atual").select("sku,saldo").in("sku", skusStokboxVinculados);
     if (eSaldo) toast("Erro ao calcular saldo inicial do STOKBOX.", "error");
     const saldoPorStokbox = {};
-    (saldoData||[]).forEach(r => { saldoPorStokbox[r.sku] = Number(r.saldo)||0; });
+    (saldoData||[]).forEach(r => { saldoPorStokbox[r.sku] = (saldoPorStokbox[r.sku] || 0) + (Number(r.saldo) || 0); });
     skusHub.forEach(s => {
       if (!EF_LINK[s]) return;
       if (saldoPorStokbox[EF_LINK[s]] !== undefined) EF_ESTOQUE[s] = saldoPorStokbox[EF_LINK[s]];
@@ -3158,14 +3157,26 @@ function efMarcaClass(marca){
 function efCalcularSerie(sku){
   const meses = efMesesList();
   let inicial = EF_ESTOQUE[sku] || 0;
-  return meses.map(m => {
+  const hoje = new Date();
+  return meses.map((m, idx) => {
     const fech = EF_FECHAMENTOS[`${sku}|${m.key}`];
     const venda = efGetMedia(sku, m.key);
+    // mês atual (idx 0): o Inicial agora é o saldo AO VIVO de hoje (já reflete o que saiu até agora),
+    // então no cálculo do Final usamos só a fração da Média referente aos dias que ainda faltam no
+    // mês — pra não descontar de novo o que já saiu antes de hoje. Meses futuros usam a média cheia
+    // (dias restantes = todos os dias do mês, já que a projeção começa do dia 1 desses meses).
+    let vendaInterna = venda;
+    if (idx === 0){
+      const [anoM, mesM] = m.key.split("-").map(Number);
+      const diasDoMes = new Date(anoM, mesM, 0).getDate();
+      const diasRestantes = Math.max(0, Math.min(diasDoMes, diasDoMes - hoje.getDate() + 1));
+      vendaInterna = diasDoMes > 0 ? venda * (diasRestantes / diasDoMes) : venda;
+    }
     const entradasManuais = efEntradasManuaisDoMes(sku, m.key);
     const entradasContainer = efEntradasContainerDoMes(sku, m.key);
     const contribsEntrada = [...entradasManuais, ...entradasContainer];
     const entrada = contribsEntrada.reduce((s,c) => s + c.qtd, 0);
-    const computedFinal = inicial - venda + entrada;
+    const computedFinal = inicial - vendaInterna + entrada;
     const locked = fech !== undefined;
     const final = locked ? fech : computedFinal;
     const row = { mes: m, inicial, venda, entrada, contribsEntrada, final, locked };
@@ -4631,7 +4642,7 @@ window.plImportarSelecionados = async function(fonte){
     const s = PL_STAGING[fonte].find(x => String(x.id) === String(id));
     if (!s) continue;
     const { data: novoContainer, error: eC } = await db.from("imp_containers").insert({
-      fonte, nome: s.codigo, etd: s.etd_sugerido, eta: null, origem_staging_id: s.id
+      fonte, nome: s.codigo, etd: s.etd_sugerido, eta: null, origem_staging_id: s.id, status_embarque: "booking"
     }).select().single();
     if (eC || !novoContainer){ toast(`Erro ao importar ${s.codigo}.`, "error"); continue; }
     const payloads = (s.itens || []).map((it, idx) => {
