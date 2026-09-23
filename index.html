@@ -445,8 +445,14 @@
   table.pc-table tbody tr.pc-row-pago{ background: var(--success-soft); }
   table.pc-table tbody tr.pc-row-pago td:first-child{ border-left:3px solid var(--success); }
   table.pc-table tbody tr:not(.pc-row-pago) td:first-child{ border-left:3px solid var(--warn); }
-  .pc-calc-chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:600; padding:3px 9px; border-radius:6px; background:var(--accent-soft); color:var(--accent-dark); }
+  table.pc-table th, table.pc-table td{ text-align:center; }
+  table.pc-table td{ font-size:13.5px; }
+  table.pc-table td.mono{ font-weight:700; letter-spacing:.2px; }
+  .pc-calc-chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:13.5px; font-weight:700; padding:4px 11px; border-radius:7px; background:var(--accent-soft); color:var(--accent-dark); letter-spacing:.2px; }
+  .pc-table input.pc-input{ text-align:center; font-size:13.5px; font-weight:600; padding:7px 8px; }
   .pc-table input.real-field.filled{ background:var(--success-soft); border-color:#bbf7d0; color:#166534; font-weight:700; }
+  .pc-perc-wrap{ display:inline-flex; align-items:center; justify-content:center; gap:4px; }
+  .pc-perc-sign{ font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:var(--text-muted); }
   @media (max-width: 1000px){ .dash-grid-2{ grid-template-columns: 1fr; } }
   .dash-pend-item{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); cursor:pointer; }
   .dash-pend-item:last-child{ border-bottom:none; }
@@ -1973,6 +1979,8 @@ function renderPrevisaoCustos(){
     return da.localeCompare(dbb); // mais antigos em cima
   });
 
+  const fmtEdit = v => (v === null || v === undefined || v === "") ? "" : fmtN(v, 2);
+
   if (!lista.length){
     tbody.innerHTML = `<tr><td colspan="11" class="empty-state">${PC_CONTAINERS.length ? "Nenhum contêiner com esse filtro." : "Nenhum contêiner LOGBOX cadastrado ainda."}</td></tr>`;
   } else {
@@ -1985,18 +1993,20 @@ function renderPrevisaoCustos(){
       const valorPill = c.invoice_confirmada
         ? `<span class="pc-valor-pill invoice">✅ Valor Invoice</span>`
         : `<span class="pc-valor-pill previa">⏳ Prévia</span>`;
+      const temReal1 = c.real_imp_despesas !== null && c.real_imp_despesas !== undefined && c.real_imp_despesas !== "";
+      const temReal2 = c.real_cambio !== null && c.real_cambio !== undefined && c.real_cambio !== "";
       return `<tr class="${c.cambio_fechado ? "pc-row-pago" : ""}">
         <td style="font-weight:700;">${escapeHtml(c.nome)}</td>
         <td><span class="pc-status-pill ${pcStatusClasse(c)}">${pcStatusIcone(c)} ${pcStatusLabel(c)}</span></td>
         <td>${valorPill}</td>
-        <td class="num mono">${c.valor_container !== null && c.valor_container !== undefined ? "US$ " + fmtN(c.valor_container, 2) : "—"}</td>
+        <td class="num mono">US$ ${c.valor_container !== null && c.valor_container !== undefined ? fmtN(c.valor_container, 2) : "—"}</td>
         <td>${dataChegadaHtml}</td>
-        <td class="num"><input type="text" inputmode="decimal" class="mono-field" style="width:70px; text-align:right;" value="${c.estimativa_dolar ?? ""}" onchange="pcSalvarCampo('${c.id}','estimativa_dolar', this.value)"></td>
-        <td class="num"><input type="text" inputmode="decimal" class="mono-field" style="width:60px; text-align:right;" value="${c.perc_imp_despesas ?? ""}" onchange="pcSalvarCampo('${c.id}','perc_imp_despesas', this.value)"></td>
+        <td class="num"><input type="text" inputmode="decimal" class="mono-field pc-input" style="width:78px;" value="${fmtEdit(c.estimativa_dolar)}" onchange="pcSalvarCampo('${c.id}','estimativa_dolar', this.value)"></td>
+        <td class="num"><div class="pc-perc-wrap"><input type="text" inputmode="decimal" class="mono-field pc-input" style="width:44px;" value="${c.perc_imp_despesas ?? ""}" onchange="pcSalvarCampo('${c.id}','perc_imp_despesas', this.value)"><span class="pc-perc-sign">%</span></div></td>
         <td class="num">${impDesp !== null ? `<span class="pc-calc-chip">${fmtN(impDesp, 2)}</span>` : `<span style="color:var(--text-faint);">—</span>`}</td>
-        <td class="num"><input type="text" inputmode="decimal" class="mono-field real-field${(c.real_imp_despesas !== null && c.real_imp_despesas !== undefined && c.real_imp_despesas !== "") ? " filled" : ""}" style="width:90px; text-align:right;" value="${c.real_imp_despesas ?? ""}" onchange="pcSalvarCampo('${c.id}','real_imp_despesas', this.value)"></td>
+        <td class="num"><input type="text" inputmode="decimal" class="mono-field pc-input real-field${temReal1 ? " filled" : ""}" style="width:100px;" value="${fmtEdit(c.real_imp_despesas)}" onchange="pcSalvarCampo('${c.id}','real_imp_despesas', this.value)"></td>
         <td class="num">${cambio !== null ? `<span class="pc-calc-chip">${fmtN(cambio, 2)}</span>` : `<span style="color:var(--text-faint);">—</span>`}</td>
-        <td class="num"><input type="text" inputmode="decimal" class="mono-field real-field${(c.real_cambio !== null && c.real_cambio !== undefined && c.real_cambio !== "") ? " filled" : ""}" style="width:90px; text-align:right;" value="${c.real_cambio ?? ""}" onchange="pcSalvarCampo('${c.id}','real_cambio', this.value)"></td>
+        <td class="num"><input type="text" inputmode="decimal" class="mono-field pc-input real-field${temReal2 ? " filled" : ""}" style="width:100px;" value="${fmtEdit(c.real_cambio)}" onchange="pcSalvarCampo('${c.id}','real_cambio', this.value)"></td>
       </tr>`;
     }).join("");
   }
