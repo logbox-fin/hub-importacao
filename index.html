@@ -453,6 +453,10 @@
   .pc-table input.real-field.filled{ background:var(--success-soft); border-color:#bbf7d0; color:#166534; font-weight:700; }
   .pc-perc-wrap{ display:inline-flex; align-items:center; justify-content:center; gap:4px; }
   .pc-perc-sign{ font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:var(--text-muted); }
+  .pc-editavel{ cursor:pointer; border-bottom:1px dashed var(--border-strong); padding-bottom:1px; }
+  .pc-editavel:hover{ border-bottom-color:var(--accent); }
+  span.pc-calc-chip.pc-editavel{ border-bottom:none; }
+  span.pc-calc-chip.pc-editavel:hover{ background:var(--accent); color:#fff; }
   @media (max-width: 1000px){ .dash-grid-2{ grid-template-columns: 1fr; } }
   .dash-pend-item{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); cursor:pointer; }
   .dash-pend-item:last-child{ border-bottom:none; }
@@ -1954,10 +1958,12 @@ function pcStatusValor(c){
   return c.invoice_confirmada ? "Valor Invoice" : "Prévia";
 }
 function pcPrevisaoCambio(c){
+  if (c.prev_cambio_manual !== null && c.prev_cambio_manual !== undefined && c.prev_cambio_manual !== "") return Number(c.prev_cambio_manual);
   if (c.valor_container === null || c.valor_container === undefined || c.estimativa_dolar === null || c.estimativa_dolar === undefined) return null;
   return Number(c.valor_container) * Number(c.estimativa_dolar);
 }
 function pcPrevisaoImpDespesas(c){
+  if (c.prev_imp_despesas_manual !== null && c.prev_imp_despesas_manual !== undefined && c.prev_imp_despesas_manual !== "") return Number(c.prev_imp_despesas_manual);
   const cambio = pcPrevisaoCambio(c);
   if (cambio === null || c.perc_imp_despesas === null || c.perc_imp_despesas === undefined) return null;
   return cambio * (Number(c.perc_imp_despesas) / 100);
@@ -1999,13 +2005,19 @@ function renderPrevisaoCustos(){
         <td style="font-weight:700;">${escapeHtml(c.nome)}</td>
         <td><span class="pc-status-pill ${pcStatusClasse(c)}">${pcStatusIcone(c)} ${pcStatusLabel(c)}</span></td>
         <td>${valorPill}</td>
-        <td class="num mono">US$ ${c.valor_container !== null && c.valor_container !== undefined ? fmtN(c.valor_container, 2) : "—"}</td>
+        <td class="num mono" id="pcCell_valor_container_${c.id}">${c.invoice_confirmada
+          ? `US$ ${c.valor_container !== null && c.valor_container !== undefined ? fmtN(c.valor_container, 2) : "—"}`
+          : `<span class="pc-editavel" title="Clique para editar" onclick="pcEditarCampo('${c.id}','valor_container',${c.valor_container === null || c.valor_container === undefined ? "null" : c.valor_container})">US$ ${c.valor_container !== null && c.valor_container !== undefined ? fmtN(c.valor_container, 2) : "—"}</span>`}</td>
         <td>${dataChegadaHtml}</td>
         <td class="num"><input type="text" inputmode="decimal" class="mono-field pc-input" style="width:78px;" value="${fmtEdit(c.estimativa_dolar)}" onchange="pcSalvarCampo('${c.id}','estimativa_dolar', this.value)"></td>
         <td class="num"><div class="pc-perc-wrap"><input type="text" inputmode="decimal" class="mono-field pc-input" style="width:44px;" value="${c.perc_imp_despesas ?? ""}" onchange="pcSalvarCampo('${c.id}','perc_imp_despesas', this.value)"><span class="pc-perc-sign">%</span></div></td>
-        <td class="num">${impDesp !== null ? `<span class="pc-calc-chip">${fmtN(impDesp, 2)}</span>` : `<span style="color:var(--text-faint);">—</span>`}</td>
+        <td class="num" id="pcCell_prev_imp_despesas_manual_${c.id}">${impDesp !== null
+          ? `<span class="pc-calc-chip pc-editavel" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_imp_despesas_manual',${impDesp})">${fmtN(impDesp, 2)}</span>`
+          : `<span class="pc-editavel" style="color:var(--text-faint);" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_imp_despesas_manual',null)">—</span>`}</td>
         <td class="num"><input type="text" inputmode="decimal" class="mono-field pc-input real-field${temReal1 ? " filled" : ""}" style="width:100px;" value="${fmtEdit(c.real_imp_despesas)}" onchange="pcSalvarCampo('${c.id}','real_imp_despesas', this.value)"></td>
-        <td class="num">${cambio !== null ? `<span class="pc-calc-chip">${fmtN(cambio, 2)}</span>` : `<span style="color:var(--text-faint);">—</span>`}</td>
+        <td class="num" id="pcCell_prev_cambio_manual_${c.id}">${cambio !== null
+          ? `<span class="pc-calc-chip pc-editavel" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_cambio_manual',${cambio})">${fmtN(cambio, 2)}</span>`
+          : `<span class="pc-editavel" style="color:var(--text-faint);" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_cambio_manual',null)">—</span>`}</td>
         <td class="num"><input type="text" inputmode="decimal" class="mono-field pc-input real-field${temReal2 ? " filled" : ""}" style="width:100px;" value="${fmtEdit(c.real_cambio)}" onchange="pcSalvarCampo('${c.id}','real_cambio', this.value)"></td>
       </tr>`;
     }).join("");
@@ -2062,6 +2074,15 @@ window.pcSalvarCampo = async function(containerId, campo, valorStr){
   const c = PC_CONTAINERS.find(x => String(x.id) === String(containerId));
   if (c) c[campo] = valor;
   renderPrevisaoCustos();
+};
+window.pcEditarCampo = function(containerId, campo, valorAtual){
+  const wrap = document.getElementById(`pcCell_${campo}_${containerId}`);
+  if (!wrap) return;
+  const val = (valorAtual === null || valorAtual === undefined) ? "" : fmtN(valorAtual, 2);
+  wrap.innerHTML = `<input type="text" inputmode="decimal" class="mono-field pc-input" style="width:100px;" value="${val}" onblur="pcSalvarCampo('${containerId}','${campo}', this.value)" onkeydown="if(event.key==='Enter') this.blur();">`;
+  const input = wrap.querySelector("input");
+  input.focus();
+  input.select();
 };
 
 /* ============================================================ */
