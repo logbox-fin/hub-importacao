@@ -397,6 +397,7 @@
   .kanban-empty{ text-align:center; padding:24px 10px; color:var(--text-faint); font-size:12.5px; }
   .kanban-card .kc-chips{ display:flex; flex-wrap:wrap; gap:5px; margin-bottom:7px; }
   .kanban-card .kc-agente{ font-size:11px; color:var(--text-faint); margin-bottom:8px; }
+  .kanban-card .kc-provisorio{ font-size:10.5px; font-weight:700; color:#92400e; background:var(--warn-soft); border-radius:6px; padding:4px 8px; margin-bottom:8px; display:inline-block; }
 
   /* Chips de meta-informação e urgência — usados nos cards de contêiner (Packing List, Kanban, Arquivo) */
   .meta-chip{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:var(--text-muted); background:var(--surface-alt); border:1px solid var(--border); border-radius:20px; padding:3px 9px; white-space:nowrap; }
@@ -4283,7 +4284,33 @@ window.plToggleBookingFeito = async function(fonte, id, marcado){
   if (s) s.booking_feito = marcado;
   renderPackingList(fonte);
   const { error } = await db.from("imp_containers_staging").update({ booking_feito: marcado }).eq("id", id);
-  if (error){ toast("Erro ao salvar Booking Feito.", "error"); await loadPackingList(fonte); }
+  if (error){ toast("Erro ao salvar Booking Feito.", "error"); await loadPackingList(fonte); return; }
+  if (!s) return;
+
+  const existente = PL_CONTAINERS[fonte].find(c => String(c.origem_staging_id) === String(s.id));
+  if (marcado){
+    // ainda não existe um card desse contêiner no Kanban — cria um provisório (sem itens ainda)
+    if (!existente){
+      const { data: novoContainer, error: eC } = await db.from("imp_containers").insert({
+        fonte, nome: s.codigo, etd: s.etd_sugerido, eta: null, origem_staging_id: s.id, status_embarque: "booking"
+      }).select("*, imp_container_itens(*)").single();
+      if (eC || !novoContainer){ toast("Booking marcado, mas não deu pra criar o card no Kanban — tenta de novo.", "error"); return; }
+      PL_CONTAINERS[fonte].push(novoContainer);
+      if (typeof renderKanban === "function") renderKanban();
+      renderPackingList(fonte);
+      toast(`${s.codigo} entrou no Kanban — Booking Feito.`);
+    }
+  } else {
+    // desmarcou — se o card provisório ainda não tem itens nem saiu do lugar, remove do Kanban
+    if (existente && !(existente.imp_container_itens && existente.imp_container_itens.length) && existente.status_embarque === "booking" && !existente.chegou_em){
+      const { error: eD } = await db.from("imp_containers").delete().eq("id", existente.id);
+      if (!eD){
+        PL_CONTAINERS[fonte] = PL_CONTAINERS[fonte].filter(c => c.id !== existente.id);
+        if (typeof renderKanban === "function") renderKanban();
+        renderPackingList(fonte);
+      }
+    }
+  }
 };
 window.plToggleInvoiceConfirmada = async function(fonte, containerId, marcado){
   if (!marcado){
@@ -4639,6 +4666,7 @@ function renderKanban(){
           <span class="meta-chip" id="estGalpaoWrap_kb_${c.id}">🏭 Estim. galpão: ${fmtDate(c.eta_galpao_estimado)}<span style="cursor:pointer; margin-left:4px;" title="Editar estimativa" onclick="event.stopPropagation(); estimativaGalpaoEditar('kb','${c.fonte}','${c.id}')">✏️</span></span>
         </div>
         ${c.agente_carga ? `<div class="kc-agente">🚚 ${escapeHtml(c.agente_carga)}</div>` : ""}
+        ${(c.imp_container_itens || []).length === 0 ? `<div class="kc-provisorio">📝 Lista de produtos pendente</div>` : ""}
         <div class="kc-foot">
           <span class="tag-emp ${c.fonte === "mti" ? "mti" : "logbox"}">${c.fonte.toUpperCase()}</span>
           <div class="kanban-arrows">
@@ -4803,15 +4831,26 @@ window.plImportarSelecionados = async function(fonte){
   for (const id of ids){
     const s = PL_STAGING[fonte].find(x => String(x.id) === String(id));
     if (!s) continue;
-    const { data: novoContainer, error: eC } = await db.from("imp_containers").insert({
-      fonte, nome: s.codigo, etd: s.etd_sugerido, eta: null, origem_staging_id: s.id, status_embarque: "booking"
-    }).select().single();
-    if (eC || !novoContainer){ toast(`Erro ao importar ${s.codigo}.`, "error"); continue; }
+    // se marcou "Booking Feito" antes, já existe um card provisório pra esse contêiner — completa ele em vez de duplicar
+    const existente = PL_CONTAINERS[fonte].find(c => String(c.origem_staging_id) === String(s.id));
+    let containerId;
+    if (existente){
+      const { error: eU } = await db.from("imp_containers").update({ nome: s.codigo, etd: s.etd_sugerido }).eq("id", existente.id);
+      if (eU){ toast(`Erro ao atualizar ${s.codigo}.`, "error"); continue; }
+      await db.from("imp_container_itens").delete().eq("container_id", existente.id);
+      containerId = existente.id;
+    } else {
+      const { data: novoContainer, error: eC } = await db.from("imp_containers").insert({
+        fonte, nome: s.codigo, etd: s.etd_sugerido, eta: null, origem_staging_id: s.id, status_embarque: "booking"
+      }).select().single();
+      if (eC || !novoContainer){ toast(`Erro ao importar ${s.codigo}.`, "error"); continue; }
+      containerId = novoContainer.id;
+    }
     const payloads = (s.itens || []).map((it, idx) => {
       const skuMatch = plMatchSku(it.modelo, fonte);
       if (!skuMatch) pendCount++;
       return {
-        container_id: novoContainer.id,
+        container_id: containerId,
         modelo_original: it.modelo,
         sku: skuMatch,
         ordem: idx,
@@ -4827,7 +4866,7 @@ window.plImportarSelecionados = async function(fonte){
       const { error: eI } = await db.from("imp_container_itens").insert(payloads);
       if (eI){
         toast(`Erro ao salvar itens de ${s.codigo}: ${eI.message}`, "error");
-        await db.from("imp_containers").delete().eq("id", novoContainer.id);
+        if (!existente) await db.from("imp_containers").delete().eq("id", containerId);
         continue;
       }
       itensCount += payloads.length;
