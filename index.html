@@ -2950,9 +2950,11 @@ function renderPedidoDetItens(){
     return `<div class="ped-item-row">
       <span class="ped-item-drag">⠿</span>
       <input type="checkbox" ${it.selecionado!==false?'checked':''} onchange="pedidoDetItemCampo(${i},'selecionado',this.checked)" style="width:16px; height:16px; accent-color:var(--accent);">
-      <span class="pir-nome">${travado
+      <span class="pir-nome" style="position:relative;">${travado
           ? `<div style="font-weight:600; font-size:13px;">${escapeHtml(it.nome)}</div><div style="font-size:11px; color:var(--text-faint);">${it.sku?escapeHtml(it.sku)+' · ':''}${escapeHtml(it.ncm)||''}</div>`
-          : `<input type="text" value="${escapeHtml(it.nome||'')}" placeholder="Nome do item" oninput="pedidoDetItemCampo(${i},'nome',this.value)">`}</span>
+          : `<input type="text" id="pedItemNome_${i}" autocomplete="off" value="${escapeHtml(it.nome||'')}" placeholder="Nome do item ou busque no cadastro..." oninput="pedidoDetBuscarProduto(${i}, this.value)">
+             ${it.sku ? `<div style="font-size:11px; color:var(--text-faint); margin-top:2px;">${escapeHtml(it.sku)}${it.ncm ? ' · '+escapeHtml(it.ncm) : ''}</div>` : ""}
+             <div id="pedItemDropdown_${i}" class="pl-item-search-dd" style="display:none;"></div>`}</span>
       <span>${it.margem_media!==null&&it.margem_media!==undefined ? `<span class="mkt-badge" style="background:${mbBg(it.margem_media)}; color:${mbColor(it.margem_media)};">${fmtN(it.margem_media,1)}%</span>` : '<span style="color:var(--text-faint); font-size:11.5px;">—</span>'}</span>
       <input type="text" inputmode="decimal" value="${it.rmb??''}" onchange="pedidoDetItemCampo(${i},'rmb',parseNum(this.value))">
       <input type="text" inputmode="numeric" value="${it.qtde??''}" onchange="pedidoDetItemCampo(${i},'qtde',parseNum(this.value))">
@@ -2975,6 +2977,42 @@ window.pedidoDetAddManual = function(){
   PEDIDO_ATUAL.itens.push({ id:"it_"+Math.random().toString(36).slice(2), prod_lote_id:null, nome:"", sku:"", ncm:"", rmb:0, qtde:"", margem_media:null, selecionado:true });
   renderPedidoDetItens();
 };
+// busca no Banco de Dados de Produtos direto na linha de item manual — sem selecionar nada, continua livre (sem SKU)
+window.pedidoDetBuscarProduto = function(i, valor){
+  const it = PEDIDO_ATUAL?.itens[i];
+  if (!it) return;
+  it.nome = valor;
+  if (it.sku){ it.sku = ""; it.ncm = ""; } // editar o nome desvincula do produto selecionado antes
+  salvarPedidoDetalhe();
+  const dd = document.getElementById(`pedItemDropdown_${i}`);
+  if (!dd) return;
+  const q = valor.trim();
+  if (q.length < 2){ dd.style.display = "none"; dd.innerHTML = ""; return; }
+  db.from(TABLE_PRODUTOS).select("sku,nome_produto,ncm").eq("ativo", true).or(`sku.ilike.%${q}%,nome_produto.ilike.%${q}%`).limit(15).then(({ data, error }) => {
+    if (error) return;
+    const matches = data || [];
+    dd.innerHTML = matches.length
+      ? matches.map(p => `<div onclick="pedidoDetSelecionarProduto(${i}, '${escapeHtml(p.sku).replace(/'/g,"\\'")}', '${escapeHtml(p.nome_produto||"").replace(/'/g,"\\'")}', '${escapeHtml(p.ncm||"").replace(/'/g,"\\'")}')"><span class="mono" style="font-weight:700;">${escapeHtml(p.sku)}</span> — ${escapeHtml(p.nome_produto||"")}</div>`).join("")
+      : `<div style="color:var(--text-faint); cursor:default;">Nenhum produto encontrado — pode digitar livre.</div>`;
+    dd.style.display = "block";
+  });
+};
+window.pedidoDetSelecionarProduto = function(i, sku, nome, ncm){
+  const it = PEDIDO_ATUAL?.itens[i];
+  if (!it) return;
+  it.nome = nome;
+  it.sku = sku;
+  it.ncm = ncm;
+  renderPedidoDetItens();
+  salvarPedidoDetalhe();
+};
+document.addEventListener("click", (e) => {
+  document.querySelectorAll("[id^='pedItemDropdown_']").forEach(d => {
+    if (d.style.display === "none") return;
+    const idx = d.id.replace("pedItemDropdown_", "");
+    if (!e.target.closest(`#${d.id}`) && e.target.id !== `pedItemNome_${idx}`) d.style.display = "none";
+  });
+});
 window.pedidoDetAbrirAddLote = async function(){
   if (!PEDIDO_ATUAL.lote_id){ toast("Esse pedido não está vinculado a um lote.", "error"); return; }
   const { data: produtosLote } = await db.from("imp_lote_produtos").select("*").eq("lote_id", PEDIDO_ATUAL.lote_id).order("ordem");
