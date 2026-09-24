@@ -324,6 +324,12 @@
   .pl-staging-card:hover{ border-color:var(--accent); }
   .pl-staging-card.sel{ border-color:var(--accent); background:var(--accent-soft); }
   .pl-staging-card input[type="checkbox"]{ margin-top:3px; width:16px; height:16px; accent-color:var(--accent); flex-shrink:0; pointer-events:none; }
+  .pl-staging-card.booking-ok{ border-left:3px solid var(--success); }
+  .pl-booking-pill{ font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap; flex-shrink:0; }
+  .pl-booking-pill.ok{ background:var(--success-soft); color:#166534; }
+  .pl-booking-pill.pend{ background:var(--warn-soft); color:#92400e; }
+  .pl-booking-toggle{ display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; cursor:pointer; }
+  .pl-booking-toggle input{ pointer-events:auto; margin:0; width:14px; height:14px; accent-color:var(--success); }
   .pl-container-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); cursor:pointer; transition:border-color .12s; }
   .pl-container-card:hover{ border-color:var(--accent); }
   .pl-container-card .plc-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:6px; }
@@ -4179,13 +4185,22 @@ function renderPackingList(fonte){
   if (stagingList){
     stagingList.innerHTML = staging.length ? staging.map(s => {
       const sel = PL_SEL[fonte].has(String(s.id));
-      return `<div class="pl-staging-card ${sel ? "sel" : ""}" onclick="plToggleSel('${fonte}','${s.id}')">
+      const bookingOk = !!s.booking_feito;
+      return `<div class="pl-staging-card ${sel ? "sel" : ""} ${bookingOk ? "booking-ok" : ""}" onclick="plToggleSel('${fonte}','${s.id}')">
         <input type="checkbox" ${sel ? "checked" : ""}>
         <div style="flex:1; min-width:0;">
-          <div class="lote-nome">${escapeHtml(s.codigo)}</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <div class="lote-nome">${escapeHtml(s.codigo)}</div>
+            <span class="pl-booking-pill ${bookingOk ? "ok" : "pend"}">${bookingOk ? "✅ Booking feito" : "⏳ Aguardando booking"}</span>
+          </div>
           <div class="lote-meta">${s.etd_sugerido ? "ETD sugerido: " + new Date(s.etd_sugerido + "T00:00:00").toLocaleDateString("pt-BR") : "sem data na planilha"} · ${s.n_itens} ${s.n_itens === 1 ? "item" : "itens"}</div>
           <div class="mono" style="font-size:13px; font-weight:700; color:var(--text-muted); margin-bottom:8px;">¥ ${fmtN(s.total_rmb, 2)}</div>
-          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); plVerItensStaging('${fonte}','${s.id}')">👁 Ver itens</button>
+          <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); plVerItensStaging('${fonte}','${s.id}')">👁 Ver itens</button>
+            <label class="pl-booking-toggle" style="color:${bookingOk ? "#166534" : "var(--text-muted)"};" onclick="event.stopPropagation();">
+              <input type="checkbox" ${bookingOk ? "checked" : ""} onclick="event.stopPropagation()" onchange="plToggleBookingFeito('${fonte}','${s.id}', this.checked)"> Booking feito
+            </label>
+          </div>
         </div>
       </div>`;
     }).join("") : `<div class="empty-state">Nada pendente de importar no momento — tudo que veio da planilha já foi importado.</div>`;
@@ -4263,6 +4278,13 @@ function renderPackingList(fonte){
   }
   grid.innerHTML = containers.map(cardHtml).join("");
 }
+window.plToggleBookingFeito = async function(fonte, id, marcado){
+  const s = PL_STAGING[fonte].find(x => String(x.id) === String(id));
+  if (s) s.booking_feito = marcado;
+  renderPackingList(fonte);
+  const { error } = await db.from("imp_containers_staging").update({ booking_feito: marcado }).eq("id", id);
+  if (error){ toast("Erro ao salvar Booking Feito.", "error"); await loadPackingList(fonte); }
+};
 window.plToggleInvoiceConfirmada = async function(fonte, containerId, marcado){
   if (!marcado){
     const { error } = await db.from("imp_containers").update({ invoice_confirmada: false }).eq("id", containerId);
