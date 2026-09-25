@@ -1474,6 +1474,12 @@ function ordemEspecialDoSku(sku){
   if (!sku) return null;
   return ORDEM_ESPECIAL_PREFIXOS.find(cfg => sku.startsWith(cfg.prefixo)) || null;
 }
+// Comparação "natural": números dentro do texto são lidos pelo valor inteiro, não
+// caractere por caractere — assim "BC-6CR50" vem antes de "BC-6CR305" (50 < 305) e
+// "VA-BC4000" vem antes de "VA-BC20000" (4000 < 20000), em vez da ordem alfabética pura.
+function compareNatural(a, b){
+  return String(a || "").localeCompare(String(b || ""), "pt-BR", { numeric: true, sensitivity: "base" });
+}
 // Aplica a ordem especial DEPOIS de qualquer sort normal: descobre em quais
 // posições da lista os itens de cada grupo caíram e realoca só esses itens entre
 // si (mantendo a ordem A-Z dentro de cada família) — o resto da lista não muda.
@@ -1489,7 +1495,7 @@ function aplicarOrdemEspecial(list, getSku){
     const ordenado = indices.map(i => list[i]).sort((a, b) => {
       const cfgA = ordemEspecialDoSku(getSku(a)), cfgB = ordemEspecialDoSku(getSku(b));
       if (cfgA.pos !== cfgB.pos) return cfgA.pos - cfgB.pos;
-      return String(getSku(a) || "").localeCompare(String(getSku(b) || ""), "pt-BR");
+      return compareNatural(getSku(a), getSku(b));
     });
     indices.forEach((i, k) => { list[i] = ordenado[k]; });
   });
@@ -3354,7 +3360,10 @@ function efCalcularSerie(sku){
     const locked = fech !== undefined;
     const final = locked ? fech : computedFinal;
     const row = { mes: m, inicial, venda, entrada, contribsEntrada, final, locked };
-    inicial = final;
+    // o Final exibido pode ficar negativo (é o alerta visual de ruptura de estoque),
+    // mas o saldo que vira "Inicial" do mês seguinte nunca pode ser negativo — senão o
+    // déficit de um mês vai se acumulando indefinidamente nos meses seguintes.
+    inicial = Math.max(0, final);
     return row;
   });
 }
@@ -3375,9 +3384,9 @@ function renderEstoqueFuturo(){
   const filtroMarca = EF_FILTRO_MARCA;
   let linhas = EF_GRUPO.filter(g => (!filtroGrupo || g.grupos.includes(filtroGrupo)) && (!filtroMarca || (EF_PRODMAP[g.sku]?.marca || "") === filtroMarca));
   linhas.sort((a,b) => {
-    const ma = (EF_PRODMAP[a.sku]?.marca||"").localeCompare(EF_PRODMAP[b.sku]?.marca||"");
+    const ma = compareNatural(EF_PRODMAP[a.sku]?.marca, EF_PRODMAP[b.sku]?.marca);
     if (ma !== 0) return ma;
-    return a.sku.localeCompare(b.sku);
+    return compareNatural(a.sku, b.sku);
   });
   linhas = aplicarOrdemEspecial(linhas, g => g.sku);
 
@@ -3513,7 +3522,7 @@ window.abrirFecharMes = function(){
 function renderFecharMesModal(){
   const m = EF_FECHAMENTO_ALVO;
   const listaEl = document.getElementById("fecharMesLista");
-  const linhas = aplicarOrdemEspecial(EF_GRUPO.slice().sort((a,b) => a.sku.localeCompare(b.sku)), g => g.sku);
+  const linhas = aplicarOrdemEspecial(EF_GRUPO.slice().sort((a,b) => compareNatural(a.sku, b.sku)), g => g.sku);
   listaEl.innerHTML = linhas.map(g => {
     const serie = efCalcularSerie(g.sku);
     const row = serie.find(r => r.mes.key === m.key);
@@ -3709,8 +3718,10 @@ function getFilteredProdutos(){
     let va = a[sortField], vb = b[sortField];
     if (va === null || va === undefined) va = "";
     if (vb === null || vb === undefined) vb = "";
-    if (typeof va === "string") va = va.toLowerCase();
-    if (typeof vb === "string") vb = vb.toLowerCase();
+    if (typeof va === "string" && typeof vb === "string"){
+      const cmp = compareNatural(va, vb);
+      return sortDir === "asc" ? cmp : -cmp;
+    }
     if (va < vb) return sortDir === "asc" ? -1 : 1;
     if (va > vb) return sortDir === "asc" ? 1 : -1;
     return 0;
