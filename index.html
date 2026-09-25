@@ -261,6 +261,9 @@
   /* Pedido — detalhe (página inteira, igual Quotes) */
   .ped-det-head{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
   .ped-det-head h2{ margin:0; font-size:22px; font-weight:700; }
+  .pd-det-titulo-editavel{ cursor:pointer; border-bottom:1px dashed transparent; }
+  .pd-det-titulo-editavel:hover{ border-bottom-color:var(--border-strong); }
+  #pd_det_titulo_input{ margin:0; font-size:22px; font-weight:700; font-family:'Inter',sans-serif; padding:2px 6px; border-radius:6px; border:1px solid var(--accent); width:min(420px, 100%); }
   .ped-det-head .sub{ font-size:12.5px; color:var(--text-faint); margin-top:2px; }
   .ped-tot-row{ display:grid; grid-template-columns: repeat(3,1fr); gap:14px; margin-bottom:16px; }
   .ped-tot-card{ border-radius:var(--radius); padding:16px 18px; box-shadow:var(--shadow); }
@@ -795,7 +798,7 @@
       <div id="pedido-detalhe" style="display:none;">
         <div class="ped-det-head">
           <div>
-            <h2 id="pd_det_titulo">Pedido</h2>
+            <span id="pd_det_titulo_wrap"><h2 id="pd_det_titulo" class="pd-det-titulo-editavel" onclick="pedidoDetEditarTitulo()" title="Clique pra editar">Pedido</h2></span>
             <div class="sub" id="pd_det_sub"></div>
           </div>
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
@@ -2783,6 +2786,9 @@ window.confirmarGerarPedido = async function(){
 /* ============================================================ */
 let PEDIDOS = [];
 const PED_STATUS_LABEL = { rascunho:"⏳ Rascunho", enviado:"📤 Enviado", confirmado:"✅ Confirmado" };
+const PED_STATUS_LABEL_EN = { rascunho:"⏳ Draft", enviado:"📤 Sent", confirmado:"✅ Confirmed" };
+// responsáveis pra quem o PDF do pedido sai em inglês em vez de português
+const PED_PDF_RESPONSAVEIS_EN = ["molly", "yongxing"];
 
 async function loadPedidos(){
   const { data, error } = await db.from("imp_pedidos").select("*").order("created_at", {ascending:false});
@@ -2935,6 +2941,30 @@ window.fecharPedidoDetalhe = function(){
   document.getElementById("pedidos-lista").style.display = "";
   loadPedidos();
 };
+window.pedidoDetEditarTitulo = function(){
+  if (!PEDIDO_ATUAL) return;
+  const wrap = document.getElementById("pd_det_titulo_wrap");
+  if (!wrap) return;
+  wrap.innerHTML = `<input type="text" id="pd_det_titulo_input" value="${escapeHtml(PEDIDO_ATUAL.nome||'')}" onblur="pedidoDetSalvarTitulo(this.value)" onkeydown="if(event.key==='Enter') this.blur();">`;
+  const input = document.getElementById("pd_det_titulo_input");
+  input.focus();
+  input.select();
+};
+window.pedidoDetSalvarTitulo = async function(valor){
+  const nome = (valor||"").trim();
+  if (!PEDIDO_ATUAL) return;
+  if (!nome){ pedidoDetRenderTitulo(); return; }
+  PEDIDO_ATUAL.nome = nome;
+  pedidoDetRenderTitulo();
+  const { error } = await db.from("imp_pedidos").update({ nome }).eq("id", PEDIDO_ATUAL.id);
+  if (error){ toast("Erro ao salvar o nome do pedido.", "error"); return; }
+  toast("Nome do pedido atualizado.");
+};
+function pedidoDetRenderTitulo(){
+  const wrap = document.getElementById("pd_det_titulo_wrap");
+  if (!wrap || !PEDIDO_ATUAL) return;
+  wrap.innerHTML = `<h2 id="pd_det_titulo" class="pd-det-titulo-editavel" onclick="pedidoDetEditarTitulo()" title="Clique pra editar">${escapeHtml(PEDIDO_ATUAL.nome)}</h2>`;
+}
 function renderPedidoDetItens(){
   if (!PEDIDO_ATUAL) return;
   const cotRmb = parseNum(document.getElementById("pd_det_cotrmb").value) || PEDIDO_ATUAL.cot_rmb || 7;
@@ -2994,9 +3024,26 @@ window.pedidoDetBuscarProduto = function(i, valor){
     dd.innerHTML = matches.length
       ? matches.map(p => `<div onclick="pedidoDetSelecionarProduto(${i}, '${escapeHtml(p.sku).replace(/'/g,"\\'")}', '${escapeHtml(p.nome_produto||"").replace(/'/g,"\\'")}', '${escapeHtml(p.ncm||"").replace(/'/g,"\\'")}')"><span class="mono" style="font-weight:700;">${escapeHtml(p.sku)}</span> — ${escapeHtml(p.nome_produto||"")}</div>`).join("")
       : `<div style="color:var(--text-faint); cursor:default;">Nenhum produto encontrado — pode digitar livre.</div>`;
+    pedItemPosicionarDropdown(i);
     dd.style.display = "block";
   });
 };
+// o card "Produtos do Pedido" tem rolagem própria (.table-wrap{overflow:auto}), que corta um menu
+// posicionado "absolute" preso nele — por isso o dropdown flutua com position:fixed, calculado pela
+// posição real do campo na tela, e fecha sozinho se a página ou a lista rolar.
+function pedItemPosicionarDropdown(i){
+  const dd = document.getElementById(`pedItemDropdown_${i}`);
+  const input = document.getElementById(`pedItemNome_${i}`);
+  if (!dd || !input) return;
+  const rect = input.getBoundingClientRect();
+  dd.style.position = "fixed";
+  dd.style.top = (rect.bottom + 4) + "px";
+  dd.style.left = rect.left + "px";
+  dd.style.width = rect.width + "px";
+}
+document.addEventListener("scroll", () => {
+  document.querySelectorAll("[id^='pedItemDropdown_']").forEach(d => { if (d.style.display !== "none") d.style.display = "none"; });
+}, true);
 window.pedidoDetSelecionarProduto = function(i, sku, nome, ncm){
   const it = PEDIDO_ATUAL?.itens[i];
   if (!it) return;
@@ -3078,10 +3125,18 @@ window.pedidoDetVerLote = function(){
 };
 window.pedidoDetExportarPDF = function(){
   const p = PEDIDO_ATUAL;
+  const emIngles = PED_PDF_RESPONSAVEIS_EN.includes((p.responsavel||"").trim().toLowerCase());
+  const L = emIngles
+    ? { generatedOn:"Generated on", lote:"Batch", totalRmb:"Total RMB", marca:"Brand", responsavel:"Owner",
+        col_num:"#", col_produto:"Product", col_sku:"SKU", col_unit:"¥ Unit.", col_qtd:"Qty", col_total:"Total ¥",
+        produtos:"Products", observacoes:"Notes", statusMap: PED_STATUS_LABEL_EN, locale:"en-US" }
+    : { generatedOn:"Gerado em", lote:"Lote", totalRmb:"Total RMB", marca:"Marca", responsavel:"Responsável",
+        col_num:"#", col_produto:"Produto", col_sku:"SKU", col_unit:"¥ Unit.", col_qtd:"Qtd", col_total:"Total ¥",
+        produtos:"Produtos", observacoes:"Observações", statusMap: PED_STATUS_LABEL, locale:"pt-BR" };
   const cotRmb = parseNum(document.getElementById("pd_det_cotrmb").value) || p.cot_rmb || 7;
   const itensSel = p.itens.filter(it => it.selecionado !== false);
   const totalRmb = itensSel.reduce((s,it) => s + (Number(it.rmb)||0)*(Number(it.qtde)||0), 0);
-  const data = new Date().toLocaleDateString("pt-BR");
+  const data = new Date().toLocaleDateString(L.locale);
   const rowsHTML = itensSel.map((it,i) => `<tr style="background:${i%2===0?'#fff':'#f7f7fb'};">
     <td style="padding:9px 12px; color:#9898aa; font-weight:600; font-size:12px;">${String(i+1).padStart(2,'0')}</td>
     <td style="padding:9px 12px; font-weight:700; font-size:13px;">${escapeHtml(it.nome)}</td>
@@ -3108,17 +3163,17 @@ window.pedidoDetExportarPDF = function(){
       .notes-box{background:#f7f7fb; border-radius:10px; padding:14px 16px;}
     </style></head><body>
     <div class="header"><div><div class="logo">HUB <span>IMPORTAÇÃO</span></div><div style="font-size:11px; color:#9898aa; margin-top:3px;">by LogBox</div></div>
-      <div><div class="ped-title">${escapeHtml(p.nome)}</div><div class="ped-date">Gerado em ${data}</div><div style="text-align:right;"><span class="status-badge">${PED_STATUS_LABEL[p.status]||p.status}</span></div></div></div>
+      <div><div class="ped-title">${escapeHtml(p.nome)}</div><div class="ped-date">${L.generatedOn} ${data}</div><div style="text-align:right;"><span class="status-badge">${L.statusMap[p.status]||p.status}</span></div></div></div>
     <div class="meta-row">
-      <div class="meta-card"><div class="meta-label">Lote</div><div class="meta-value" style="font-size:13px;">${escapeHtml(p.lote_nome)||'—'}</div></div>
-      <div class="meta-card"><div class="meta-label">Total RMB</div><div class="meta-value">¥ ${fmtN(totalRmb)}</div></div>
-      ${p.marca?`<div class="meta-card"><div class="meta-label">Marca</div><div class="meta-value" style="font-size:13px;">${escapeHtml(p.marca)}</div></div>`:''}
-      ${p.responsavel?`<div class="meta-card"><div class="meta-label">Responsável</div><div class="meta-value" style="font-size:13px;">${escapeHtml(p.responsavel)}</div></div>`:''}
+      <div class="meta-card"><div class="meta-label">${L.lote}</div><div class="meta-value" style="font-size:13px;">${escapeHtml(p.lote_nome)||'—'}</div></div>
+      <div class="meta-card"><div class="meta-label">${L.totalRmb}</div><div class="meta-value">¥ ${fmtN(totalRmb)}</div></div>
+      ${p.marca?`<div class="meta-card"><div class="meta-label">${L.marca}</div><div class="meta-value" style="font-size:13px;">${escapeHtml(p.marca)}</div></div>`:''}
+      ${p.responsavel?`<div class="meta-card"><div class="meta-label">${L.responsavel}</div><div class="meta-value" style="font-size:13px;">${escapeHtml(p.responsavel)}</div></div>`:''}
     </div>
-    <table><thead><tr><th>#</th><th>Produto</th><th>SKU</th><th>¥ Unit.</th><th>Qtd</th><th>Total ¥</th></tr></thead><tbody>${rowsHTML}</tbody></table>
-    <div class="totals-bar"><div><div style="font-size:9px; font-weight:700; opacity:.5; text-transform:uppercase;">Produtos</div><div style="font-size:20px; font-weight:900;">${itensSel.length}</div></div>
-      <div><div style="font-size:9px; font-weight:700; opacity:.5; text-transform:uppercase;">Total RMB</div><div style="font-size:20px; font-weight:900;">¥ ${fmtN(totalRmb)}</div></div></div>
-    ${p.obs?`<div class="notes-box"><div class="meta-label">Observações</div><div style="font-size:13px; margin-top:6px; line-height:1.6;">${escapeHtml(p.obs)}</div></div>`:''}
+    <table><thead><tr><th>${L.col_num}</th><th>${L.col_produto}</th><th>${L.col_sku}</th><th>${L.col_unit}</th><th>${L.col_qtd}</th><th>${L.col_total}</th></tr></thead><tbody>${rowsHTML}</tbody></table>
+    <div class="totals-bar"><div><div style="font-size:9px; font-weight:700; opacity:.5; text-transform:uppercase;">${L.produtos}</div><div style="font-size:20px; font-weight:900;">${itensSel.length}</div></div>
+      <div><div style="font-size:9px; font-weight:700; opacity:.5; text-transform:uppercase;">${L.totalRmb}</div><div style="font-size:20px; font-weight:900;">¥ ${fmtN(totalRmb)}</div></div></div>
+    ${p.obs?`<div class="notes-box"><div class="meta-label">${L.observacoes}</div><div style="font-size:13px; margin-top:6px; line-height:1.6;">${escapeHtml(p.obs)}</div></div>`:''}
   </body></html>`;
   const w = window.open("", "_blank");
   w.document.write(html);
