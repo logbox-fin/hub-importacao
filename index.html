@@ -548,7 +548,7 @@
   .fin-total-row.grand input.fin-total-input:focus{ outline-color:rgba(255,255,255,.5); background:rgba(255,255,255,.08); }
 
   .fin-sku-list{ display:flex; flex-direction:column; gap:10px; padding:14px 18px; max-height:640px; overflow-y:auto; }
-  .fin-sku-card{ border:1px solid var(--border); border-radius:10px; background:var(--surface); overflow:hidden; transition:border-color .15s; }
+  .fin-sku-card{ border:1px solid var(--border); border-radius:10px; background:var(--surface); transition:border-color .15s; }
   .fin-sku-card.pend{ border-color:#f0b4b4; background:var(--danger-soft); }
   .fin-sku-card.open{ border-color:var(--accent); }
   .fin-sku-card-header{ display:flex; align-items:center; gap:14px; padding:12px 16px; cursor:pointer; flex-wrap:wrap; }
@@ -6102,24 +6102,42 @@ function nfeParsear(wb){
 }
 
 /* ---------- leitura da aba "ESPELHO DA NOTA" (fac-símile da DANFE) do despachante ---------- */
-// Layout tipo DANFE: rótulo pequeno numa célula, valor na célula logo abaixo (ou, às vezes, à
-// direita na mesma linha) — bem diferente da tabela em linhas/colunas da aba de rateio, por isso
-// a busca aqui é por rótulo (tokens normalizados) em toda a grade, não por cabeçalho de coluna.
+// Layout tipo DANFE: rótulo pequeno numa célula, valor na célula abaixo dele — só que, por causa
+// de mesclagem de células no template, o valor nem sempre fica exatamente na MESMA coluna do
+// rótulo: pode estar 1-2 colunas à direita (ex.: "VALOR DO IPI" tem o valor dele uma coluna
+// adiante). Por isso a busca aqui usa uma JANELA: da coluna do rótulo até a coluna do PRÓXIMO
+// rótulo na mesma linha (sem ultrapassar), tanto na linha de baixo quanto, como reserva, na
+// própria linha à direita. Isso evita tanto perder o valor (janela grande demais pra menos)
+// quanto vazar pro valor do campo vizinho (janela pequena demais pra mais).
+// Rótulos de campo são sempre textos curtos — por isso células de texto longo (parágrafos de
+// observação, descrição de produto) são ignoradas como candidatas a rótulo, evitando bater por
+// acaso num trecho de frase solta que mencione as mesmas palavras.
+const NFE_ESPELHO_ROTULO_MAX_LEN = 45;
 function nfeEspelhoAchaValor(grid, candidatos){
-  for (const tokens of candidatos){
+  for (const cand of candidatos){
+    const tokens = cand.must || cand;
+    const excluir = cand.not || [];
     for (let i = 0; i < grid.length; i++){
       const row = grid[i] || [];
-      for (let j = 0; j < row.length; j++){
-        const norm = finNorm(row[j]);
-        if (!norm) continue;
-        const toks = norm.split(" ").filter(Boolean);
+      // só conta como "rótulo" célula de texto de verdade — um número nunca fecha a janela de
+      // busca (senão um layout "RÓTULO: valor" na mesma linha perderia o próprio valor).
+      const colsComRotulo = [];
+      for (let c = 0; c < row.length; c++){ if (nfeNum(row[c]) === null && finNorm(row[c])) colsComRotulo.push(c); }
+      for (let idx = 0; idx < colsComRotulo.length; idx++){
+        const j = colsComRotulo[idx];
+        const texto = nfeCellStr(row[j]);
+        if (texto.length > NFE_ESPELHO_ROTULO_MAX_LEN) continue; // não é rótulo, é texto corrido
+        const toks = finNorm(row[j]).split(" ").filter(Boolean);
         if (!tokens.every(t => toks.includes(t))) continue;
-        // só a célula logo abaixo — pular 2 linhas arrisca "vazar" pro valor de outro rótulo
-        // empilhado na mesma coluna (ex.: dois campos tipo DANFE um em cima do outro).
-        const vAbaixo = nfeNum((grid[i + 1] || [])[j]);
-        if (vAbaixo !== null) return vAbaixo;
-        for (let dj = 1; dj <= 5; dj++){
-          const v = nfeNum(row[j + dj]);
+        if (excluir.some(t => toks.includes(t))) continue;
+        const limite = idx + 1 < colsComRotulo.length ? colsComRotulo[idx + 1] : Math.min(row.length, j + 6);
+        const abaixo = grid[i + 1] || [];
+        for (let c = j; c < limite; c++){
+          const v = nfeNum(abaixo[c]);
+          if (v !== null) return v;
+        }
+        for (let c = j + 1; c < limite; c++){
+          const v = nfeNum(row[c]);
           if (v !== null) return v;
         }
       }
@@ -6133,15 +6151,18 @@ function nfeParsearEspelhoNota(wb){
   const sheet = wb.Sheets[sheetName];
   const grid = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null, raw: true });
   return {
-    total_produtos: nfeEspelhoAchaValor(grid, [["VALOR","TOTAL","PRODUTOS"], ["TOTAL","PRODUTOS"]]),
-    base_icms: nfeEspelhoAchaValor(grid, [["BASE","CALCULO","ICMS"], ["BC","ICMS"]]),
-    valor_icms: nfeEspelhoAchaValor(grid, [["VALOR","ICMS"]]),
+    // exclui "II" pra não bater com um campo combinado tipo "VALOR TOTAL DOS PRODUTOS + II"
+    // (existe nalguns modelos de ESPELHO) — esse não é o Total Produtos puro que a gente quer;
+    // nesse caso é melhor cair no fallback por soma (nfeRecalcular) do que puxar um valor errado.
+    total_produtos: nfeEspelhoAchaValor(grid, [{must:["VALOR","TOTAL","PRODUTOS"], not:["II"]}, {must:["TOTAL","PRODUTOS"], not:["II"]}]),
+    base_icms: nfeEspelhoAchaValor(grid, [{must:["BASE","CALCULO","ICMS"], not:["ST"]}, {must:["BC","ICMS"], not:["ST"]}]),
+    valor_icms: nfeEspelhoAchaValor(grid, [{must:["VALOR","ICMS"], not:["ST"]}]),
     valor_ipi: nfeEspelhoAchaValor(grid, [["VALOR","IPI"]]),
     // Valor do II não consta na aba ESPELHO DA NOTA nem entra na somatória do Total da Nota
     // (confirmado por Wissam) — não faz parte desse painel, só existe por item/por contêiner
     // como soma simples (ver NFE_APOIO.valor_ii em nfeRecalcular), usado no Fechamento Container.
     marinha_mercante: nfeEspelhoAchaValor(grid, [["AFRMM"], ["MARINHA","MERCANTE"]]),
-    despesas_acessorias: nfeEspelhoAchaValor(grid, [["OUTRAS","DESPESAS","ACESSORIAS"], ["DESPESAS","ACESSORIAS"]]),
+    despesas_acessorias: nfeEspelhoAchaValor(grid, [["OUTRAS","DESPESAS","ACESSORIAS"], ["OUTRAS","DESPESAS","ACESSOR"], ["DESPESAS","ACESSORIAS"], ["DESPESAS","ACESSOR"]]),
     total_nota: nfeEspelhoAchaValor(grid, [["VALOR","TOTAL","NOTA"], ["TOTAL","NOTA"]])
   };
 }
