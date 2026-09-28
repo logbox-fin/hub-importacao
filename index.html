@@ -541,6 +541,37 @@
   .fin-total-row .val{ font-family:'JetBrains Mono',monospace; font-size:17px; color:var(--accent-dark); }
   .fin-total-row.grand{ background:var(--accent-dark); color:#fff; }
   .fin-total-row.grand .val{ color:#fff; font-size:19px; }
+  .fin-total-list{ border-top:1px solid var(--border); }
+  .fin-total-row input.fin-total-input{ border:none; background:transparent; text-align:right; font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:700; color:var(--accent-dark); width:170px; padding:4px 6px; border-radius:6px; }
+  .fin-total-row input.fin-total-input:focus{ outline:2px solid var(--accent-soft); background:var(--surface); }
+  .fin-total-row.grand input.fin-total-input{ color:#fff; font-size:17px; }
+  .fin-total-row.grand input.fin-total-input:focus{ outline-color:rgba(255,255,255,.5); background:rgba(255,255,255,.08); }
+
+  .fin-sku-list{ display:flex; flex-direction:column; gap:10px; padding:14px 18px; max-height:640px; overflow-y:auto; }
+  .fin-sku-card{ border:1px solid var(--border); border-radius:10px; background:var(--surface); overflow:hidden; transition:border-color .15s; }
+  .fin-sku-card.pend{ border-color:#f0b4b4; background:var(--danger-soft); }
+  .fin-sku-card.open{ border-color:var(--accent); }
+  .fin-sku-card-header{ display:flex; align-items:center; gap:14px; padding:12px 16px; cursor:pointer; flex-wrap:wrap; }
+  .fin-sku-card-header:hover{ background:var(--surface-alt); }
+  .fin-sku-card-id{ min-width:120px; }
+  .fin-sku-card-nome{ flex:1 1 220px; font-size:12.5px; font-weight:600; color:var(--text); min-width:160px; }
+  .fin-sku-card-nums{ display:flex; gap:18px; }
+  .fin-sku-card-nums .grp{ display:flex; flex-direction:column; align-items:flex-end; gap:1px; }
+  .fin-sku-card-nums .lbl{ font-size:9.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-faint); font-weight:700; }
+  .fin-sku-card-nums .val{ font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:var(--text); }
+  .fin-sku-card-chevron{ font-size:11px; color:var(--text-faint); width:16px; text-align:center; }
+  .fin-sku-card-body{ padding:4px 16px 16px; border-top:1px solid var(--border); }
+  .fin-card-section{ padding:12px 0; border-bottom:1px dashed var(--border); }
+  .fin-card-section:last-child{ border-bottom:none; padding-bottom:2px; }
+  .fin-card-section-title{ font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--accent-dark); margin-bottom:9px; }
+  .fin-card-section-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px 14px; }
+  .fin-card-field{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+  .fin-card-field.wide{ grid-column: 1 / -1; }
+  .fin-card-field label{ font-size:10.5px; font-weight:600; color:var(--text-muted); }
+  .fin-card-field input, .fin-card-field select{ padding:7px 9px; border-radius:7px; border:1px solid var(--border-strong); font-family:'JetBrains Mono',monospace; font-size:12.5px; background:var(--surface); color:var(--text); width:100%; }
+  .fin-card-field input:focus{ outline:2px solid var(--accent-soft); border-color:var(--accent); }
+  .fin-card-field .chip-ro{ padding:7px 9px; }
+  .fin-card-field .ref-ro{ font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:700; color:var(--text-faint); }
 
   .fin-cmv-box{ display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:14px; }
   .fin-cmv-card{ border:1px solid var(--border); border-radius:10px; padding:14px 16px; background:var(--surface); }
@@ -5899,6 +5930,8 @@ let NFE_RAW = [];              // linhas cruas lidas do espelho do despachante
 let NFE_MERGED = [];           // linhas por SKU, já mescladas e calculadas (o que é salvo em imp_nfe_apoio_itens)
 let NFE_ALIASES = {};          // modelo_original normalizado -> sku, aprendido (por fonte)
 let NFE_SKU_OVERRIDES = {};    // vínculos manuais feitos nesta sessão, antes de confirmarem o "aprendizado"
+let NFE_ESPELHO_NOTA = null;   // totais lidos direto da aba "ESPELHO DA NOTA" do despachante (fac-símile da DANFE)
+let NFE_EXPANDIDOS = new Set(); // índices dos cards de SKU abertos (Apoio NF-e)
 
 async function loadApoioNfe(){
   await finGarantirContainers(true);
@@ -5914,7 +5947,7 @@ async function loadApoioNfe(){
 window.nfeSelecionarContainer = async function(containerId){
   NFE_CONTAINER_ID = containerId || null;
   NFE_CONTAINER = FIN_CONTAINERS.find(c => String(c.id) === String(containerId)) || null;
-  NFE_RAW = []; NFE_MERGED = []; NFE_SKU_OVERRIDES = {};
+  NFE_RAW = []; NFE_MERGED = []; NFE_SKU_OVERRIDES = {}; NFE_ESPELHO_NOTA = null; NFE_EXPANDIDOS = new Set();
   const el = document.getElementById("nfeConteudo");
   const chip = document.getElementById("nfeStatusChip");
   if (!containerId){
@@ -6046,8 +6079,9 @@ function nfeParsear(wb){
     const qtde = nfeNum(get(row, qtyPcsIdx)) || 0;
     const totalProd = nfeNum(get(row, totalProdutoIdx)) || 0;
     const vmldVal = nfeNum(get(row, vmldRIdx)) || 0;
-    if (!ncmVal && !modelVal && !descVal) continue;
-    if (!ncmVal && qtde === 0 && totalProd === 0 && vmldVal === 0) continue;
+    // linhas sem NCM são subtotais/separadores de "ADIÇÃO XX" do despachante, não itens de fato —
+    // todo item real da planilha sempre tem NCM preenchido.
+    if (!ncmVal) continue;
     raw.push({
       ncm: ncmVal, model: modelVal, descricao: descVal || modelVal,
       qtde, unit: nfeNum(get(row,unitIdx)) || 0, total_produto: totalProd,
@@ -6067,6 +6101,51 @@ function nfeParsear(wb){
   if (!raw.length) toast("A planilha foi lida, mas nenhuma linha de item foi encontrada nela.", "error");
 }
 
+/* ---------- leitura da aba "ESPELHO DA NOTA" (fac-símile da DANFE) do despachante ---------- */
+// Layout tipo DANFE: rótulo pequeno numa célula, valor na célula logo abaixo (ou, às vezes, à
+// direita na mesma linha) — bem diferente da tabela em linhas/colunas da aba de rateio, por isso
+// a busca aqui é por rótulo (tokens normalizados) em toda a grade, não por cabeçalho de coluna.
+function nfeEspelhoAchaValor(grid, candidatos){
+  for (const tokens of candidatos){
+    for (let i = 0; i < grid.length; i++){
+      const row = grid[i] || [];
+      for (let j = 0; j < row.length; j++){
+        const norm = finNorm(row[j]);
+        if (!norm) continue;
+        const toks = norm.split(" ").filter(Boolean);
+        if (!tokens.every(t => toks.includes(t))) continue;
+        // só a célula logo abaixo — pular 2 linhas arrisca "vazar" pro valor de outro rótulo
+        // empilhado na mesma coluna (ex.: dois campos tipo DANFE um em cima do outro).
+        const vAbaixo = nfeNum((grid[i + 1] || [])[j]);
+        if (vAbaixo !== null) return vAbaixo;
+        for (let dj = 1; dj <= 5; dj++){
+          const v = nfeNum(row[j + dj]);
+          if (v !== null) return v;
+        }
+      }
+    }
+  }
+  return null;
+}
+function nfeParsearEspelhoNota(wb){
+  const sheetName = wb.SheetNames.find(n => finNorm(n).includes("ESPELHO"));
+  if (!sheetName) return null;
+  const sheet = wb.Sheets[sheetName];
+  const grid = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null, raw: true });
+  return {
+    total_produtos: nfeEspelhoAchaValor(grid, [["VALOR","TOTAL","PRODUTOS"], ["TOTAL","PRODUTOS"]]),
+    base_icms: nfeEspelhoAchaValor(grid, [["BASE","CALCULO","ICMS"], ["BC","ICMS"]]),
+    valor_icms: nfeEspelhoAchaValor(grid, [["VALOR","ICMS"]]),
+    valor_ipi: nfeEspelhoAchaValor(grid, [["VALOR","IPI"]]),
+    // Valor do II não consta na aba ESPELHO DA NOTA nem entra na somatória do Total da Nota
+    // (confirmado por Wissam) — não faz parte desse painel, só existe por item/por contêiner
+    // como soma simples (ver NFE_APOIO.valor_ii em nfeRecalcular), usado no Fechamento Container.
+    marinha_mercante: nfeEspelhoAchaValor(grid, [["AFRMM"], ["MARINHA","MERCANTE"]]),
+    despesas_acessorias: nfeEspelhoAchaValor(grid, [["OUTRAS","DESPESAS","ACESSORIAS"], ["DESPESAS","ACESSORIAS"]]),
+    total_nota: nfeEspelhoAchaValor(grid, [["VALOR","TOTAL","NOTA"], ["TOTAL","NOTA"]])
+  };
+}
+
 window.nfeArquivoSelecionado = async function(evt){
   const file = evt.target.files[0];
   if (!file) return;
@@ -6076,6 +6155,7 @@ window.nfeArquivoSelecionado = async function(evt){
     const wb = XLSX.read(buf, { type: "array" });
     nfeParsear(wb);
     if (!NFE_RAW.length) return;
+    NFE_ESPELHO_NOTA = nfeParsearEspelhoNota(wb);
     NFE_APOIO.arquivo_nome = file.name;
     nfeRecalcular();
     const pendentes = NFE_MERGED.filter(i => i._pendente).length;
@@ -6142,6 +6222,27 @@ function nfeRecalcular(){
   // (nfeEditarHeaderCampo) sem serem sobrescritos por edições em outros campos.
   NFE_APOIO.frete_total = merged.reduce((s,it) => s + (it._frete || 0), 0);
   NFE_APOIO.capatazia_total = merged.reduce((s,it) => s + (it._capatazia || 0), 0);
+
+  // Totais "do cabeçalho da nota" — vêm direto da aba ESPELHO DA NOTA do despachante (fac-símile
+  // da DANFE) quando encontrados lá; senão caem pro somatório das linhas do rateio, como reserva.
+  // Assim como Frete/Capatazia acima, são calculados só aqui (uma vez por leitura de arquivo) e daí
+  // em diante ficam livres pra edição manual sem serem sobrescritos por edições em itens individuais.
+  const somaMerged = campo => merged.reduce((s,it) => s + (Number(it[campo]) || 0), 0);
+  const E = NFE_ESPELHO_NOTA || {};
+  const pegar = (campoEspelho, somaCampo) => (E[campoEspelho] !== null && E[campoEspelho] !== undefined) ? E[campoEspelho] : somaMerged(somaCampo);
+  NFE_APOIO.total_produtos = pegar("total_produtos", "valor_total");
+  NFE_APOIO.base_icms = pegar("base_icms", "base_icms");
+  NFE_APOIO.valor_icms = pegar("valor_icms", "valor_icms");
+  NFE_APOIO.valor_ipi = pegar("valor_ipi", "valor_ipi");
+  // Valor do II não entra no painel ESPELHO nem na somatória do Total da Nota (confirmado por
+  // Wissam) — aqui é só a soma simples dos itens, trava depois de calculado como os demais campos,
+  // mas segue sendo usado por trás no Fechamento Container.
+  NFE_APOIO.valor_ii = somaMerged("valor_ii");
+  NFE_APOIO.marinha_mercante = pegar("marinha_mercante", "marinha_mercante");
+  NFE_APOIO.despesas_acessorias = (E.despesas_acessorias !== null && E.despesas_acessorias !== undefined) ? E.despesas_acessorias : 0;
+  const totalNotaFallback = NFE_APOIO.total_produtos + NFE_APOIO.valor_ipi + somaMerged("valor_pis") + somaMerged("valor_cofins") + somaMerged("valor_cofins_mais");
+  NFE_APOIO.total_nota = (E.total_nota !== null && E.total_nota !== undefined) ? E.total_nota : totalNotaFallback;
+
   nfeRecalcularTotais();
   nfeRenderTabela();
   nfeSalvarDebounced();
@@ -6150,23 +6251,19 @@ function nfeRecalcularTotais(){
   const soma = campo => NFE_MERGED.reduce((s,it) => s + (Number(it[campo]) || 0), 0);
   const A = NFE_APOIO;
   A.vmld_total = soma("vmld");
-  A.valor_ii = soma("valor_ii");
   A.tx_siscomex = soma("tx_siscomex");
-  A.valor_ipi = soma("valor_ipi");
   A.valor_pis = soma("valor_pis");
   A.valor_cofins = soma("valor_cofins");
   A.valor_cofins_mais = soma("valor_cofins_mais");
-  A.base_icms = soma("base_icms");
-  A.valor_icms = soma("valor_icms");
-  A.marinha_mercante = soma("marinha_mercante");
   A.bc_ibscbs = soma("bc_ibscbs");
   A.valor_cbs = soma("valor_cbs");
   A.valor_ibs_uf = soma("valor_ibs_uf");
   A.valor_ibs = A.valor_ibs_uf;
   A.n_itens = NFE_MERGED.length;
-  A.total_produtos = soma("valor_total");
-  A.total_nota = A.total_produtos + A.valor_ii + A.valor_ipi + A.valor_pis + A.valor_cofins + A.valor_cofins_mais;
-  A.total_nf_ibscbs = A.total_nota + A.valor_cbs + A.valor_ibs;
+  // total_produtos, base_icms, valor_icms, valor_ipi, valor_ii, marinha_mercante, despesas_acessorias
+  // e total_nota NÃO são recalculados aqui — são fixados uma vez em nfeRecalcular() (vindos do
+  // ESPELHO DA NOTA ou somados como reserva) e depois só mudam se o usuário editar o campo direto.
+  A.total_nf_ibscbs = (A.total_nota||0) + A.valor_cbs + A.valor_ibs;
 }
 
 window.nfeEscolherSku = async function(idx, sku){
@@ -6181,10 +6278,11 @@ window.nfeEscolherSku = async function(idx, sku){
   toast("SKU vinculado — aplicado a todas as linhas com essa descrição.");
   nfeRecalcular();
 };
-window.nfeEditarItem = function(idx, campo, valorStr){
+window.nfeEditarItem = function(idx, campo, valorStr, isPct){
   const item = NFE_MERGED[idx];
   if (!item) return;
-  item[campo] = parseNum(valorStr) || 0;
+  const n = parseNum(valorStr) || 0;
+  item[campo] = isPct ? n / 100 : n;
   if (["vmld","marinha_mercante","valor_ii","tx_siscomex"].includes(campo)){
     item.bc_ibscbs = (item.vmld||0) + (item.marinha_mercante||0) + (item.valor_ii||0) + (item.tx_siscomex||0);
     item.valor_cbs = item.bc_ibscbs * 0.009;
@@ -6197,10 +6295,22 @@ window.nfeEditarItem = function(idx, campo, valorStr){
   nfeRenderTabela();
   nfeSalvarDebounced();
 };
-window.nfeEditarHeaderCampo = function(campo, valorStr){
-  NFE_APOIO[campo] = parseNum(valorStr) || 0;
+window.nfeEditarItemTexto = function(idx, campo, valor){
+  const item = NFE_MERGED[idx];
+  if (!item) return;
+  item[campo] = (valor || "").trim();
   nfeRenderTabela();
   nfeSalvarDebounced();
+};
+window.nfeEditarHeaderCampo = function(campo, valorStr){
+  NFE_APOIO[campo] = parseNum(valorStr) || 0;
+  nfeRecalcularTotais();
+  nfeRenderTabela();
+  nfeSalvarDebounced();
+};
+window.nfeToggleCard = function(idx){
+  if (NFE_EXPANDIDOS.has(idx)) NFE_EXPANDIDOS.delete(idx); else NFE_EXPANDIDOS.add(idx);
+  nfeRenderTabela();
 };
 
 function nfeOpcoesSku(){
@@ -6213,6 +6323,129 @@ function nfeOpcoesSku(){
     if (p.sku && !vistos.has(p.sku)){ vistos.add(p.sku); opts += `<option value="${escapeHtml(p.sku)}">${escapeHtml(p.sku)} — ${escapeHtml(p.nome_produto||"")}</option>`; }
   });
   return opts;
+}
+
+/* ---------- cards por SKU (Apoio NF-e) ---------- */
+function nfeCardCampoNum(idx, label, campo, decimals, isPct){
+  const raw = Number(NFE_MERGED[idx][campo]) || 0;
+  const shown = isPct ? raw * 100 : raw;
+  return `<div class="fin-card-field"><label>${label}</label><input type="text" inputmode="decimal" value="${fmtN(shown, decimals===undefined?2:decimals)}" onchange="nfeEditarItem(${idx},'${campo}', this.value, ${isPct?"true":"false"})"></div>`;
+}
+function nfeCardCampoTxt(idx, label, campo, valor, wide){
+  return `<div class="fin-card-field${wide?" wide":""}"><label>${label}</label><input type="text" value="${escapeHtml(valor||"")}" onchange="nfeEditarItemTexto(${idx},'${campo}', this.value)"></div>`;
+}
+function nfeCardCampoRO(label, innerHtml){
+  return `<div class="fin-card-field"><label>${label}</label><div class="chip-ro">${innerHtml}</div></div>`;
+}
+function nfeCardSecao(titulo, camposHtml){
+  return `<div class="fin-card-section"><div class="fin-card-section-title">${titulo}</div><div class="fin-card-section-grid">${camposHtml}</div></div>`;
+}
+function nfeSkuCardHtml(it, idx){
+  const aberto = NFE_EXPANDIDOS.has(idx);
+  const skuBadge = it.sku
+    ? `<span class="fin-sku-badge ${it._rawCount>1?"merged":"match"}">${escapeHtml(it.sku)}${it._rawCount>1?` ×${it._rawCount}`:""}</span>`
+    : `<span class="fin-sku-badge pend">pendente</span>`;
+  const nomeResumo = escapeHtml((it.descricao_despachante||"(sem descrição)").slice(0,70));
+
+  const skuCampo = it.sku
+    ? nfeCardCampoRO("SKU", `<span class="ref-ro">${escapeHtml(it.sku)}${it._rawCount>1?` (mescla ${it._rawCount} linhas)`:""}</span>`)
+    : nfeCardCampoRO("SKU", `<select class="fin-sku-pick" onchange="nfeEscolherSku(${idx}, this.value)"><option value="">Vincular SKU…</option>${nfeOpcoesSku()}</select>`);
+
+  const corpo = !aberto ? "" : `
+    <div class="fin-sku-card-body">
+      ${nfeCardSecao("1 · Base", [
+        nfeCardCampoTxt(idx, "Nome", "descricao_despachante", it.descricao_despachante, true),
+        skuCampo,
+        nfeCardCampoTxt(idx, "NCM", "ncm", it.ncm),
+        nfeCardCampoNum(idx, "Quantidade", "qtde", 0),
+        nfeCardCampoNum(idx, "Preço Unit.", "preco_unit", 8),
+        nfeCardCampoNum(idx, "Valor Total", "valor_total", 2)
+      ].join(""))}
+      ${nfeCardSecao("2 · Imposto de Importação", [
+        nfeCardCampoNum(idx, "VMLD", "vmld", 2),
+        nfeCardCampoNum(idx, "Alíquota II", "aliq_ii", 2, true),
+        nfeCardCampoNum(idx, "Valor II", "valor_ii", 2)
+      ].join(""))}
+      ${nfeCardSecao("3 · IBS e CBS", [
+        nfeCardCampoRO("BC IBS/CBS", `<span class="ref-ro">R$ ${fmtN(it.bc_ibscbs,2)}</span>`),
+        nfeCardCampoRO("Alíq. CBS", `<span class="ref-ro">0,9%</span>`),
+        nfeCardCampoRO("Valor CBS", `<span class="ref-ro">R$ ${fmtN(it.valor_cbs,2)}</span>`),
+        nfeCardCampoRO("Alíq. IBS UF", `<span class="ref-ro">0,1%</span>`),
+        nfeCardCampoRO("Valor IBS UF", `<span class="ref-ro">R$ ${fmtN(it.valor_ibs_uf,2)}</span>`)
+      ].join(""))}
+      ${nfeCardSecao("4 · Cofins", [
+        nfeCardCampoRO("VMLD", `<span class="ref-ro">R$ ${fmtN(it.vmld,2)}</span>`),
+        nfeCardCampoNum(idx, "Alíquota Cofins", "aliq_cofins", 2, true),
+        nfeCardCampoNum(idx, "Valor Cofins", "valor_cofins", 2)
+      ].join(""))}
+      ${nfeCardSecao("5 · PIS", [
+        nfeCardCampoRO("VMLD", `<span class="ref-ro">R$ ${fmtN(it.vmld,2)}</span>`),
+        nfeCardCampoNum(idx, "Alíquota PIS", "aliq_pis", 2, true),
+        nfeCardCampoNum(idx, "Valor PIS", "valor_pis", 2)
+      ].join(""))}
+      ${nfeCardSecao("6 · IPI", [
+        nfeCardCampoRO("VMLD", `<span class="ref-ro">R$ ${fmtN(it.vmld,2)}</span>`),
+        nfeCardCampoNum(idx, "Alíquota IPI", "aliq_ipi", 1, true),
+        nfeCardCampoNum(idx, "Valor IPI", "valor_ipi", 2)
+      ].join(""))}
+      ${nfeCardSecao("7 · ICMS", [
+        nfeCardCampoNum(idx, "Alíq. ICMS", "aliq_icms", 1, true),
+        nfeCardCampoNum(idx, "Valor ICMS", "valor_icms", 2),
+        nfeCardCampoNum(idx, "Base ICMS", "base_icms", 2)
+      ].join(""))}
+    </div>`;
+
+  return `
+    <div class="fin-sku-card ${it._pendente?"pend":""} ${aberto?"open":""}">
+      <div class="fin-sku-card-header" onclick="nfeToggleCard(${idx})">
+        <div class="fin-sku-card-id">${skuBadge}</div>
+        <div class="fin-sku-card-nome" title="${escapeHtml(it.descricao_despachante||"")}">${nomeResumo}</div>
+        <div class="fin-sku-card-nums">
+          <div class="grp"><span class="lbl">Qtde</span><span class="val">${fmtN(it.qtde,0)}</span></div>
+          <div class="grp"><span class="lbl">Total</span><span class="val">R$ ${fmtN(it.valor_total,2)}</span></div>
+        </div>
+        <div class="fin-sku-card-chevron">${aberto?"▲":"▼"}</div>
+      </div>
+      ${corpo}
+    </div>`;
+}
+
+/* ---------- painel de totais (ESPELHO — Totais do Container) ---------- */
+function nfeEspelhoPanelHtml(A){
+  const linha = (label, campo, opts={}) => `
+    <div class="fin-total-row${opts.grand?" grand":""}">
+      <span>${label}</span>
+      <input class="fin-total-input" inputmode="decimal" value="${fmtN(A[campo]||0,2)}" onchange="nfeEditarHeaderCampo('${campo}', this.value)">
+    </div>`;
+  const linhaRO = (label, valorTxt, opts={}) => `<div class="fin-total-row${opts.grand?" grand":""}"><span>${label}</span><span class="val">${valorTxt}</span></div>`;
+  return `
+    <div class="fin-section">
+      <div class="fin-section-head"><div class="fin-section-title">🧾 ESPELHO — Totais do Container</div></div>
+      <div class="fin-section-body">
+        <div class="fin-field-block">
+          <div class="fin-field-block-title">Frete & Capatazia <span class="fin-tag manual">ajustável — vem somado da planilha do despachante</span></div>
+          <div class="fin-grid-fields">
+            <div class="fin-mini-field"><label>Frete Total</label><input type="text" inputmode="decimal" value="${fmtN(A.frete_total||0,2)}" onchange="nfeEditarHeaderCampo('frete_total', this.value)"></div>
+            <div class="fin-mini-field"><label>Capatazia Total</label><input type="text" inputmode="decimal" value="${fmtN(A.capatazia_total||0,2)}" onchange="nfeEditarHeaderCampo('capatazia_total', this.value)"></div>
+          </div>
+        </div>
+      </div>
+      <div class="fin-total-list">
+        ${linha("Total Produtos","total_produtos")}
+        ${linha("Base ICMS","base_icms")}
+        ${linha("Valor ICMS","valor_icms")}
+        ${linha("Valor IPI","valor_ipi")}
+        ${linha("Despesas (outras despesas acessórias)","despesas_acessorias")}
+        ${linha("AFRMM","marinha_mercante")}
+        ${linhaRO("Nº Itens", A.n_itens||0)}
+        ${linha("Total da Nota","total_nota",{grand:true})}
+        ${linhaRO("BC IBS/CBS", "R$ " + fmtN(A.bc_ibscbs||0,2))}
+        ${linhaRO("Valor IBS UF", "R$ " + fmtN(A.valor_ibs_uf||0,2))}
+        ${linhaRO("Valor IBS", "R$ " + fmtN(A.valor_ibs||0,2))}
+        ${linhaRO("Valor CBS", "R$ " + fmtN(A.valor_cbs||0,2))}
+        ${linhaRO("Total NF com IBS/CBS", "R$ " + fmtN(A.total_nf_ibscbs||0,2), {grand:true})}
+      </div>
+    </div>`;
 }
 
 function nfeRenderTabela(){
@@ -6229,91 +6462,17 @@ function nfeRenderTabela(){
     <div class="fin-kpi" style="--fin-color:#0d9488;"><div class="fin-kpi-label">CBS + IBS UF</div><div class="fin-kpi-value">${fmtN((A.valor_cbs||0)+(A.valor_ibs||0),0)}</div><div class="fin-kpi-sub">reforma tributária</div></div>
   </div>`;
 
-  const inp = (idx, campo, decimals) => `<input type="text" inputmode="decimal" class="fin-input" value="${fmtN(NFE_MERGED[idx][campo]||0, decimals===undefined?2:decimals)}" onchange="nfeEditarItem(${idx},'${campo}', this.value)">`;
-  const linhas = NFE_MERGED.map((it, idx) => {
-    const skuCell = it.sku
-      ? `<span class="fin-sku-badge ${it._rawCount>1?"merged":"match"}">${escapeHtml(it.sku)}${it._rawCount>1?` ×${it._rawCount}`:""}</span>`
-      : `<span class="fin-sku-badge pend">pendente</span><br><select class="fin-sku-pick" onchange="nfeEscolherSku(${idx}, this.value)"><option value="">Vincular SKU…</option>${nfeOpcoesSku()}</select>`;
-    return `<tr class="${it._pendente ? "fin-row-unmatched" : ""}">
-      <td class="left">${skuCell}<div style="font-size:10.5px; color:var(--text-faint); margin-top:2px; max-width:220px; white-space:normal;" title="${escapeHtml(it.descricao_despachante)}">${escapeHtml((it.descricao_despachante||"").slice(0,42))}</div></td>
-      <td>${escapeHtml(it.ncm||"—")}</td>
-      <td>${inp(idx,"qtde",0)}</td>
-      <td>${inp(idx,"preco_unit",4)}</td>
-      <td>${inp(idx,"valor_total",2)}</td>
-      <td>${inp(idx,"vmld",2)}</td>
-      <td class="mono">${((it.aliq_ii||0)*100).toFixed(1)}%</td>
-      <td>${inp(idx,"valor_ii",2)}</td>
-      <td>${inp(idx,"tx_siscomex",2)}</td>
-      <td>${inp(idx,"marinha_mercante",2)}</td>
-      <td class="mono" style="color:var(--accent-dark); font-weight:700;">${fmtN(it.bc_ibscbs,2)}</td>
-      <td class="mono">${fmtN(it.valor_cbs,2)}</td>
-      <td class="mono">${fmtN(it.valor_ibs_uf,2)}</td>
-      <td class="mono">${((it.aliq_cofins||0)*100).toFixed(2)}%</td>
-      <td>${inp(idx,"valor_cofins",2)}</td>
-      <td>${inp(idx,"valor_cofins_mais",2)}</td>
-      <td class="mono">${((it.aliq_pis||0)*100).toFixed(2)}%</td>
-      <td>${inp(idx,"valor_pis",2)}</td>
-      <td class="mono">${((it.aliq_ipi||0)*100).toFixed(1)}%</td>
-      <td>${inp(idx,"valor_ipi",2)}</td>
-      <td>${inp(idx,"base_icms",2)}</td>
-      <td class="mono">${((it.aliq_icms||0)*100).toFixed(1)}%</td>
-      <td>${inp(idx,"valor_icms",2)}</td>
-    </tr>`;
-  }).join("");
-
-  const somaCol = campo => NFE_MERGED.reduce((s,it) => s + (Number(it[campo])||0), 0);
+  const cardsHtml = NFE_MERGED.map((it, idx) => nfeSkuCardHtml(it, idx)).join("");
 
   el.innerHTML = kpisHtml + `
     <div class="fin-section">
       <div class="fin-section-head">
-        <div class="fin-section-title">📋 RATEIO por SKU</div>
+        <div class="fin-section-title">📋 Itens do Container (${NFE_MERGED.length} SKU${NFE_MERGED.length===1?"":"s"})</div>
         <button class="btn btn-ghost btn-sm" onclick="nfeTrocarArquivo()">📎 Trocar arquivo</button>
       </div>
-      <div class="table-wrap" style="box-shadow:none; border:none; max-height:560px;">
-        <table class="fin-table">
-          <thead><tr>
-            <th class="left">SKU / Descrição</th><th>NCM</th><th>Qtde</th><th>Preço Un.</th><th>Total</th><th>VMLD</th>
-            <th>Alíq. II</th><th>Valor II</th><th>Tx Siscomex</th><th>AFRMM</th>
-            <th>BC IBS/CBS</th><th>CBS 0,9%</th><th>IBS UF 0,1%</th>
-            <th>Alíq. Cofins</th><th>Cofins 9,65%</th><th>Cofins (+)</th>
-            <th>Alíq. PIS</th><th>PIS</th><th>Alíq. IPI</th><th>IPI</th>
-            <th>Base ICMS</th><th>Alíq. ICMS</th><th>ICMS</th>
-          </tr></thead>
-          <tbody>${linhas || `<tr><td colspan="23" class="empty-state">Nenhum item.</td></tr>`}</tbody>
-          <tfoot><tr>
-            <td class="left">TOTAL (${NFE_MERGED.length} SKU)</td><td></td>
-            <td class="mono">${fmtN(somaCol("qtde"),0)}</td><td></td>
-            <td class="mono">${fmtN(somaCol("valor_total"),2)}</td><td class="mono">${fmtN(somaCol("vmld"),2)}</td>
-            <td></td><td class="mono">${fmtN(somaCol("valor_ii"),2)}</td>
-            <td class="mono">${fmtN(somaCol("tx_siscomex"),2)}</td><td class="mono">${fmtN(somaCol("marinha_mercante"),2)}</td>
-            <td class="mono">${fmtN(somaCol("bc_ibscbs"),2)}</td><td class="mono">${fmtN(somaCol("valor_cbs"),2)}</td><td class="mono">${fmtN(somaCol("valor_ibs_uf"),2)}</td>
-            <td></td><td class="mono">${fmtN(somaCol("valor_cofins"),2)}</td><td class="mono">${fmtN(somaCol("valor_cofins_mais"),2)}</td>
-            <td></td><td class="mono">${fmtN(somaCol("valor_pis"),2)}</td>
-            <td></td><td class="mono">${fmtN(somaCol("valor_ipi"),2)}</td>
-            <td class="mono">${fmtN(somaCol("base_icms"),2)}</td><td></td><td class="mono">${fmtN(somaCol("valor_icms"),2)}</td>
-          </tr></tfoot>
-        </table>
-      </div>
+      <div class="fin-sku-list">${cardsHtml || `<div class="empty-state">Nenhum item.</div>`}</div>
     </div>
-
-    <div class="fin-section">
-      <div class="fin-section-head"><div class="fin-section-title">🧾 ESPELHO — Totais do Container</div></div>
-      <div class="fin-section-body">
-        <div class="fin-field-block">
-          <div class="fin-field-block-title">Frete & Capatazia <span class="fin-tag manual">ajustável — vem somado da planilha do despachante</span></div>
-          <div class="fin-grid-fields">
-            <div class="fin-mini-field"><label>Frete Total</label><input type="text" inputmode="decimal" value="${fmtN(A.frete_total||0,2)}" onchange="nfeEditarHeaderCampo('frete_total', this.value)"></div>
-            <div class="fin-mini-field"><label>Capatazia Total</label><input type="text" inputmode="decimal" value="${fmtN(A.capatazia_total||0,2)}" onchange="nfeEditarHeaderCampo('capatazia_total', this.value)"></div>
-          </div>
-        </div>
-        <div class="fin-total-row"><span>Total Produtos</span><span class="val">R$ ${fmtN(A.total_produtos,2)}</span></div>
-        <div class="fin-total-row"><span>+ I.I. / IPI / PIS / Cofins / Cofins (+)</span><span class="val">R$ ${fmtN((A.valor_ii||0)+(A.valor_ipi||0)+(A.valor_pis||0)+(A.valor_cofins||0)+(A.valor_cofins_mais||0),2)}</span></div>
-        <div class="fin-total-row grand"><span>Total da Nota</span><span class="val">R$ ${fmtN(A.total_nota,2)}</span></div>
-        <div class="fin-total-row"><span>BC IBS/CBS (VMLD + AFRMM + I.I. + Tx Siscomex)</span><span class="val">R$ ${fmtN(A.bc_ibscbs,2)}</span></div>
-        <div class="fin-total-row"><span>+ CBS (0,9%) e IBS UF (0,1%)</span><span class="val">R$ ${fmtN((A.valor_cbs||0)+(A.valor_ibs||0),2)}</span></div>
-        <div class="fin-total-row grand"><span>Total NF com IBS/CBS</span><span class="val">R$ ${fmtN(A.total_nf_ibscbs,2)}</span></div>
-      </div>
-    </div>`;
+    ${nfeEspelhoPanelHtml(A)}`;
 }
 
 let _NFE_SALVAR_TIMER = null;
@@ -6327,6 +6486,7 @@ async function nfeSalvarAgora(){
     valor_ii: A.valor_ii||0, tx_siscomex: A.tx_siscomex||0, valor_ipi: A.valor_ipi||0,
     valor_pis: A.valor_pis||0, valor_cofins: A.valor_cofins||0, valor_cofins_mais: A.valor_cofins_mais||0,
     base_icms: A.base_icms||0, valor_icms: A.valor_icms||0, marinha_mercante: A.marinha_mercante||0,
+    despesas_acessorias: A.despesas_acessorias||0,
     n_itens: A.n_itens||0, total_produtos: A.total_produtos||0, total_nota: A.total_nota||0,
     bc_ibscbs: A.bc_ibscbs||0, valor_cbs: A.valor_cbs||0, valor_ibs_uf: A.valor_ibs_uf||0,
     valor_ibs: A.valor_ibs||0, total_nf_ibscbs: A.total_nf_ibscbs||0, atualizado_em: new Date().toISOString()
