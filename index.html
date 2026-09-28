@@ -523,6 +523,17 @@
   .fin-sku-badge.merged{ background:var(--accent-soft); color:var(--accent-dark); }
   .fin-sku-badge.pend{ background:var(--danger-soft); color:#991b1b; }
 
+  .fin-sku-ac{ position:relative; width:100%; max-width:260px; }
+  .fin-sku-ac-input{ width:100%; font-size:12.5px; padding:6px 8px; border-radius:6px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text); }
+  .fin-sku-ac-input:focus{ outline:2px solid var(--accent-soft); border-color:var(--accent); }
+  .fin-sku-ac-lista{ display:none; position:absolute; z-index:40; top:calc(100% + 3px); left:0; right:0; max-height:220px; overflow-y:auto; background:var(--surface); border:1px solid var(--border-strong); border-radius:8px; box-shadow:0 8px 20px rgba(0,0,0,.14); }
+  .fin-sku-ac-lista.open{ display:block; }
+  .fin-sku-ac-lista .item{ padding:7px 10px; font-size:12px; cursor:pointer; border-bottom:1px solid var(--border); }
+  .fin-sku-ac-lista .item:last-child{ border-bottom:none; }
+  .fin-sku-ac-lista .item:hover{ background:var(--surface-alt); }
+  .fin-sku-ac-lista .item.vazio{ color:var(--text-muted); cursor:default; font-style:italic; }
+  .fin-sku-ac-lista .item.vazio:hover{ background:transparent; }
+
   .fin-field-block{ margin-bottom:18px; }
   .fin-field-block:last-child{ margin-bottom:0; }
   .fin-field-block-title{ font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-faint); margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
@@ -546,6 +557,24 @@
   .fin-total-row input.fin-total-input:focus{ outline:2px solid var(--accent-soft); background:var(--surface); }
   .fin-total-row.grand input.fin-total-input{ color:#fff; font-size:17px; }
   .fin-total-row.grand input.fin-total-input:focus{ outline-color:rgba(255,255,255,.5); background:rgba(255,255,255,.08); }
+
+  /* Fechamento Container — tabela de 3 colunas (espelha a planilha do Wissam) */
+  .fech-tabela3{ display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; margin-top:16px; }
+  @media (max-width: 980px){ .fech-tabela3{ grid-template-columns: 1fr; } }
+  .fech-col{ border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--surface); box-shadow:var(--shadow); }
+  .fech-col-head{ display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#1e3a8a; color:#fff; font-weight:800; font-size:12.5px; text-transform:uppercase; letter-spacing:.4px; }
+  .fech-col-head .val{ font-family:'JetBrains Mono',monospace; font-weight:800; }
+  .fech-row{ display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 14px; font-size:12.5px; border-bottom:1px solid var(--border); color:var(--text); }
+  .fech-row:last-child{ border-bottom:none; }
+  .fech-row.subtotal{ background:var(--surface-alt); font-weight:800; }
+  .fech-row.subtotal.laranja{ background:#fde3c8; }
+  .fech-row.subtotal.verde{ background:#cdefd6; }
+  .fech-row.detalhe{ padding-left:26px; color:var(--text-muted); }
+  .fech-row .val{ font-family:'JetBrains Mono',monospace; font-weight:700; white-space:nowrap; }
+  .fech-row .val.ro{ color:var(--text-muted); font-weight:600; }
+  .fech-row input.fech-input{ width:110px; text-align:right; border:1px solid transparent; background:transparent; font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:700; border-radius:5px; padding:3px 6px; color:var(--text); }
+  .fech-row input.fech-input:hover{ border-color:var(--border-strong); }
+  .fech-row input.fech-input:focus{ outline:none; border-color:var(--accent); background:var(--surface); }
 
   .fin-sku-list{ display:flex; flex-direction:column; gap:10px; padding:14px 18px; max-height:640px; overflow-y:auto; }
   .fin-sku-card{ border:1px solid var(--border); border-radius:10px; background:var(--surface); transition:border-color .15s; }
@@ -3950,6 +3979,7 @@ function renderTableProdutos(){
       <td class="num mono">${p.peso_bruto_caixa_kg !== null ? fmtN(p.peso_bruto_caixa_kg, 3) : "—"}</td>
       <td class="actions-cell" onclick="event.stopPropagation()">
         <button class="btn-icon" title="Editar" onclick="abrirEdicao('${p.id}')">✎</button>
+        <button class="btn-icon" title="Duplicar" onclick="abrirDuplicar('${p.id}')">⧉</button>
         ${p.ativo ? `<button class="btn-icon" title="Desativar" onclick="confirmarDesativar('${p.id}','${escapeHtml(p.sku)}')">🗑</button>` : `<button class="btn-icon" title="Reativar" onclick="reativarProduto('${p.id}')">↺</button>`}
       </td>
     </tr>
@@ -4024,6 +4054,38 @@ window.abrirEdicao = function(id){
   updateCbmPreview();
   document.getElementById("modalTitle").textContent = `Editar Produto — ${p.sku}`;
   document.getElementById("modalOverlay").classList.add("open");
+};
+window.abrirDuplicar = function(id){
+  const p = produtos.find(x => x.id === id);
+  if (!p) return;
+  editingId = null; // salva como produto NOVO, não sobrescreve o original
+  limparForm();
+  const empresasAtuais = Array.isArray(p.empresa) ? p.empresa : (p.empresa ? [p.empresa] : []);
+  document.getElementById("f_empresa_logbox").checked = empresasAtuais.includes("LOGBOX");
+  document.getElementById("f_empresa_mti").checked = empresasAtuais.includes("MTI");
+  document.getElementById("f_ativo").value = "true";
+  document.getElementById("f_sku").value = ""; // SKU precisa ser novo/único
+  document.getElementById("f_nome_produto").value = p.nome_produto || "";
+  document.getElementById("f_nome_ingles").value = p.nome_ingles || "";
+  document.getElementById("f_nome_chines").value = p.nome_chines || "";
+  document.getElementById("f_ncm").value = p.ncm || "";
+  document.getElementById("f_codigo_barras").value = "";
+  document.getElementById("f_marca").value = p.marca || "";
+  document.getElementById("f_comprador").value = p.comprador || "";
+  document.getElementById("f_preco_rmb").value = p.preco_rmb ?? "";
+  document.getElementById("f_valor_duimp_usd").value = p.valor_duimp_usd ?? "";
+  document.getElementById("f_peso_item_kg").value = p.peso_item_kg ?? "";
+  document.getElementById("f_qtde_caixa_master").value = p.qtde_caixa_master ?? "";
+  document.getElementById("f_comprimento_cm").value = p.comprimento_cm ?? "";
+  document.getElementById("f_largura_cm").value = p.largura_cm ?? "";
+  document.getElementById("f_altura_cm").value = p.altura_cm ?? "";
+  document.getElementById("f_peso_liquido_caixa_kg").value = p.peso_liquido_caixa_kg ?? "";
+  document.getElementById("f_peso_bruto_caixa_kg").value = p.peso_bruto_caixa_kg ?? "";
+  updateCbmPreview();
+  document.getElementById("modalTitle").textContent = `Duplicar Produto — baseado em ${p.sku}`;
+  document.getElementById("f_sku").readOnly = false;
+  document.getElementById("modalOverlay").classList.add("open");
+  document.getElementById("f_sku").focus();
 };
 function fecharModal(){ document.getElementById("modalOverlay").classList.remove("open"); }
 document.getElementById("btnNovo").addEventListener("click", abrirNovo);
@@ -5320,7 +5382,7 @@ function renderContainerDetalhe(){
     <div class="pl-item-row">
       <div>${escapeHtml((it.sku && prodNomePorSku[it.sku]) || String(it.modelo_original || "").split("\n")[0])}</div>
       <div>${it.sku
-        ? `<span class="pir-sku-ok">${escapeHtml(it.sku)}</span>`
+        ? `<div class="pir-sku-pend"><span class="pir-sku-ok">${escapeHtml(it.sku)}</span><button class="btn-icon" style="width:24px; height:24px;" title="Trocar SKU vinculado" onclick="plAbrirResolverSku('${fonte}','${it.id}','${escapeHtml(String(it.modelo_original || "").split("\n")[0]).replace(/'/g, "&apos;")}')">🔗</button></div>`
         : `<div class="pir-sku-pend"><span style="color:#d97706; font-weight:700;">⚠ sem SKU</span><button class="btn-icon" style="width:24px; height:24px;" title="Vincular SKU" onclick="plAbrirResolverSku('${fonte}','${it.id}','${escapeHtml(String(it.modelo_original || "").split("\n")[0]).replace(/'/g, "&apos;")}')">🔗</button></div>`}
       </div>
       <div class="mono">${fmtN(it.qty_ctn, 0)}</div>
@@ -5931,6 +5993,7 @@ let NFE_MERGED = [];           // linhas por SKU, já mescladas e calculadas (o 
 let NFE_ALIASES = {};          // modelo_original normalizado -> sku, aprendido (por fonte)
 let NFE_SKU_OVERRIDES = {};    // vínculos manuais feitos nesta sessão, antes de confirmarem o "aprendizado"
 let NFE_ESPELHO_NOTA = null;   // totais lidos direto da aba "ESPELHO DA NOTA" do despachante (fac-símile da DANFE)
+let NFE_FRETE_CAPATAZIA_REAIS = null; // {frete, capatazia} em R$, lidos 2 linhas acima do cabeçalho da aba rateio (a coluna do item é em US$)
 let NFE_EXPANDIDOS = new Set(); // índices dos cards de SKU abertos (Apoio NF-e)
 
 async function loadApoioNfe(){
@@ -5947,7 +6010,7 @@ async function loadApoioNfe(){
 window.nfeSelecionarContainer = async function(containerId){
   NFE_CONTAINER_ID = containerId || null;
   NFE_CONTAINER = FIN_CONTAINERS.find(c => String(c.id) === String(containerId)) || null;
-  NFE_RAW = []; NFE_MERGED = []; NFE_SKU_OVERRIDES = {}; NFE_ESPELHO_NOTA = null; NFE_EXPANDIDOS = new Set();
+  NFE_RAW = []; NFE_MERGED = []; NFE_SKU_OVERRIDES = {}; NFE_ESPELHO_NOTA = null; NFE_FRETE_CAPATAZIA_REAIS = null; NFE_EXPANDIDOS = new Set();
   const el = document.getElementById("nfeConteudo");
   const chip = document.getElementById("nfeStatusChip");
   if (!containerId){
@@ -6102,6 +6165,15 @@ function nfeParsear(wb){
   }
   NFE_RAW = raw;
   if (!raw.length) toast("A planilha foi lida, mas nenhuma linha de item foi encontrada nela.", "error");
+
+  // Frete/Capatazia: a coluna do item (FRETE/102) vem rateada em DÓLAR. Duas linhas acima do
+  // cabeçalho, nas mesmas colunas, o despachante coloca o total do container já em REAIS
+  // (confirmado por Wissam) — guarda aqui pra nfeRecalcular usar em vez do somatório em dólar.
+  const linhaReaisFreteCapatazia = rows[headerRowIdx - 2] || [];
+  NFE_FRETE_CAPATAZIA_REAIS = {
+    frete: nfeNum(get(linhaReaisFreteCapatazia, freteIdx)),
+    capatazia: nfeNum(get(linhaReaisFreteCapatazia, capataziaIdx))
+  };
 }
 
 /* ---------- leitura da aba "ESPELHO DA NOTA" (fac-símile da DANFE) do despachante ---------- */
@@ -6244,8 +6316,13 @@ function nfeRecalcular(){
   // Frete/Capatazia só existem como total do container (não por SKU) — são recalculados aqui,
   // direto da planilha recém-lida, e a partir daí ficam editáveis livremente no painel de totais
   // (nfeEditarHeaderCampo) sem serem sobrescritos por edições em outros campos.
-  NFE_APOIO.frete_total = merged.reduce((s,it) => s + (it._frete || 0), 0);
-  NFE_APOIO.capatazia_total = merged.reduce((s,it) => s + (it._capatazia || 0), 0);
+  // As colunas FRETE/102 por item vêm em DÓLAR (rateado por item); o total certo em REAIS foi lido
+  // à parte em NFE_FRETE_CAPATAZIA_REAIS (nfeParsear, 2 linhas acima do cabeçalho da aba rateio,
+  // confirmado por Wissam) — usamos esse valor quando existir; senão caímos pro somatório em dólar.
+  const freteReais = NFE_FRETE_CAPATAZIA_REAIS && NFE_FRETE_CAPATAZIA_REAIS.frete;
+  const capataziaReais = NFE_FRETE_CAPATAZIA_REAIS && NFE_FRETE_CAPATAZIA_REAIS.capatazia;
+  NFE_APOIO.frete_total = (freteReais !== null && freteReais !== undefined) ? freteReais : merged.reduce((s,it) => s + (it._frete || 0), 0);
+  NFE_APOIO.capatazia_total = (capataziaReais !== null && capataziaReais !== undefined) ? capataziaReais : merged.reduce((s,it) => s + (it._capatazia || 0), 0);
 
   // Totais "do cabeçalho da nota" — vêm direto da aba ESPELHO DA NOTA do despachante (fac-símile
   // da DANFE) quando encontrados lá; senão caem pro somatório das linhas do rateio, como reserva.
@@ -6348,6 +6425,32 @@ function nfeOpcoesSku(){
   });
   return opts;
 }
+function nfeSkuOpcoesLista(){
+  const vistos = new Set();
+  const lista = [];
+  (NFE_CONTAINER && NFE_CONTAINER.imp_container_itens || []).forEach(it => {
+    if (it.sku && !vistos.has(it.sku)){ vistos.add(it.sku); lista.push({ sku: it.sku, nome: (it.modelo_original||"").split("\n")[0] }); }
+  });
+  (FIN_PRODUTOS_CACHE || []).forEach(p => {
+    if (p.sku && !vistos.has(p.sku)){ vistos.add(p.sku); lista.push({ sku: p.sku, nome: p.nome_produto||"" }); }
+  });
+  return lista;
+}
+window.nfeFiltrarSku = function(idx, q){
+  const termo = finNorm(q||"");
+  const lista = nfeSkuOpcoesLista();
+  const filtrados = termo ? lista.filter(o => finNorm(o.sku).includes(termo) || finNorm(o.nome).includes(termo)) : lista;
+  const el = document.getElementById(`finSkuAcLista_${idx}`);
+  if (!el) return;
+  el.innerHTML = filtrados.length
+    ? filtrados.slice(0, 50).map(o => `<div class="item" onmousedown="nfeEscolherSku(${idx}, '${escapeHtml(o.sku).replace(/'/g, "&apos;")}')"><b>${escapeHtml(o.sku)}</b> — ${escapeHtml(o.nome)}</div>`).join("")
+    : `<div class="item vazio">Nenhum SKU encontrado</div>`;
+  el.classList.add("open");
+};
+window.nfeFecharSkuLista = function(idx){
+  // delay pra dar tempo do onmousedown da opção disparar antes do blur fechar a lista
+  setTimeout(() => { const el = document.getElementById(`finSkuAcLista_${idx}`); if (el) el.classList.remove("open"); }, 180);
+};
 
 /* ---------- cards por SKU (Apoio NF-e) ---------- */
 function nfeCardCampoNum(idx, label, campo, decimals, isPct){
@@ -6373,7 +6476,13 @@ function nfeSkuCardHtml(it, idx){
 
   const skuCampo = it.sku
     ? nfeCardCampoRO("SKU", `<span class="ref-ro">${escapeHtml(it.sku)}${it._rawCount>1?` (mescla ${it._rawCount} linhas)`:""}</span>`)
-    : nfeCardCampoRO("SKU", `<select class="fin-sku-pick" onchange="nfeEscolherSku(${idx}, this.value)"><option value="">Vincular SKU…</option>${nfeOpcoesSku()}</select>`);
+    : nfeCardCampoRO("SKU", `<div class="fin-sku-ac">
+        <input type="text" class="fin-sku-ac-input" placeholder="Buscar SKU ou nome do produto…" autocomplete="off"
+          oninput="nfeFiltrarSku(${idx}, this.value)"
+          onfocus="nfeFiltrarSku(${idx}, this.value)"
+          onblur="nfeFecharSkuLista(${idx})">
+        <div class="fin-sku-ac-lista" id="finSkuAcLista_${idx}"></div>
+      </div>`);
 
   const corpo = !aberto ? "" : `
     <div class="fin-sku-card-body">
@@ -6617,11 +6726,69 @@ function fechRender(){
   if (!el || !FECH_DATA) return;
   const c = fechComputar(FECH_DATA);
   const d = FECH_DATA;
-  const auto = `<span class="fin-tag auto">auto (Apoio NF-e)</span>`;
-  const def = `<span class="fin-tag default">padrão</span>`;
-  const campo = (id, label, tag) => `
-    <div class="fin-mini-field"><label>${label} ${tag||""}</label>
-      <input type="text" inputmode="decimal" value="${fmtN(d[id]||0,2)}" onchange="fechEditarCampo('${id}', this.value)"></div>`;
+
+  const val = (n) => fmtN(n||0, 2);
+  const editInput = (id) => `<input class="fech-input" type="text" inputmode="decimal" value="${val(d[id])}" onchange="fechEditarCampo('${id}', this.value)">`;
+  const roVal = (n) => `<span class="val ro">R$ ${val(n)}</span>`;
+  const linha = (label, direita, cls) => `<div class="fech-row ${cls||""}"><span>${label}</span>${direita}</div>`;
+  const subtotal = (label, total, cls) => linha(`<b>${label}</b>`, `<span class="val">R$ ${val(total)}</span>`, `subtotal ${cls||""}`);
+  const editavel = (label, id, cls) => linha(`<b>${label}</b>`, editInput(id), `subtotal ${cls||""}`);
+  const detalheEdit = (label, id) => linha(`- ${label}`, editInput(id), "detalhe");
+  const detalheRO = (label, n) => linha(`- ${label}`, roVal(n), "detalhe");
+  const coluna = (titulo, total, corpo) => `
+    <div class="fech-col">
+      <div class="fech-col-head"><span>${titulo}</span><span class="val">R$ ${val(total)}</span></div>
+      ${corpo}
+    </div>`;
+
+  const colImpostos = coluna("IMPOSTOS", c.totalImpostos, `
+    ${subtotal("GUIA ICMS", c.guiaIcms)}
+    ${detalheEdit("ICMS", "icms")}
+    ${subtotal("SISCOMEX", c.siscomex)}
+    ${detalheEdit("I.I", "ii")}
+    ${detalheEdit("IPI", "ipi")}
+    ${detalheEdit("TAXA SISCOMEX", "tx_siscomex")}
+    ${detalheEdit("PIS", "pis")}
+    ${detalheEdit("COFINS", "cofins")}
+    ${detalheEdit("COFINS (+)", "cofins_mais")}
+  `);
+
+  const colDespesas = coluna("DESPESAS IMPORTAÇÃO", c.totalDespesas, `
+    ${subtotal("LOCAL CHARGE", c.localCharge, "laranja")}
+    ${detalheEdit("DESPESAS EMBARQUE", "despesas_embarque")}
+    ${detalheEdit("TAXA EXPORTADOR", "taxa_exportador")}
+    ${subtotal("AGENTE DE CARGA", c.agente)}
+    ${detalheEdit("FRETE", "frete")}
+    ${detalheEdit("CAPATAZIA", "capatazia")}
+    ${detalheEdit("TAXAS AGENTE DE CARGA", "taxas_agente_carga")}
+    ${detalheEdit("TAXAS NACIONAIS", "taxas_nacionais")}
+    ${editavel("S.D.A.", "sda")}
+    ${subtotal("ATUAL COMEX", c.atualComex)}
+    ${subtotal("SERVIÇOS ATUAL COMEX", c.servicosAtualComex, "verde")}
+    ${detalheEdit("ASSESSORIA", "atual_comex_assessoria")}
+    ${detalheEdit("HONORÁRIOS", "atual_comex_honorarios")}
+    ${detalheEdit("A.F.R.M.M.", "afrmm")}
+    ${detalheEdit("ESCOLTA", "atual_comex_escolta")}
+    ${subtotal("CRÉDITOS ATUAL COMEX", c.creditosAtualComex, "verde")}
+    ${detalheEdit("CRÉDITO IRRF", "atual_comex_credito_irrf")}
+    ${detalheEdit("CRÉDITO PIS", "atual_comex_credito_pis")}
+    ${detalheEdit("CRÉDITO COFINS", "atual_comex_credito_cofins")}
+    ${detalheEdit("CRÉDITO CSLL", "atual_comex_credito_csll")}
+    ${editavel("—", "despesa_extra", "laranja")}
+    ${editavel("ARMAZENAGEM", "armazenagem")}
+    ${editavel("TRANSPORTE FOX", "transporte_fox")}
+  `);
+
+  const colCmv = coluna("CMV CONTÁBIL", c.totalCmvContabil, `
+    ${editavel("VMLD", "vmld")}
+    ${detalheRO("CUSTO PRODUTO", c.custoProduto)}
+    ${detalheRO("FRETE", d.frete||0)}
+    ${detalheRO("CAPATAZIA", d.capatazia||0)}
+    ${linha("<b>I.I</b>", roVal(d.ii||0), "subtotal")}
+    ${linha("<b>TAXA SISCOMEX</b>", roVal(d.tx_siscomex||0), "subtotal")}
+    ${linha("<b>A.F.R.M.M.</b>", roVal(d.afrmm||0), "subtotal")}
+    ${linha("<b>COFINS (+)</b>", roVal(d.cofins_mais||0), "subtotal")}
+  `);
 
   el.innerHTML = `
     <div class="fin-kpis">
@@ -6631,58 +6798,14 @@ function fechRender(){
       <div class="fin-kpi" style="--fin-color:#7c3aed;"><div class="fin-kpi-label">CMV Contábil</div><div class="fin-kpi-value">${fmtN(c.totalCmvContabil,0)}</div><div class="fin-kpi-sub">R$ · total do contêiner</div></div>
     </div>
 
-    <div class="fin-section">
-      <div class="fin-section-head"><div class="fin-section-title">🧾 Impostos</div><button class="btn btn-ghost btn-sm" onclick="fechRepuxarApoio()">🔄 Repuxar do Apoio NF-e</button></div>
-      <div class="fin-section-body">
-        <div class="fin-grid-fields">
-          ${campo("icms","Guia ICMS",auto)}${campo("ii","I.I. (Importação)",auto)}${campo("ipi","IPI",auto)}
-          ${campo("tx_siscomex","Taxa Siscomex",auto)}${campo("pis","PIS",auto)}${campo("cofins","Cofins (9,65%)",auto)}${campo("cofins_mais","Cofins (+)",auto)}
-        </div>
-        <div class="fin-total-row"><span>Guia ICMS</span><span class="val">R$ ${fmtN(c.guiaIcms,2)}</span></div>
-        <div class="fin-total-row"><span>Siscomex (I.I + IPI + Tx Siscomex + PIS + Cofins + Cofins (+))</span><span class="val">R$ ${fmtN(c.siscomex,2)}</span></div>
-        <div class="fin-total-row grand"><span>Total Impostos</span><span class="val">R$ ${fmtN(c.totalImpostos,2)}</span></div>
-      </div>
+    <div style="display:flex; justify-content:flex-end; margin-top:14px;">
+      <button class="btn btn-ghost btn-sm" onclick="fechRepuxarApoio()">🔄 Repuxar do Apoio NF-e</button>
     </div>
 
-    <div class="fin-section">
-      <div class="fin-section-head"><div class="fin-section-title">🚚 Despesas de Importação</div></div>
-      <div class="fin-section-body">
-        <div class="fin-field-block">
-          <div class="fin-field-block-title">Local Charge</div>
-          <div class="fin-grid-fields">${campo("despesas_embarque","Despesas Embarque")}${campo("taxa_exportador","Taxa Exportador",def)}</div>
-        </div>
-        <div class="fin-field-block">
-          <div class="fin-field-block-title">Agente de Carga</div>
-          <div class="fin-grid-fields">${campo("frete","Frete",auto)}${campo("capatazia","Capatazia",auto)}${campo("taxas_agente_carga","Taxas Agente de Carga")}${campo("taxas_nacionais","Taxas Nacionais")}</div>
-        </div>
-        <div class="fin-field-block">
-          <div class="fin-field-block-title">S.D.A. & Atual Comex</div>
-          <div class="fin-grid-fields">
-            ${campo("sda","S.D.A.",def)}${campo("atual_comex_assessoria","Assessoria",def)}${campo("atual_comex_honorarios","Honorários",def)}${campo("afrmm","A.F.R.M.M.",auto)}${campo("atual_comex_escolta","Escolta",def)}
-            ${campo("atual_comex_credito_irrf","Crédito IRRF",def)}${campo("atual_comex_credito_pis","Crédito PIS",def)}${campo("atual_comex_credito_cofins","Crédito COFINS",def)}${campo("atual_comex_credito_csll","Crédito CSLL",def)}
-          </div>
-          <div class="fin-total-row"><span>Serviços Atual Comex</span><span class="val">R$ ${fmtN(c.servicosAtualComex,2)}</span></div>
-          <div class="fin-total-row"><span>Créditos Atual Comex</span><span class="val">− R$ ${fmtN(c.creditosAtualComex,2)}</span></div>
-          <div class="fin-total-row"><span>Atual Comex (líquido)</span><span class="val">R$ ${fmtN(c.atualComex,2)}</span></div>
-        </div>
-        <div class="fin-field-block">
-          <div class="fin-field-block-title">Outras</div>
-          <div class="fin-grid-fields">${campo("despesa_extra","— (sem nome)",def)}${campo("armazenagem","Armazenagem")}${campo("transporte_fox","Transporte Fox")}</div>
-        </div>
-        <div class="fin-total-row grand"><span>Total Despesas de Importação</span><span class="val">R$ ${fmtN(c.totalDespesas,2)}</span></div>
-      </div>
-    </div>
-
-    <div class="fin-section">
-      <div class="fin-section-head"><div class="fin-section-title">📗 CMV Contábil</div></div>
-      <div class="fin-section-body">
-        <div class="fin-grid-fields">${campo("vmld","VMLD Total",auto)}</div>
-        <div class="fin-cmv-box" style="margin-top:14px;">
-          <div class="fin-cmv-card"><div class="lbl">VMLD (Custo Produto + Frete + Capatazia)</div><div class="val">R$ ${fmtN(d.vmld||0,2)}</div></div>
-          <div class="fin-cmv-card"><div class="lbl">Custo Produto (VMLD − Frete − Capatazia)</div><div class="val">R$ ${fmtN(c.custoProduto,2)}</div></div>
-          <div class="fin-cmv-card destaque"><div class="lbl">Total CMV Contábil (VMLD + I.I. + Tx Siscomex + AFRMM + Cofins (+))</div><div class="val">R$ ${fmtN(c.totalCmvContabil,2)}</div></div>
-        </div>
-      </div>
+    <div class="fech-tabela3">
+      ${colImpostos}
+      ${colDespesas}
+      ${colCmv}
     </div>`;
 }
 window.fechEditarCampo = function(campo, valorStr){
