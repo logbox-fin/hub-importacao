@@ -6080,8 +6080,11 @@ function nfeParsear(wb){
     const totalProd = nfeNum(get(row, totalProdutoIdx)) || 0;
     const vmldVal = nfeNum(get(row, vmldRIdx)) || 0;
     // linhas sem NCM são subtotais/separadores de "ADIÇÃO XX" do despachante, não itens de fato —
-    // todo item real da planilha sempre tem NCM preenchido.
-    if (!ncmVal) continue;
+    // todo item real da planilha sempre tem NCM preenchido. Em alguns arquivos essa linha-resumo
+    // da adição VEM com NCM preenchido (cada adição é classificada sob um único NCM), mas o
+    // modelo/descrição começa literalmente com "ADIÇÃO NN" em vez de um produto de verdade — pula também.
+    const ehLinhaAdicao = /^ADI[CÇ][AÃ]O\s*\d/.test(finNorm(modelVal)) || /^ADI[CÇ][AÃ]O\s*\d/.test(finNorm(descVal));
+    if (!ncmVal || ehLinhaAdicao) continue;
     raw.push({
       ncm: ncmVal, model: modelVal, descricao: descVal || modelVal,
       qtde, unit: nfeNum(get(row,unitIdx)) || 0, total_produto: totalProd,
