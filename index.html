@@ -6015,7 +6015,9 @@ let NFE_APOIO = null;          // linha agregada (imp_nfe_apoio) em edição
 let NFE_RAW = [];              // linhas cruas lidas do espelho do despachante
 let NFE_MERGED = [];           // linhas por SKU, já mescladas e calculadas (o que é salvo em imp_nfe_apoio_itens)
 let NFE_ALIASES = {};          // modelo_original normalizado -> sku, aprendido (por fonte)
+let NFE_ALIASES_AMBIGUAS = new Set(); // modelo_original normalizado marcado ambíguo (2+ SKUs diferentes já vistos pra essa descrição, em QUALQUER contêiner) — nfeMatchContainerItem nunca mais tenta adivinhar sozinho pra essas
 let NFE_SKU_OVERRIDES_ROW = {}; // vínculo manual de UMA linha crua específica (índice em NFE_RAW) — todo vínculo manual passa por aqui, nunca por descrição inteira, pra nunca vazar/mesclar sozinho com outras linhas iguais (ex.: cores diferentes do mesmo modelo)
+let NFE_LINHAS_DESVINCULADAS = new Set(); // índices crus (NFE_RAW) que o usuário desfez a mesclagem automática manualmente — ficam pendentes até escolha manual, mesmo que nfeMatchContainerItem ache um SKU
 let NFE_ESPELHO_NOTA = null;   // totais lidos direto da aba "ESPELHO DA NOTA" do despachante (fac-símile da DANFE)
 let NFE_FRETE_CAPATAZIA_REAIS = null; // {frete, capatazia} em R$, lidos 2 linhas acima do cabeçalho da aba rateio (a coluna do item é em US$)
 let NFE_EXPANDIDOS = new Set(); // índices dos cards de SKU abertos (Apoio NF-e)
@@ -6035,7 +6037,7 @@ async function loadApoioNfe(){
 window.nfeSelecionarContainer = async function(containerId){
   NFE_CONTAINER_ID = containerId || null;
   NFE_CONTAINER = FIN_CONTAINERS.find(c => String(c.id) === String(containerId)) || null;
-  NFE_RAW = []; NFE_MERGED = []; NFE_SKU_OVERRIDES_ROW = {}; NFE_ESPELHO_NOTA = null; NFE_FRETE_CAPATAZIA_REAIS = null; NFE_EXPANDIDOS = new Set(); NFE_TROCANDO_SKU = new Set();
+  NFE_RAW = []; NFE_MERGED = []; NFE_SKU_OVERRIDES_ROW = {}; NFE_ESPELHO_NOTA = null; NFE_FRETE_CAPATAZIA_REAIS = null; NFE_EXPANDIDOS = new Set(); NFE_TROCANDO_SKU = new Set(); NFE_LINHAS_DESVINCULADAS = new Set();
   const el = document.getElementById("nfeConteudo");
   const chip = document.getElementById("nfeStatusChip");
   if (!containerId){
@@ -6045,11 +6047,14 @@ window.nfeSelecionarContainer = async function(containerId){
   }
   el.innerHTML = `<div class="fin-empty-hint"><div class="ico">⏳</div>Carregando…</div>`;
 
-  // aliases marcados como ambíguos (mesma descrição já com 2+ SKUs diferentes) ficam de fora do
-  // cache de sugestão automática — o Hub nunca mais tenta "adivinhar" sozinho pra essa descrição.
-  const { data: aliasData } = await db.from("imp_sku_aliases").select("modelo_original,sku").eq("fonte", (NFE_CONTAINER && NFE_CONTAINER.fonte) || "logbox").eq("ambiguo", false);
+  // aliases marcados como ambíguos (mesma descrição já com 2+ SKUs diferentes, aprendido em QUALQUER
+  // contêiner) ficam de fora do cache de sugestão automática E bloqueiam o match automático contra o
+  // Packing List do próprio contêiner (nfeMatchContainerItem) — o Hub nunca mais tenta "adivinhar"
+  // sozinho pra essa descrição, nem aqui nem em nenhum contêiner futuro.
+  const { data: aliasData } = await db.from("imp_sku_aliases").select("modelo_original,sku,ambiguo").eq("fonte", (NFE_CONTAINER && NFE_CONTAINER.fonte) || "logbox");
   NFE_ALIASES = {};
-  (aliasData || []).forEach(a => { NFE_ALIASES[a.modelo_original] = a.sku; });
+  NFE_ALIASES_AMBIGUAS = new Set();
+  (aliasData || []).forEach(a => { if (a.ambiguo) NFE_ALIASES_AMBIGUAS.add(a.modelo_original); else NFE_ALIASES[a.modelo_original] = a.sku; });
 
   const { data: apoioData, error } = await db.from("imp_nfe_apoio").select("*, imp_nfe_apoio_itens(*)").eq("container_id", containerId).maybeSingle();
   if (error){ toast("Erro ao carregar Apoio NF-e.", "error"); }
@@ -6102,6 +6107,12 @@ function nfePct(v){
 function nfeCellStr(v){ return v === null || v === undefined ? "" : String(v).trim(); }
 function nfeMatchContainerItem(chave){
   if (!chave || !NFE_CONTAINER) return null;
+  // descrição já aprendida como ambígua em QUALQUER contêiner anterior (2+ SKUs diferentes vistos pra
+  // ela, ex.: cores) — nunca mais tenta adivinhar sozinho, mesmo que ESTE contêiner em particular só
+  // tenha 1 SKU cadastrado no Packing List pra ela (produtos "normais", como duplicatas de adição da
+  // DI pro mesmo SKU real, nunca caem aqui — só ficam ambíguos quando alguém realmente vincula 2 SKUs
+  // diferentes pra mesma descrição alguma vez, então continuam mesclando automático como sempre)
+  if (NFE_ALIASES_AMBIGUAS.has(chave)) return null;
   // pega os SKUs DISTINTOS do Packing List desse mesmo container que batem com essa descrição — se
   // tiver mais de 1 (ex.: duas cores diferentes do mesmo modelo, texto do despachante não distingue),
   // não dá pra adivinhar sozinho qual linha crua é qual: fica pendente, esperando escolha manual linha
@@ -6306,7 +6317,9 @@ function nfeRecalcular(){
     // fazer nesta leitura, e vale só pra ESTA linha, nunca pras outras com o mesmo texto (ex.: outra
     // cor do mesmo modelo, ainda pendente). NFE_ALIASES é o aprendizado de CONTÊINERES/leituras
     // anteriores (recarregado do banco ao trocar de contêiner ou abrir um arquivo novo).
-    r.sku = NFE_SKU_OVERRIDES_ROW[idx] || NFE_ALIASES[chave] || nfeMatchContainerItem(chave) || null;
+    // NFE_LINHAS_DESVINCULADAS: linha que o usuário desfez uma mesclagem automática errada — força
+    // pendente (não usa alias nem match automático) até ele escolher de novo manualmente.
+    r.sku = NFE_SKU_OVERRIDES_ROW[idx] || (NFE_LINHAS_DESVINCULADAS.has(idx) ? null : (NFE_ALIASES[chave] || nfeMatchContainerItem(chave))) || null;
     // split do COFINS: o despachante manda o valor real (podendo ser 9,65% ou 10,25%); aqui separamos
     // sempre o "padrão" (9,65% da base) do excedente ("Cofins (+)"), pra bater com a planilha do Wissam.
     const base = r.aliq_cofins > 0 ? r.valor_cofins_desp / r.aliq_cofins : 0;
@@ -6451,7 +6464,7 @@ window.nfeEscolherSku = async function(idx, sku){
     // pra não vazar pra outra linha igual ainda pendente (ex.: outra cor do mesmo modelo) — vale tanto
     // pra vínculo novo (pendente, 1 linha só) quanto pra troca de SKU de um item já mesclado (aplica
     // no grupo inteiro que já estava junto, já que essas linhas já eram reconhecidas como o mesmo produto)
-    (item._rawIdxs || []).forEach(i => { NFE_SKU_OVERRIDES_ROW[i] = sku; });
+    (item._rawIdxs || []).forEach(i => { NFE_SKU_OVERRIDES_ROW[i] = sku; NFE_LINHAS_DESVINCULADAS.delete(i); });
     nfeRecalcular();
   }
 };
@@ -6493,6 +6506,18 @@ window.nfeAbrirTrocarSku = function(idx){
   NFE_TROCANDO_SKU.add(idx);
   nfeRenderTabela();
   setTimeout(() => document.querySelector(`#finSkuAcLista_${idx}`)?.previousElementSibling?.focus(), 30);
+};
+window.nfeDesvincularLinhas = function(idx){
+  const item = NFE_MERGED[idx];
+  if (!item) return;
+  if (!NFE_RAW.length){
+    toast("Esse contêiner foi carregado de dados já salvos — não dá pra separar de volta as linhas originais. Suba o arquivo do despachante de novo (📎 Trocar arquivo) pra conseguir desvincular.", "error");
+    return;
+  }
+  if (!item._rawIdxs || item._rawIdxs.length < 2) return;
+  item._rawIdxs.forEach(i => { delete NFE_SKU_OVERRIDES_ROW[i]; NFE_LINHAS_DESVINCULADAS.add(i); });
+  toast(`Linhas separadas — ${item._rawIdxs.length} itens pendentes de novo, vincule cada um com o SKU certo.`);
+  nfeRecalcular();
 };
 
 function nfeOpcoesSku(){
@@ -6562,10 +6587,12 @@ function nfeSkuCardHtml(it, idx){
     : `<span class="fin-sku-badge pend">pendente</span>`;
   const nomeResumo = escapeHtml((it.descricao_despachante||"(sem descrição)").slice(0,70));
 
+  const podeDesvincular = it._rawCount > 1 && NFE_RAW.length > 0;
   const skuCampo = (it.sku && !trocando)
-    ? nfeCardCampoRO("SKU", `<div style="display:flex; align-items:center; gap:6px;">
+    ? nfeCardCampoRO("SKU", `<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
         <span class="ref-ro">${escapeHtml(it.sku)}${it._rawCount>1?` (mescla ${it._rawCount} linhas)`:""}</span>
         <button type="button" class="btn-icon" style="width:22px; height:22px; flex-shrink:0;" title="Trocar SKU vinculado" onclick="event.stopPropagation(); nfeAbrirTrocarSku(${idx})">✎</button>
+        ${podeDesvincular ? `<button type="button" class="btn-icon" style="width:22px; height:22px; flex-shrink:0;" title="Desvincular linhas — separa de volta pra vincular cada uma com um SKU diferente (ex.: cores)" onclick="event.stopPropagation(); nfeDesvincularLinhas(${idx})">🔓</button>` : ""}
       </div>`)
     : nfeCardCampoRO("SKU", `<div class="fin-sku-ac">
         <input type="text" class="fin-sku-ac-input" placeholder="Buscar SKU ou nome do produto…" autocomplete="off"
