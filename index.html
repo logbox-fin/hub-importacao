@@ -481,6 +481,75 @@
   .pc-editavel:hover{ border-bottom-color:var(--accent); }
   span.pc-calc-chip.pc-editavel{ border-bottom:none; }
   span.pc-calc-chip.pc-editavel:hover{ background:var(--accent); color:#fff; }
+
+  /* ============ FINANCEIRO: Apoio NF-e / Fechamento / Precificação Container ============ */
+  .fin-topbar{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 18px; box-shadow:var(--shadow); margin-bottom:16px; }
+  .fin-topbar .field{ min-width:280px; flex:1; }
+  .fin-topbar .field label{ font-size:11px; }
+  .fin-status-chip{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; padding:4px 11px; border-radius:20px; white-space:nowrap; }
+  .fin-status-chip.ok{ background:var(--success-soft); color:#166534; }
+  .fin-status-chip.pend{ background:var(--warn-soft); color:#92400e; }
+  .fin-empty-hint{ background:var(--surface); border:1px dashed var(--border-strong); border-radius:var(--radius); padding:50px 24px; text-align:center; color:var(--text-faint); }
+  .fin-empty-hint .ico{ font-size:34px; margin-bottom:10px; }
+
+  .fin-upload-box{ background:var(--surface); border:2px dashed var(--border-strong); border-radius:var(--radius); padding:28px; text-align:center; margin-bottom:16px; transition:.15s; }
+  .fin-upload-box.dragover{ border-color:var(--accent); background:var(--accent-soft); }
+  .fin-upload-box .ico{ font-size:30px; margin-bottom:8px; }
+  .fin-upload-box input[type=file]{ display:none; }
+
+  .fin-kpis{ display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:16px; }
+  .fin-kpi{ position:relative; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px 14px 18px; box-shadow:var(--shadow); overflow:hidden; }
+  .fin-kpi::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:5px; background: var(--fin-color, var(--accent)); }
+  .fin-kpi-label{ font-size:10px; text-transform:uppercase; letter-spacing:.5px; font-weight:700; color:var(--text-faint); margin-bottom:5px; }
+  .fin-kpi-value{ font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:800; color:var(--text); line-height:1.1; }
+  .fin-kpi-sub{ font-size:10.5px; color:var(--text-muted); margin-top:3px; }
+
+  .fin-section{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:16px; overflow:hidden; }
+  .fin-section-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:13px 18px; border-bottom:1px solid var(--border); background:var(--surface-alt); flex-wrap:wrap; }
+  .fin-section-title{ font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted); display:flex; align-items:center; gap:8px; }
+  .fin-section-body{ padding:16px 18px; }
+
+  table.fin-table{ width:100%; border-collapse:collapse; }
+  table.fin-table th, table.fin-table td{ text-align:center; padding:9px 10px; font-size:12.5px; border-bottom:1px solid var(--border); white-space:nowrap; }
+  table.fin-table thead th{ background:var(--surface-alt); font-size:10.5px; text-transform:uppercase; letter-spacing:.3px; color:var(--text-muted); font-weight:700; position:sticky; top:0; z-index:1; }
+  table.fin-table td.left{ text-align:left; }
+  table.fin-table tbody tr:hover{ background:var(--surface-alt); }
+  table.fin-table tbody tr.fin-row-unmatched{ background:var(--danger-soft); }
+  table.fin-table tfoot td{ font-weight:800; background:var(--surface-alt); border-top:2px solid var(--border-strong); position:sticky; bottom:0; }
+  .fin-table input.fin-input{ width:100%; min-width:70px; text-align:center; font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:600; padding:5px 6px; border-radius:6px; border:1px solid var(--border-strong); background:var(--surface); }
+  .fin-table select.fin-sku-pick{ font-size:12px; padding:5px 6px; border-radius:6px; max-width:210px; }
+  .fin-sku-badge{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px; }
+  .fin-sku-badge.match{ background:var(--success-soft); color:#166534; }
+  .fin-sku-badge.merged{ background:var(--accent-soft); color:var(--accent-dark); }
+  .fin-sku-badge.pend{ background:var(--danger-soft); color:#991b1b; }
+
+  .fin-field-block{ margin-bottom:18px; }
+  .fin-field-block:last-child{ margin-bottom:0; }
+  .fin-field-block-title{ font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-faint); margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+  .fin-tag{ font-size:9.5px; font-weight:700; text-transform:none; letter-spacing:0; padding:2px 7px; border-radius:10px; }
+  .fin-tag.auto{ background:var(--accent-soft); color:var(--accent-dark); }
+  .fin-tag.default{ background:var(--warn-soft); color:#92400e; }
+  .fin-tag.manual{ background:var(--surface-alt); color:var(--text-muted); border:1px solid var(--border); }
+  .fin-grid-fields{ display:grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap:12px 16px; }
+  .fin-mini-field{ display:flex; flex-direction:column; gap:4px; }
+  .fin-mini-field label{ font-size:11px; font-weight:600; color:var(--text-muted); display:flex; align-items:center; gap:5px; justify-content:space-between; }
+  .fin-mini-field input{ padding:8px 10px; border-radius:8px; border:1px solid var(--border-strong); font-family:'JetBrains Mono',monospace; font-size:13.5px; background:var(--surface); color:var(--text); }
+  .fin-mini-field input:focus{ outline:2px solid var(--accent-soft); border-color:var(--accent); }
+  .fin-mini-field input.fin-readonly{ background:var(--surface-alt); color:var(--accent-dark); font-weight:700; cursor:default; }
+
+  .fin-total-row{ display:flex; align-items:center; justify-content:space-between; padding:12px 18px; font-size:13.5px; font-weight:700; background:var(--surface-alt); border-top:1px solid var(--border); }
+  .fin-total-row .val{ font-family:'JetBrains Mono',monospace; font-size:17px; color:var(--accent-dark); }
+  .fin-total-row.grand{ background:var(--accent-dark); color:#fff; }
+  .fin-total-row.grand .val{ color:#fff; font-size:19px; }
+
+  .fin-cmv-box{ display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:14px; }
+  .fin-cmv-card{ border:1px solid var(--border); border-radius:10px; padding:14px 16px; background:var(--surface); }
+  .fin-cmv-card .lbl{ font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; font-weight:700; color:var(--text-faint); margin-bottom:6px; }
+  .fin-cmv-card .val{ font-family:'JetBrains Mono',monospace; font-size:19px; font-weight:800; color:var(--text); }
+  .fin-cmv-card.destaque{ background:var(--accent-dark); border-color:var(--accent-dark); }
+  .fin-cmv-card.destaque .lbl{ color:#c7d2fe; }
+  .fin-cmv-card.destaque .val{ color:#fff; }
+
   @media (max-width: 1000px){ .dash-grid-2{ grid-template-columns: 1fr; } }
   .dash-pend-item{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); cursor:pointer; }
   .dash-pend-item:last-child{ border-bottom:none; }
@@ -512,12 +581,8 @@
 <nav id="sidebar">
   <div class="sidebar-brand">HUB IMPORTAÇÃO<span>LogBox</span></div>
 
-  <div class="nav-item top-level built" data-view="dashboard" data-label="Dashboard" onclick="irPara('dashboard', true, 'Dashboard')">
+  <div class="nav-item built" data-view="dashboard" data-label="Dashboard" onclick="irPara('dashboard', true, 'Dashboard')">
     <span class="label">Dashboard</span><span class="soon-dot"></span>
-  </div>
-
-  <div class="nav-item top-level built" data-view="fabricas" data-label="Fábricas" onclick="irPara('fabricas', true, 'Fábricas')">
-    <span class="label">🏭 Fábricas</span><span class="soon-dot"></span>
   </div>
 
   <div class="nav-group">
@@ -531,6 +596,7 @@
   <div class="nav-group">
     <div class="nav-group-label">Cadastro</div>
     <div class="nav-item built" data-view="v-produtos" onclick="irPara('v-produtos', true, 'Banco de Dados')"><span class="label">Banco de Dados</span><span class="soon-dot"></span></div>
+    <div class="nav-item built" data-view="fabricas" data-label="Fábricas" onclick="irPara('fabricas', true, 'Fábricas')"><span class="label">🏭 Fábricas</span><span class="soon-dot"></span></div>
     <div class="nav-item built" data-view="v-estoquefuturo" onclick="irPara('v-estoquefuturo', true, 'Estoque Futuro')"><span class="label">Estoque Futuro</span><span class="soon-dot"></span></div>
   </div>
 
@@ -551,9 +617,9 @@
   <div class="nav-group">
     <div class="nav-group-label">Financeiro</div>
     <div class="nav-item built" data-view="ph-prevcustos" onclick="irPara('ph-prevcustos', true, 'Previsão dos Custos')"><span class="label">Previsão dos Custos</span><span class="soon-dot"></span></div>
-    <div class="nav-item" data-view="ph-nfe" onclick="irPara('ph-nfe', false, 'Apoio NFe')"><span class="label">Apoio NFe</span><span class="soon-dot"></span></div>
-    <div class="nav-item" data-view="ph-fechcontainer" onclick="irPara('ph-fechcontainer', false, 'Fechamento Container')"><span class="label">Fechamento Container</span><span class="soon-dot"></span></div>
-    <div class="nav-item" data-view="ph-precificacaocontainer" onclick="irPara('ph-precificacaocontainer', false, 'Precificação Container')"><span class="label">Precificação Container</span><span class="soon-dot"></span></div>
+    <div class="nav-item built" data-view="ph-nfe" onclick="irPara('ph-nfe', true, 'Apoio NF-e')"><span class="label">Apoio NFe</span><span class="soon-dot"></span></div>
+    <div class="nav-item built" data-view="ph-fechcontainer" onclick="irPara('ph-fechcontainer', true, 'Fechamento Container')"><span class="label">Fechamento Container</span><span class="soon-dot"></span></div>
+    <div class="nav-item built" data-view="ph-precificacaocontainer" onclick="irPara('ph-precificacaocontainer', true, 'Precificação Container')"><span class="label">Precificação Container</span><span class="soon-dot"></span></div>
     <div class="nav-item" data-view="ph-fechcambio" onclick="irPara('ph-fechcambio', false, 'Fechamento de Câmbio')"><span class="label">Fechamento de Câmbio</span><span class="soon-dot"></span></div>
   </div>
 
@@ -622,6 +688,42 @@
           <tbody id="pcTbody"><tr><td colspan="11" class="empty-state">Carregando…</td></tr></tbody>
         </table>
       </div>
+    </div>
+
+    <!-- ============ APOIO NF-e ============ -->
+    <div class="view" id="view-ph-nfe">
+      <div class="fin-topbar">
+        <div class="field">
+          <label>Contêiner (Desembaraço ou já chegados)</label>
+          <select id="nfeContainerSelect" onchange="nfeSelecionarContainer(this.value)"><option value="">Selecione um contêiner…</option></select>
+        </div>
+        <div id="nfeStatusChip"></div>
+      </div>
+      <div id="nfeConteudo"><div class="fin-empty-hint"><div class="ico">🛃</div>Selecione um contêiner acima pra começar.</div></div>
+    </div>
+
+    <!-- ============ FECHAMENTO CONTAINER ============ -->
+    <div class="view" id="view-ph-fechcontainer">
+      <div class="fin-topbar">
+        <div class="field">
+          <label>Contêiner (Desembaraço ou já chegados)</label>
+          <select id="fechContainerSelect" onchange="fechSelecionarContainer(this.value)"><option value="">Selecione um contêiner…</option></select>
+        </div>
+        <div id="fechStatusChip"></div>
+      </div>
+      <div id="fechConteudo"><div class="fin-empty-hint"><div class="ico">📊</div>Selecione um contêiner acima pra começar.</div></div>
+    </div>
+
+    <!-- ============ PRECIFICAÇÃO CONTAINER ============ -->
+    <div class="view" id="view-ph-precificacaocontainer">
+      <div class="fin-topbar">
+        <div class="field">
+          <label>Contêiner (Desembaraço ou já chegados)</label>
+          <select id="precContainerSelect" onchange="precSelecionarContainer(this.value)"><option value="">Selecione um contêiner…</option></select>
+        </div>
+        <div id="precStatusChip"></div>
+      </div>
+      <div id="precConteudo"><div class="fin-empty-hint"><div class="ico">💰</div>Selecione um contêiner acima pra começar.</div></div>
     </div>
 
     <!-- ============ GENERIC PLACEHOLDER (módulos ainda não construídos) ============ -->
@@ -789,8 +891,8 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Pedido</th><th>Lote</th><th>Marca</th><th>Responsável</th><th>Status</th><th>Data Envio</th><th></th></tr></thead>
-            <tbody id="pedidoTbody"><tr><td colspan="7" class="empty-state">Carregando…</td></tr></tbody>
+            <thead><tr><th>Pedido</th><th>Marca</th><th>Responsável</th><th>Valor do Pedido</th><th>Est. CBM</th><th>Resp. Pagamento</th><th>Fábrica</th><th>Status</th><th>Data Envio</th><th></th></tr></thead>
+            <tbody id="pedidoTbody"><tr><td colspan="10" class="empty-state">Carregando…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -800,6 +902,16 @@
           <div>
             <span id="pd_det_titulo_wrap"><h2 id="pd_det_titulo" class="pd-det-titulo-editavel" onclick="pedidoDetEditarTitulo()" title="Clique pra editar">Pedido</h2></span>
             <div class="sub" id="pd_det_sub"></div>
+            <div style="display:flex; gap:14px; margin-top:6px; flex-wrap:wrap;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <label style="font-size:11.5px; color:var(--text-faint);">Resp. Pagamento:</label>
+                <select id="pd_det_resppag" onchange="pedidoDetSalvarMeta()" style="font-size:12.5px; padding:3px 6px;"></select>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <label style="font-size:11.5px; color:var(--text-faint);">Fábrica:</label>
+                <input type="text" id="pd_det_fabrica" onchange="pedidoDetSalvarMeta()" placeholder="—" style="font-size:12.5px; padding:3px 6px; width:150px;">
+              </div>
+            </div>
           </div>
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <div class="status-pick">
@@ -1112,6 +1224,8 @@
         <div class="field"><label>Lote de Origem</label><select id="pd_lote" onchange="pedidoLoteMudou()"><option value="">— nenhum (pedido do zero) —</option></select></div>
         <div class="field"><label>Marca</label><select id="pd_marca"></select></div>
         <div class="field"><label>Responsável</label><select id="pd_responsavel"></select></div>
+        <div class="field"><label>Responsável de Pagamento</label><select id="pd_responsavel_pagamento"></select></div>
+        <div class="field"><label>Fábrica</label><input type="text" id="pd_fabrica" placeholder="Nome da fábrica"></div>
       </div>
     </div>
     <div class="modal-foot"><span></span><div style="display:flex; gap:10px;"><button class="btn btn-ghost" onclick="fecharModalPedido()">Cancelar</button><button class="btn btn-primary" onclick="criarPedido()">Criar e Abrir →</button></div></div>
@@ -1552,6 +1666,9 @@ function irPara(viewId, built, label){
     if (viewId === "ph-arquivo") loadArquivo();
     if (viewId === "fabricas") loadFabricas();
     if (viewId === "ph-prevcustos") loadPrevisaoCustos();
+    if (viewId === "ph-nfe") loadApoioNfe();
+    if (viewId === "ph-fechcontainer") loadFechamentoContainer();
+    if (viewId === "ph-precificacaocontainer") loadPrecificacaoContainer();
   } else {
     if (viewId === "v-precificacoes") { document.getElementById("precif-lista").style.display=""; document.getElementById("precif-editor").style.display="none"; }
     if (viewId === "v-pedidos") { document.getElementById("pedidos-lista").style.display=""; document.getElementById("pedido-detalhe").style.display="none"; renderPedStatCards(); renderPedidos(); }
@@ -1564,6 +1681,9 @@ function irPara(viewId, built, label){
     if (viewId === "ph-arquivo") loadArquivo();
     if (viewId === "fabricas") loadFabricas();
     if (viewId === "ph-prevcustos") loadPrevisaoCustos();
+    if (viewId === "ph-nfe") loadApoioNfe();
+    if (viewId === "ph-fechcontainer") loadFechamentoContainer();
+    if (viewId === "ph-precificacaocontainer") loadPrecificacaoContainer();
   }
 }
 
@@ -2185,7 +2305,7 @@ async function popularSelectsMarcaResp(){
     const el = document.getElementById(id);
     if (el) el.innerHTML = `<option value="">—</option>` + arr.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
   });
-  [["nl_responsavel",responsaveis], ["le_responsavel",responsaveis], ["pd_responsavel",responsaveis]].forEach(([id, arr]) => {
+  [["nl_responsavel",responsaveis], ["le_responsavel",responsaveis], ["pd_responsavel",responsaveis], ["pd_responsavel_pagamento",responsaveis], ["pd_det_resppag",responsaveis]].forEach(([id, arr]) => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = `<option value="">—</option>` + arr.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
   });
@@ -2791,6 +2911,7 @@ window.confirmarGerarPedido = async function(){
 /* ======================= PEDIDOS =============================== */
 /* ============================================================ */
 let PEDIDOS = [];
+let PED_CBM_MAP = {};
 const PED_STATUS_LABEL = { rascunho:"⏳ Rascunho", enviado:"📤 Enviado", confirmado:"✅ Confirmado" };
 const PED_STATUS_LABEL_EN = { rascunho:"⏳ Draft", enviado:"📤 Sent", confirmado:"✅ Confirmed" };
 // responsáveis pra quem o PDF do pedido sai em inglês em vez de português
@@ -2800,6 +2921,7 @@ async function loadPedidos(){
   const { data, error } = await db.from("imp_pedidos").select("*").order("created_at", {ascending:false});
   if (error){ toast("Erro ao carregar pedidos.", "error"); return; }
   PEDIDOS = data;
+  await pedCarregarCbmMap();
   await popularSelectsMarcaResp();
   const loteSel = document.getElementById("pd_lote");
   loteSel.innerHTML = `<option value="">— nenhum (pedido do zero) —</option>` + LOTES.map(l => `<option value="${l.id}">${escapeHtml(l.nome)}</option>`).join("");
@@ -2808,6 +2930,32 @@ async function loadPedidos(){
 }
 function totalRmbPedido(p){
   return (p.itens||[]).filter(it => it.selecionado !== false).reduce((s,it) => s + (Number(it.rmb)||0)*(Number(it.qtde)||0), 0);
+}
+// mapa sku -> {qtde_caixa_master, cbm_caixa} usado pra estimar o CBM dos pedidos
+// (cbm_caixa = comprimento x largura x altura da caixa master, em m³)
+async function pedCarregarCbmMap(){
+  const { data, error } = await db.from(TABLE_PRODUTOS).select("sku,qtde_caixa_master,comprimento_cm,largura_cm,altura_cm");
+  if (error) return;
+  PED_CBM_MAP = {};
+  (data||[]).forEach(p => {
+    if (!p.qtde_caixa_master || !p.comprimento_cm || !p.largura_cm || !p.altura_cm) return;
+    PED_CBM_MAP[p.sku] = {
+      qtde_caixa_master: Number(p.qtde_caixa_master),
+      cbm_caixa: (Number(p.comprimento_cm) * Number(p.largura_cm) * Number(p.altura_cm)) / 1000000
+    };
+  });
+}
+// estima o CBM total do pedido: por item, (qtde do item ÷ qtde por caixa master) x cbm da caixa.
+// itens sem SKU vinculado ou sem medida cadastrada ficam de fora do cálculo (mas sinalizados).
+function estimativaCbmPedido(p){
+  let cbm = 0, incompleto = false, temAlgum = false;
+  (p.itens||[]).filter(it => it.selecionado !== false).forEach(it => {
+    const info = it.sku ? PED_CBM_MAP[it.sku] : null;
+    if (!info || !info.qtde_caixa_master){ incompleto = true; return; }
+    temAlgum = true;
+    cbm += ((Number(it.qtde)||0) / info.qtde_caixa_master) * info.cbm_caixa;
+  });
+  return { cbm, incompleto, temAlgum };
 }
 function renderPedStatCards(){
   const grupos = { rascunho:{peds:[]}, enviado:{peds:[]}, confirmado:{peds:[]} };
@@ -2839,13 +2987,19 @@ function renderPedidos(){
     return ordenar === "antigo" ? da - db_ : db_ - da;
   });
   const tbody = document.getElementById("pedidoTbody");
-  if (!list.length){ tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Nenhum pedido encontrado.</td></tr>`; return; }
-  tbody.innerHTML = list.map(p => `
+  if (!list.length){ tbody.innerHTML = `<tr><td colspan="10" class="empty-state">Nenhum pedido encontrado.</td></tr>`; return; }
+  tbody.innerHTML = list.map(p => {
+    const { cbm, incompleto, temAlgum } = estimativaCbmPedido(p);
+    const cbmTexto = temAlgum ? `${fmtN(cbm, 2)} m³${incompleto ? " *" : ""}` : (incompleto ? "—*" : "—");
+    return `
     <tr class="pedido-row" onclick="abrirPedidoDetalhe('${p.id}')">
       <td>${escapeHtml(p.nome)}</td>
-      <td>${escapeHtml(p.lote_nome) || "—"}</td>
       <td>${escapeHtml(p.marca) || "—"}</td>
       <td>${escapeHtml(p.responsavel) || "—"}</td>
+      <td class="mono">¥ ${fmtN(totalRmbPedido(p))}</td>
+      <td class="mono" ${incompleto ? 'title="Um ou mais itens sem SKU vinculado ou sem medida de caixa cadastrada — CBM parcial"' : ''}>${cbmTexto}</td>
+      <td>${escapeHtml(p.responsavel_pagamento) || "—"}</td>
+      <td>${escapeHtml(p.fabrica) || "—"}</td>
       <td>
         <span class="status-pick" onclick="event.stopPropagation()">
           <span class="badge-status-pill status-pill ${p.status}">${PED_STATUS_LABEL[p.status]||p.status}</span>
@@ -2859,7 +3013,8 @@ function renderPedidos(){
         <button class="btn-icon" title="Excluir" onclick="confirmarExcluirPedido('${p.id}','${escapeHtml(p.nome)}')">🗑</button>
       </td>
     </tr>
-  `).join("");
+  `;
+  }).join("");
 }
 window.pedidoStatusInline = async function(id, status){
   const { error } = await db.from("imp_pedidos").update({ status }).eq("id", id);
@@ -2871,10 +3026,11 @@ window.pedidoStatusInline = async function(id, status){
   renderPedidos();
 };
 window.abrirNovoPedido = function(){
-  ["pd_nome"].forEach(id => document.getElementById(id).value = "");
+  ["pd_nome","pd_fabrica"].forEach(id => document.getElementById(id).value = "");
   document.getElementById("pd_lote").value = "";
   document.getElementById("pd_marca").value = "";
   document.getElementById("pd_responsavel").value = "";
+  document.getElementById("pd_responsavel_pagamento").value = "";
   document.getElementById("err_pd_nome").textContent = "";
   document.getElementById("modalPedidoOverlay").classList.add("open");
 };
@@ -2896,6 +3052,8 @@ window.criarPedido = async function(){
     nome, lote_id: loteId, lote_nome: lote ? lote.nome : "",
     marca: document.getElementById("pd_marca").value || (lote ? lote.marca : "") || "",
     responsavel: document.getElementById("pd_responsavel").value || (lote ? lote.responsavel : "") || "",
+    responsavel_pagamento: document.getElementById("pd_responsavel_pagamento").value || "",
+    fabrica: document.getElementById("pd_fabrica").value.trim(),
     status: "rascunho", obs: "", itens: [],
     cot_rmb: lote ? lote.cot_rmb : (CONFIG?.rmb_usd || 7), cot_usd: lote ? lote.cot_usd : (CONFIG?.usd_brl || 5.80),
   };
@@ -2933,6 +3091,8 @@ window.abrirPedidoDetalhe = async function(id){
   document.getElementById("pd_det_status_pill").textContent = PED_STATUS_LABEL[p.status]||p.status;
   document.getElementById("pd_det_cotrmb").value = p.cot_rmb || 7;
   document.getElementById("pd_det_obs").value = p.obs || "";
+  document.getElementById("pd_det_resppag").value = p.responsavel_pagamento || "";
+  document.getElementById("pd_det_fabrica").value = p.fabrica || "";
   document.getElementById("pd_det_verlote").style.opacity = p.lote_id ? "1" : ".45";
   document.getElementById("pd_det_verlote").style.cursor = p.lote_id ? "pointer" : "not-allowed";
   document.getElementById("pd_det_addlote").style.display = p.lote_id ? "" : "none";
@@ -2940,6 +3100,18 @@ window.abrirPedidoDetalhe = async function(id){
   document.getElementById("pedidos-lista").style.display = "none";
   document.getElementById("pedido-detalhe").style.display = "block";
   renderPedidoDetItens();
+};
+window.pedidoDetSalvarMeta = async function(){
+  if (!PEDIDO_ATUAL) return;
+  const responsavel_pagamento = document.getElementById("pd_det_resppag").value;
+  const fabrica = document.getElementById("pd_det_fabrica").value.trim();
+  PEDIDO_ATUAL.responsavel_pagamento = responsavel_pagamento;
+  PEDIDO_ATUAL.fabrica = fabrica;
+  const { error } = await db.from("imp_pedidos").update({ responsavel_pagamento, fabrica }).eq("id", PEDIDO_ATUAL.id);
+  if (error){ toast("Erro ao salvar.", "error"); return; }
+  const p = PEDIDOS.find(x => x.id === PEDIDO_ATUAL.id);
+  if (p){ p.responsavel_pagamento = responsavel_pagamento; p.fabrica = fabrica; }
+  toast("Atualizado.");
 };
 window.fecharPedidoDetalhe = function(){
   PEDIDO_ATUAL = null;
@@ -5680,6 +5852,804 @@ function renderDashboard(d){
     </div>`;
 
   el.innerHTML = kpisHtml + pendHtml + `<div class="dash-grid-2">${statusHtml}${empresaHtml}</div>` + ultimosHtml;
+}
+
+/* ============================================================ */
+/* ======================= FINANCEIRO: APOIO NF-e, FECHAMENTO E PRECIFICAÇÃO DE CONTAINER ======================= */
+/* ============================================================ */
+/* As 3 telas compartilham a mesma lista de contêineres (Desembaraço + já chegados/arquivados)      */
+/* e o mesmo cache leve do catálogo de produtos, pra não bater no banco toda hora à toa.             */
+let FIN_CONTAINERS = null;
+let FIN_PRODUTOS_CACHE = null;
+
+async function finGarantirContainers(forcar){
+  if (FIN_CONTAINERS && !forcar) return FIN_CONTAINERS;
+  const { data, error } = await db.from("imp_containers").select("*, imp_container_itens(*)")
+    .or("status_embarque.eq.desembaraco,chegou_em.not.is.null")
+    .order("etd", { ascending: false });
+  if (error){ toast("Erro ao carregar contêineres.", "error"); FIN_CONTAINERS = FIN_CONTAINERS || []; return FIN_CONTAINERS; }
+  FIN_CONTAINERS = data || [];
+  return FIN_CONTAINERS;
+}
+async function finGarantirProdutos(){
+  if (FIN_PRODUTOS_CACHE) return FIN_PRODUTOS_CACHE;
+  const { data } = await db.from(TABLE_PRODUTOS).select("sku,nome_produto,ncm,qtde_caixa_master,comprimento_cm,largura_cm,altura_cm");
+  FIN_PRODUTOS_CACHE = data || [];
+  return FIN_PRODUTOS_CACHE;
+}
+function finLabelContainer(c){
+  const emp = (c.fonte || "").toUpperCase();
+  const status = c.chegou_em ? `✅ Chegou ${fmtDate(String(c.chegou_em).slice(0,10))}` : `🛃 ${KB_LABELS[c.status_embarque] || c.status_embarque || "—"}`;
+  return `${c.nome} · ${emp} · ${status}`;
+}
+function finPopularSelect(selectId, containers, valorAtual){
+  const el = document.getElementById(selectId);
+  if (!el) return;
+  el.innerHTML = `<option value="">Selecione um contêiner…</option>` + containers.map(c =>
+    `<option value="${c.id}" ${String(valorAtual) === String(c.id) ? "selected" : ""}>${escapeHtml(finLabelContainer(c))}</option>`
+  ).join("");
+}
+
+/* ---------------------------------------------------------------- */
+/* ------------------------- APOIO NF-e ---------------------------- */
+/* ---------------------------------------------------------------- */
+let NFE_CONTAINER_ID = null, NFE_CONTAINER = null;
+let NFE_APOIO = null;          // linha agregada (imp_nfe_apoio) em edição
+let NFE_RAW = [];              // linhas cruas lidas do espelho do despachante
+let NFE_MERGED = [];           // linhas por SKU, já mescladas e calculadas (o que é salvo em imp_nfe_apoio_itens)
+let NFE_ALIASES = {};          // modelo_original normalizado -> sku, aprendido (por fonte)
+let NFE_SKU_OVERRIDES = {};    // vínculos manuais feitos nesta sessão, antes de confirmarem o "aprendizado"
+
+async function loadApoioNfe(){
+  await finGarantirContainers(true);
+  await finGarantirProdutos();
+  finPopularSelect("nfeContainerSelect", FIN_CONTAINERS, NFE_CONTAINER_ID);
+  if (NFE_CONTAINER_ID){
+    const sel = document.getElementById("nfeContainerSelect");
+    if (sel) sel.value = NFE_CONTAINER_ID;
+    await nfeSelecionarContainer(NFE_CONTAINER_ID);
+  }
+}
+
+window.nfeSelecionarContainer = async function(containerId){
+  NFE_CONTAINER_ID = containerId || null;
+  NFE_CONTAINER = FIN_CONTAINERS.find(c => String(c.id) === String(containerId)) || null;
+  NFE_RAW = []; NFE_MERGED = []; NFE_SKU_OVERRIDES = {};
+  const el = document.getElementById("nfeConteudo");
+  const chip = document.getElementById("nfeStatusChip");
+  if (!containerId){
+    el.innerHTML = `<div class="fin-empty-hint"><div class="ico">🛃</div>Selecione um contêiner acima pra começar.</div>`;
+    chip.innerHTML = "";
+    return;
+  }
+  el.innerHTML = `<div class="fin-empty-hint"><div class="ico">⏳</div>Carregando…</div>`;
+
+  const { data: aliasData } = await db.from("imp_sku_aliases").select("modelo_original,sku").eq("fonte", (NFE_CONTAINER && NFE_CONTAINER.fonte) || "logbox");
+  NFE_ALIASES = {};
+  (aliasData || []).forEach(a => { NFE_ALIASES[a.modelo_original] = a.sku; });
+
+  const { data: apoioData, error } = await db.from("imp_nfe_apoio").select("*, imp_nfe_apoio_itens(*)").eq("container_id", containerId).maybeSingle();
+  if (error){ toast("Erro ao carregar Apoio NF-e.", "error"); }
+
+  if (apoioData){
+    NFE_APOIO = apoioData;
+    NFE_MERGED = (apoioData.imp_nfe_apoio_itens || []).slice().sort((a,b) => (a.ordem||0) - (b.ordem||0))
+      .map(it => ({ ...it, _chave: normModelo(it.descricao_despachante), _rawCount: 1, _frete: 0, _capatazia: 0, _pendente: !it.sku }));
+    chip.innerHTML = `<span class="fin-status-chip ok">✅ ${NFE_APOIO.arquivo_nome ? escapeHtml(NFE_APOIO.arquivo_nome) : "Dados salvos"}</span>`;
+    nfeRenderTabela();
+  } else {
+    NFE_APOIO = { container_id: containerId };
+    chip.innerHTML = `<span class="fin-status-chip pend">⏳ Aguardando planilha do despachante</span>`;
+    nfeRenderUpload();
+  }
+};
+
+function nfeRenderUpload(){
+  const el = document.getElementById("nfeConteudo");
+  if (!el) return;
+  el.innerHTML = `
+    <div class="fin-upload-box" id="nfeDropZone">
+      <div class="ico">📄</div>
+      <div style="font-weight:700; margin-bottom:6px;">Envie o espelho do despachante (.xlsx)</div>
+      <div style="font-size:12px; color:var(--text-faint); margin-bottom:14px;">O Hub vai ler a aba de rateio, vincular os SKUs desse contêiner e calcular os impostos (BC IBS/CBS, CBS, IBS UF, Cofins/Cofins+) automaticamente. Tudo fica editável depois.</div>
+      <label class="btn btn-primary" style="cursor:pointer;">📎 Escolher arquivo<input type="file" accept=".xlsx,.xls" onchange="nfeArquivoSelecionado(event)"></label>
+      ${NFE_APOIO && NFE_APOIO.id ? `<div style="margin-top:12px;"><button class="btn btn-ghost btn-sm" onclick="nfeSelecionarContainer(NFE_CONTAINER_ID)">Cancelar</button></div>` : ""}
+    </div>`;
+}
+window.nfeTrocarArquivo = function(){ nfeRenderUpload(); };
+
+/* ---------- leitura da planilha do despachante (SheetJS, 100% no navegador) ---------- */
+function finNorm(v){
+  if (v === null || v === undefined) return "";
+  let s = String(v).toUpperCase();
+  s = s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+  s = s.replace(/[^A-Z0-9$]+/g, " ").trim().replace(/\s+/g, " ");
+  return s;
+}
+function nfeNum(v){
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v === "number") return v;
+  return parseNum(v);
+}
+function nfePct(v){
+  const n = nfeNum(v);
+  if (n === null) return 0;
+  return Math.abs(n) > 1 ? n / 100 : n;
+}
+function nfeCellStr(v){ return v === null || v === undefined ? "" : String(v).trim(); }
+function nfeMatchContainerItem(chave){
+  if (!chave || !NFE_CONTAINER) return null;
+  const item = (NFE_CONTAINER.imp_container_itens || []).find(it => normModelo(it.modelo_original) === chave);
+  return item ? item.sku : null;
+}
+
+function nfeParsear(wb){
+  let sheetName = wb.SheetNames.find(n => finNorm(n).includes("RATEIO"));
+  if (!sheetName) sheetName = wb.SheetNames[0];
+  const sheet = wb.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null, raw: true });
+
+  let headerRowIdx = -1;
+  for (let i = 0; i < Math.min(rows.length, 20); i++){
+    const linha = (rows[i] || []).map(finNorm);
+    if (linha.some(c => c.includes("NCM")) && linha.some(c => c.includes("FRETE"))){ headerRowIdx = i; break; }
+  }
+  if (headerRowIdx === -1){
+    toast("Não encontrei o cabeçalho da planilha (procurei por NCM e FRETE). Confira o arquivo.", "error");
+    NFE_RAW = []; return;
+  }
+
+  const headers = rows[headerRowIdx].map(finNorm);
+  const tokensOf = h => h.split(" ").filter(Boolean);
+  const acha = fn => headers.findIndex(fn);
+  const achaTodos = fn => headers.map((h,i) => fn(h) ? i : -1).filter(i => i > -1);
+
+  const ncmIdx = acha(h => h.includes("NCM"));
+  const modelIdx = acha(h => h.includes("MODEL"));
+  const itemIdxs = achaTodos(h => h === "ITEM");
+  const descIdx = itemIdxs.length > 1 ? itemIdxs[1] : (itemIdxs.length ? itemIdxs[0] : -1);
+  const qtyPcsIdx = acha(h => h.includes("QTY") && h.includes("PCS"));
+  const freteIdx = acha(h => h.includes("FRETE"));
+  const capataziaIdx = freteIdx > -1 ? freteIdx + 1 : -1;
+  const vmldIdxs = achaTodos(h => h.includes("VMLD"));
+  const vmldRIdx = vmldIdxs.length > 1 ? vmldIdxs[1] : (vmldIdxs.length ? vmldIdxs[0] : -1);
+  const unitIdx = acha(h => h === "UNIT" || (h.includes("UNIT") && !h.includes("PRICE") && !h.includes("KG")));
+  const totalProdutoIdx = acha(h => h.includes("TOTAL") && h.includes("PRODUTO"));
+  const aliqIIIdx = acha(h => { const t = tokensOf(h); return t.includes("ALIQ") && t.includes("II"); });
+  const valorIIIdx = acha(h => { const t = tokensOf(h); return t.includes("VALOR") && t.includes("II"); });
+  const aliqIpiIdx = acha(h => { const t = tokensOf(h); return t.includes("ALIQ") && t.includes("IPI"); });
+  const valorIpiIdx = acha(h => { const t = tokensOf(h); return t.includes("VALOR") && t.includes("IPI"); });
+  const txSiscIdx = acha(h => h.includes("TX") && h.includes("SISC"));
+  const aliqPisIdx = acha(h => { const t = tokensOf(h); return t.includes("ALIQ") && t.includes("PIS"); });
+  const pisIdx = acha(h => { const t = tokensOf(h); return t.includes("PIS") && !t.includes("ALIQ"); });
+  const aliqCofinsIdx = acha(h => { const t = tokensOf(h); return t.includes("ALIQ") && t.includes("COFINS"); });
+  const cofinsIdx = acha(h => { const t = tokensOf(h); return t.includes("COFINS") && !t.includes("ALIQ"); });
+  const marinhaIdx = acha(h => h.includes("MARINHA"));
+  const bcIcmsIdx = acha(h => { const t = tokensOf(h); return t.includes("BC") && t.includes("ICMS"); });
+  const aliqIcmsIdx = acha(h => { const t = tokensOf(h); return t.includes("ALIQ") && t.includes("ICMS"); });
+  const icmsIdx = acha(h => { const t = tokensOf(h); return t.includes("ICMS") && !t.includes("BC") && !t.includes("ALIQ"); });
+
+  if (ncmIdx === -1 || (modelIdx === -1 && descIdx === -1)){
+    toast("Não consegui identificar as colunas de NCM/Modelo da planilha. Confira o arquivo com o despachante.", "error");
+    NFE_RAW = []; return;
+  }
+
+  const get = (row, idx) => idx > -1 ? row[idx] : null;
+  const raw = [];
+  for (let i = headerRowIdx + 1; i < rows.length; i++){
+    const row = rows[i] || [];
+    const ncmVal = nfeCellStr(get(row, ncmIdx));
+    const modelVal = nfeCellStr(get(row, modelIdx));
+    const descVal = nfeCellStr(get(row, descIdx));
+    const linhaTexto = row.map(c => nfeCellStr(c).toUpperCase()).join(" ");
+    if (linhaTexto.includes("TOTAL GERAL") || (/\bTOTAL\b/.test(linhaTexto) && !ncmVal && !modelVal)) break;
+    const qtde = nfeNum(get(row, qtyPcsIdx)) || 0;
+    const totalProd = nfeNum(get(row, totalProdutoIdx)) || 0;
+    const vmldVal = nfeNum(get(row, vmldRIdx)) || 0;
+    if (!ncmVal && !modelVal && !descVal) continue;
+    if (!ncmVal && qtde === 0 && totalProd === 0 && vmldVal === 0) continue;
+    raw.push({
+      ncm: ncmVal, model: modelVal, descricao: descVal || modelVal,
+      qtde, unit: nfeNum(get(row,unitIdx)) || 0, total_produto: totalProd,
+      frete: nfeNum(get(row,freteIdx)) || 0, capatazia: nfeNum(get(row,capataziaIdx)) || 0,
+      vmld: vmldVal,
+      aliq_ii: nfePct(get(row,aliqIIIdx)), valor_ii: nfeNum(get(row,valorIIIdx)) || 0,
+      tx_siscomex: nfeNum(get(row,txSiscIdx)) || 0,
+      aliq_ipi: nfePct(get(row,aliqIpiIdx)), valor_ipi: nfeNum(get(row,valorIpiIdx)) || 0,
+      aliq_pis: nfePct(get(row,aliqPisIdx)), valor_pis: nfeNum(get(row,pisIdx)) || 0,
+      aliq_cofins: nfePct(get(row,aliqCofinsIdx)), valor_cofins_desp: nfeNum(get(row,cofinsIdx)) || 0,
+      marinha_mercante: nfeNum(get(row,marinhaIdx)) || 0,
+      base_icms: nfeNum(get(row,bcIcmsIdx)) || 0, aliq_icms: nfePct(get(row,aliqIcmsIdx)), valor_icms: nfeNum(get(row,icmsIdx)) || 0,
+      sku: null
+    });
+  }
+  NFE_RAW = raw;
+  if (!raw.length) toast("A planilha foi lida, mas nenhuma linha de item foi encontrada nela.", "error");
+}
+
+window.nfeArquivoSelecionado = async function(evt){
+  const file = evt.target.files[0];
+  if (!file) return;
+  toast("Lendo planilha…");
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: "array" });
+    nfeParsear(wb);
+    if (!NFE_RAW.length) return;
+    NFE_APOIO.arquivo_nome = file.name;
+    nfeRecalcular();
+    const pendentes = NFE_MERGED.filter(i => i._pendente).length;
+    toast(pendentes ? `Planilha lida! ${pendentes} SKU(s) pendente(s) de vínculo.` : "Planilha lida e todos os SKUs foram reconhecidos!", pendentes ? "error" : "success");
+  } catch(e){
+    toast("Erro ao ler a planilha: " + e.message, "error");
+  }
+};
+
+/* ---------- mescla de duplicados por SKU + cálculo (COFINS split, BC IBS/CBS) ---------- */
+function nfeRecalcular(){
+  NFE_RAW.forEach(r => {
+    const chave = normModelo(r.model || r.descricao);
+    r._chave = chave;
+    r.sku = NFE_SKU_OVERRIDES[chave] || NFE_ALIASES[chave] || nfeMatchContainerItem(chave) || null;
+    // split do COFINS: o despachante manda o valor real (podendo ser 9,65% ou 10,25%); aqui separamos
+    // sempre o "padrão" (9,65% da base) do excedente ("Cofins (+)"), pra bater com a planilha do Wissam.
+    const base = r.aliq_cofins > 0 ? r.valor_cofins_desp / r.aliq_cofins : 0;
+    r.valor_cofins = base * 0.0965;
+    r.valor_cofins_mais = Math.max(0, r.valor_cofins_desp - r.valor_cofins);
+  });
+
+  const grupos = new Map();
+  NFE_RAW.forEach((r, idx) => {
+    const key = r.sku || `__pend_${idx}`;
+    if (!grupos.has(key)) grupos.set(key, []);
+    grupos.get(key).push(r);
+  });
+
+  const merged = [];
+  grupos.forEach(rows => {
+    const first = rows[0];
+    const soma = campo => rows.reduce((s,r) => s + (Number(r[campo]) || 0), 0);
+    const qtde = soma("qtde");
+    const totalProduto = soma("total_produto");
+    const item = {
+      sku: first.sku || null,
+      _chave: first._chave,
+      descricao_despachante: first.descricao || first.model || "",
+      ncm: first.ncm || "",
+      qtde,
+      preco_unit: qtde ? totalProduto / qtde : (first.unit || 0),
+      valor_total: totalProduto,
+      vmld: soma("vmld"),
+      aliq_ii: first.aliq_ii, valor_ii: soma("valor_ii"),
+      tx_siscomex: soma("tx_siscomex"),
+      marinha_mercante: soma("marinha_mercante"),
+      aliq_ipi: first.aliq_ipi, valor_ipi: soma("valor_ipi"),
+      aliq_pis: first.aliq_pis, valor_pis: soma("valor_pis"),
+      aliq_cofins: first.aliq_cofins, valor_cofins: soma("valor_cofins"), valor_cofins_mais: soma("valor_cofins_mais"),
+      base_icms: soma("base_icms"), aliq_icms: first.aliq_icms, valor_icms: soma("valor_icms"),
+      _frete: soma("frete"), _capatazia: soma("capatazia"),
+      _rawCount: rows.length, _pendente: !first.sku
+    };
+    item.bc_ibscbs = item.vmld + item.marinha_mercante + item.valor_ii + item.tx_siscomex;
+    item.valor_cbs = item.bc_ibscbs * 0.009;
+    item.valor_ibs_uf = item.bc_ibscbs * 0.001;
+    merged.push(item);
+  });
+  merged.sort((a,b) => compareNatural(a.sku || a.descricao_despachante, b.sku || b.descricao_despachante));
+  NFE_MERGED = merged;
+  // Frete/Capatazia só existem como total do container (não por SKU) — são recalculados aqui,
+  // direto da planilha recém-lida, e a partir daí ficam editáveis livremente no painel de totais
+  // (nfeEditarHeaderCampo) sem serem sobrescritos por edições em outros campos.
+  NFE_APOIO.frete_total = merged.reduce((s,it) => s + (it._frete || 0), 0);
+  NFE_APOIO.capatazia_total = merged.reduce((s,it) => s + (it._capatazia || 0), 0);
+  nfeRecalcularTotais();
+  nfeRenderTabela();
+  nfeSalvarDebounced();
+}
+function nfeRecalcularTotais(){
+  const soma = campo => NFE_MERGED.reduce((s,it) => s + (Number(it[campo]) || 0), 0);
+  const A = NFE_APOIO;
+  A.vmld_total = soma("vmld");
+  A.valor_ii = soma("valor_ii");
+  A.tx_siscomex = soma("tx_siscomex");
+  A.valor_ipi = soma("valor_ipi");
+  A.valor_pis = soma("valor_pis");
+  A.valor_cofins = soma("valor_cofins");
+  A.valor_cofins_mais = soma("valor_cofins_mais");
+  A.base_icms = soma("base_icms");
+  A.valor_icms = soma("valor_icms");
+  A.marinha_mercante = soma("marinha_mercante");
+  A.bc_ibscbs = soma("bc_ibscbs");
+  A.valor_cbs = soma("valor_cbs");
+  A.valor_ibs_uf = soma("valor_ibs_uf");
+  A.valor_ibs = A.valor_ibs_uf;
+  A.n_itens = NFE_MERGED.length;
+  A.total_produtos = soma("valor_total");
+  A.total_nota = A.total_produtos + A.valor_ii + A.valor_ipi + A.valor_pis + A.valor_cofins + A.valor_cofins_mais;
+  A.total_nf_ibscbs = A.total_nota + A.valor_cbs + A.valor_ibs;
+}
+
+window.nfeEscolherSku = async function(idx, sku){
+  const item = NFE_MERGED[idx];
+  if (!item || !sku) return;
+  const chave = item._chave;
+  NFE_SKU_OVERRIDES[chave] = sku;
+  const fonte = (NFE_CONTAINER && NFE_CONTAINER.fonte) || "logbox";
+  const { error } = await db.from("imp_sku_aliases").upsert({ fonte, modelo_original: chave, sku }, { onConflict: "fonte,modelo_original" });
+  if (error) toast("Vínculo aplicado, mas não consegui salvar como aprendizado: " + error.message, "error");
+  NFE_ALIASES[chave] = sku;
+  toast("SKU vinculado — aplicado a todas as linhas com essa descrição.");
+  nfeRecalcular();
+};
+window.nfeEditarItem = function(idx, campo, valorStr){
+  const item = NFE_MERGED[idx];
+  if (!item) return;
+  item[campo] = parseNum(valorStr) || 0;
+  if (["vmld","marinha_mercante","valor_ii","tx_siscomex"].includes(campo)){
+    item.bc_ibscbs = (item.vmld||0) + (item.marinha_mercante||0) + (item.valor_ii||0) + (item.tx_siscomex||0);
+    item.valor_cbs = item.bc_ibscbs * 0.009;
+    item.valor_ibs_uf = item.bc_ibscbs * 0.001;
+  }
+  if (campo === "qtde" || campo === "valor_total"){
+    item.preco_unit = item.qtde ? item.valor_total / item.qtde : item.preco_unit;
+  }
+  nfeRecalcularTotais();
+  nfeRenderTabela();
+  nfeSalvarDebounced();
+};
+window.nfeEditarHeaderCampo = function(campo, valorStr){
+  NFE_APOIO[campo] = parseNum(valorStr) || 0;
+  nfeRenderTabela();
+  nfeSalvarDebounced();
+};
+
+function nfeOpcoesSku(){
+  const vistos = new Set();
+  let opts = "";
+  (NFE_CONTAINER && NFE_CONTAINER.imp_container_itens || []).forEach(it => {
+    if (it.sku && !vistos.has(it.sku)){ vistos.add(it.sku); opts += `<option value="${escapeHtml(it.sku)}">${escapeHtml(it.sku)} — ${escapeHtml((it.modelo_original||"").split("\n")[0])}</option>`; }
+  });
+  (FIN_PRODUTOS_CACHE || []).forEach(p => {
+    if (p.sku && !vistos.has(p.sku)){ vistos.add(p.sku); opts += `<option value="${escapeHtml(p.sku)}">${escapeHtml(p.sku)} — ${escapeHtml(p.nome_produto||"")}</option>`; }
+  });
+  return opts;
+}
+
+function nfeRenderTabela(){
+  const el = document.getElementById("nfeConteudo");
+  if (!el || !NFE_APOIO) return;
+  const A = NFE_APOIO;
+  const pendentes = NFE_MERGED.filter(it => it._pendente).length;
+
+  const kpisHtml = `<div class="fin-kpis">
+    <div class="fin-kpi" style="--fin-color:#2563eb;"><div class="fin-kpi-label">Itens (SKUs)</div><div class="fin-kpi-value">${A.n_itens||0}</div><div class="fin-kpi-sub">${pendentes ? "⚠ " + pendentes + " pendente(s) de vínculo" : "✅ todos vinculados"}</div></div>
+    <div class="fin-kpi" style="--fin-color:#16a34a;"><div class="fin-kpi-label">VMLD Total</div><div class="fin-kpi-value">${fmtN(A.vmld_total,0)}</div><div class="fin-kpi-sub">R$</div></div>
+    <div class="fin-kpi" style="--fin-color:#d97706;"><div class="fin-kpi-label">Total Produtos</div><div class="fin-kpi-value">${fmtN(A.total_produtos,0)}</div><div class="fin-kpi-sub">R$</div></div>
+    <div class="fin-kpi" style="--fin-color:#7c3aed;"><div class="fin-kpi-label">Total da Nota</div><div class="fin-kpi-value">${fmtN(A.total_nota,0)}</div><div class="fin-kpi-sub">R$</div></div>
+    <div class="fin-kpi" style="--fin-color:#0d9488;"><div class="fin-kpi-label">CBS + IBS UF</div><div class="fin-kpi-value">${fmtN((A.valor_cbs||0)+(A.valor_ibs||0),0)}</div><div class="fin-kpi-sub">reforma tributária</div></div>
+  </div>`;
+
+  const inp = (idx, campo, decimals) => `<input type="text" inputmode="decimal" class="fin-input" value="${fmtN(NFE_MERGED[idx][campo]||0, decimals===undefined?2:decimals)}" onchange="nfeEditarItem(${idx},'${campo}', this.value)">`;
+  const linhas = NFE_MERGED.map((it, idx) => {
+    const skuCell = it.sku
+      ? `<span class="fin-sku-badge ${it._rawCount>1?"merged":"match"}">${escapeHtml(it.sku)}${it._rawCount>1?` ×${it._rawCount}`:""}</span>`
+      : `<span class="fin-sku-badge pend">pendente</span><br><select class="fin-sku-pick" onchange="nfeEscolherSku(${idx}, this.value)"><option value="">Vincular SKU…</option>${nfeOpcoesSku()}</select>`;
+    return `<tr class="${it._pendente ? "fin-row-unmatched" : ""}">
+      <td class="left">${skuCell}<div style="font-size:10.5px; color:var(--text-faint); margin-top:2px; max-width:220px; white-space:normal;" title="${escapeHtml(it.descricao_despachante)}">${escapeHtml((it.descricao_despachante||"").slice(0,42))}</div></td>
+      <td>${escapeHtml(it.ncm||"—")}</td>
+      <td>${inp(idx,"qtde",0)}</td>
+      <td>${inp(idx,"preco_unit",4)}</td>
+      <td>${inp(idx,"valor_total",2)}</td>
+      <td>${inp(idx,"vmld",2)}</td>
+      <td class="mono">${((it.aliq_ii||0)*100).toFixed(1)}%</td>
+      <td>${inp(idx,"valor_ii",2)}</td>
+      <td>${inp(idx,"tx_siscomex",2)}</td>
+      <td>${inp(idx,"marinha_mercante",2)}</td>
+      <td class="mono" style="color:var(--accent-dark); font-weight:700;">${fmtN(it.bc_ibscbs,2)}</td>
+      <td class="mono">${fmtN(it.valor_cbs,2)}</td>
+      <td class="mono">${fmtN(it.valor_ibs_uf,2)}</td>
+      <td class="mono">${((it.aliq_cofins||0)*100).toFixed(2)}%</td>
+      <td>${inp(idx,"valor_cofins",2)}</td>
+      <td>${inp(idx,"valor_cofins_mais",2)}</td>
+      <td class="mono">${((it.aliq_pis||0)*100).toFixed(2)}%</td>
+      <td>${inp(idx,"valor_pis",2)}</td>
+      <td class="mono">${((it.aliq_ipi||0)*100).toFixed(1)}%</td>
+      <td>${inp(idx,"valor_ipi",2)}</td>
+      <td>${inp(idx,"base_icms",2)}</td>
+      <td class="mono">${((it.aliq_icms||0)*100).toFixed(1)}%</td>
+      <td>${inp(idx,"valor_icms",2)}</td>
+    </tr>`;
+  }).join("");
+
+  const somaCol = campo => NFE_MERGED.reduce((s,it) => s + (Number(it[campo])||0), 0);
+
+  el.innerHTML = kpisHtml + `
+    <div class="fin-section">
+      <div class="fin-section-head">
+        <div class="fin-section-title">📋 RATEIO por SKU</div>
+        <button class="btn btn-ghost btn-sm" onclick="nfeTrocarArquivo()">📎 Trocar arquivo</button>
+      </div>
+      <div class="table-wrap" style="box-shadow:none; border:none; max-height:560px;">
+        <table class="fin-table">
+          <thead><tr>
+            <th class="left">SKU / Descrição</th><th>NCM</th><th>Qtde</th><th>Preço Un.</th><th>Total</th><th>VMLD</th>
+            <th>Alíq. II</th><th>Valor II</th><th>Tx Siscomex</th><th>AFRMM</th>
+            <th>BC IBS/CBS</th><th>CBS 0,9%</th><th>IBS UF 0,1%</th>
+            <th>Alíq. Cofins</th><th>Cofins 9,65%</th><th>Cofins (+)</th>
+            <th>Alíq. PIS</th><th>PIS</th><th>Alíq. IPI</th><th>IPI</th>
+            <th>Base ICMS</th><th>Alíq. ICMS</th><th>ICMS</th>
+          </tr></thead>
+          <tbody>${linhas || `<tr><td colspan="23" class="empty-state">Nenhum item.</td></tr>`}</tbody>
+          <tfoot><tr>
+            <td class="left">TOTAL (${NFE_MERGED.length} SKU)</td><td></td>
+            <td class="mono">${fmtN(somaCol("qtde"),0)}</td><td></td>
+            <td class="mono">${fmtN(somaCol("valor_total"),2)}</td><td class="mono">${fmtN(somaCol("vmld"),2)}</td>
+            <td></td><td class="mono">${fmtN(somaCol("valor_ii"),2)}</td>
+            <td class="mono">${fmtN(somaCol("tx_siscomex"),2)}</td><td class="mono">${fmtN(somaCol("marinha_mercante"),2)}</td>
+            <td class="mono">${fmtN(somaCol("bc_ibscbs"),2)}</td><td class="mono">${fmtN(somaCol("valor_cbs"),2)}</td><td class="mono">${fmtN(somaCol("valor_ibs_uf"),2)}</td>
+            <td></td><td class="mono">${fmtN(somaCol("valor_cofins"),2)}</td><td class="mono">${fmtN(somaCol("valor_cofins_mais"),2)}</td>
+            <td></td><td class="mono">${fmtN(somaCol("valor_pis"),2)}</td>
+            <td></td><td class="mono">${fmtN(somaCol("valor_ipi"),2)}</td>
+            <td class="mono">${fmtN(somaCol("base_icms"),2)}</td><td></td><td class="mono">${fmtN(somaCol("valor_icms"),2)}</td>
+          </tr></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="fin-section">
+      <div class="fin-section-head"><div class="fin-section-title">🧾 ESPELHO — Totais do Container</div></div>
+      <div class="fin-section-body">
+        <div class="fin-field-block">
+          <div class="fin-field-block-title">Frete & Capatazia <span class="fin-tag manual">ajustável — vem somado da planilha do despachante</span></div>
+          <div class="fin-grid-fields">
+            <div class="fin-mini-field"><label>Frete Total</label><input type="text" inputmode="decimal" value="${fmtN(A.frete_total||0,2)}" onchange="nfeEditarHeaderCampo('frete_total', this.value)"></div>
+            <div class="fin-mini-field"><label>Capatazia Total</label><input type="text" inputmode="decimal" value="${fmtN(A.capatazia_total||0,2)}" onchange="nfeEditarHeaderCampo('capatazia_total', this.value)"></div>
+          </div>
+        </div>
+        <div class="fin-total-row"><span>Total Produtos</span><span class="val">R$ ${fmtN(A.total_produtos,2)}</span></div>
+        <div class="fin-total-row"><span>+ I.I. / IPI / PIS / Cofins / Cofins (+)</span><span class="val">R$ ${fmtN((A.valor_ii||0)+(A.valor_ipi||0)+(A.valor_pis||0)+(A.valor_cofins||0)+(A.valor_cofins_mais||0),2)}</span></div>
+        <div class="fin-total-row grand"><span>Total da Nota</span><span class="val">R$ ${fmtN(A.total_nota,2)}</span></div>
+        <div class="fin-total-row"><span>BC IBS/CBS (VMLD + AFRMM + I.I. + Tx Siscomex)</span><span class="val">R$ ${fmtN(A.bc_ibscbs,2)}</span></div>
+        <div class="fin-total-row"><span>+ CBS (0,9%) e IBS UF (0,1%)</span><span class="val">R$ ${fmtN((A.valor_cbs||0)+(A.valor_ibs||0),2)}</span></div>
+        <div class="fin-total-row grand"><span>Total NF com IBS/CBS</span><span class="val">R$ ${fmtN(A.total_nf_ibscbs,2)}</span></div>
+      </div>
+    </div>`;
+}
+
+let _NFE_SALVAR_TIMER = null;
+function nfeSalvarDebounced(){ clearTimeout(_NFE_SALVAR_TIMER); _NFE_SALVAR_TIMER = setTimeout(nfeSalvarAgora, 600); }
+async function nfeSalvarAgora(){
+  if (!NFE_CONTAINER_ID || !NFE_MERGED.length) return;
+  const A = NFE_APOIO;
+  const payloadHeader = {
+    container_id: NFE_CONTAINER_ID, arquivo_nome: A.arquivo_nome || null,
+    vmld_total: A.vmld_total||0, frete_total: A.frete_total||0, capatazia_total: A.capatazia_total||0,
+    valor_ii: A.valor_ii||0, tx_siscomex: A.tx_siscomex||0, valor_ipi: A.valor_ipi||0,
+    valor_pis: A.valor_pis||0, valor_cofins: A.valor_cofins||0, valor_cofins_mais: A.valor_cofins_mais||0,
+    base_icms: A.base_icms||0, valor_icms: A.valor_icms||0, marinha_mercante: A.marinha_mercante||0,
+    n_itens: A.n_itens||0, total_produtos: A.total_produtos||0, total_nota: A.total_nota||0,
+    bc_ibscbs: A.bc_ibscbs||0, valor_cbs: A.valor_cbs||0, valor_ibs_uf: A.valor_ibs_uf||0,
+    valor_ibs: A.valor_ibs||0, total_nf_ibscbs: A.total_nf_ibscbs||0, atualizado_em: new Date().toISOString()
+  };
+  const { data: apoioSalvo, error: e1 } = await db.from("imp_nfe_apoio").upsert(payloadHeader, { onConflict: "container_id" }).select().single();
+  if (e1){ toast("Erro ao salvar Apoio NF-e: " + e1.message, "error"); return; }
+  NFE_APOIO.id = apoioSalvo.id;
+  await db.from("imp_nfe_apoio_itens").delete().eq("apoio_id", NFE_APOIO.id);
+  const itensPayload = NFE_MERGED.map((it,i) => ({
+    apoio_id: NFE_APOIO.id, sku: it.sku, descricao_despachante: it.descricao_despachante, ncm: it.ncm,
+    qtde: it.qtde||0, preco_unit: it.preco_unit||0, valor_total: it.valor_total||0, vmld: it.vmld||0,
+    aliq_ii: it.aliq_ii||0, valor_ii: it.valor_ii||0, tx_siscomex: it.tx_siscomex||0, marinha_mercante: it.marinha_mercante||0,
+    aliq_ipi: it.aliq_ipi||0, valor_ipi: it.valor_ipi||0, aliq_pis: it.aliq_pis||0, valor_pis: it.valor_pis||0,
+    aliq_cofins: it.aliq_cofins||0, valor_cofins: it.valor_cofins||0, valor_cofins_mais: it.valor_cofins_mais||0,
+    base_icms: it.base_icms||0, aliq_icms: it.aliq_icms||0, valor_icms: it.valor_icms||0,
+    bc_ibscbs: it.bc_ibscbs||0, valor_cbs: it.valor_cbs||0, valor_ibs_uf: it.valor_ibs_uf||0, ordem: i
+  }));
+  const { error: e2 } = await db.from("imp_nfe_apoio_itens").insert(itensPayload);
+  if (e2){ toast("Erro ao salvar itens do Apoio NF-e: " + e2.message, "error"); return; }
+  const chip = document.getElementById("nfeStatusChip");
+  if (chip) chip.innerHTML = `<span class="fin-status-chip ok">✅ ${A.arquivo_nome ? escapeHtml(A.arquivo_nome) : "Salvo"}</span>`;
+}
+
+/* ---------------------------------------------------------------- */
+/* --------------------- FECHAMENTO CONTAINER ---------------------- */
+/* ---------------------------------------------------------------- */
+let FECH_CONTAINER_ID = null, FECH_CONTAINER = null, FECH_DATA = null, FECH_APOIO = null;
+
+async function loadFechamentoContainer(){
+  await finGarantirContainers(true);
+  finPopularSelect("fechContainerSelect", FIN_CONTAINERS, FECH_CONTAINER_ID);
+  if (FECH_CONTAINER_ID){
+    const sel = document.getElementById("fechContainerSelect");
+    if (sel) sel.value = FECH_CONTAINER_ID;
+    await fechSelecionarContainer(FECH_CONTAINER_ID);
+  }
+}
+function fechDefaults(containerId, apoio){
+  return {
+    container_id: containerId,
+    icms: (apoio && apoio.valor_icms) || 0, ii: (apoio && apoio.valor_ii) || 0, ipi: (apoio && apoio.valor_ipi) || 0,
+    tx_siscomex: (apoio && apoio.tx_siscomex) || 0, pis: (apoio && apoio.valor_pis) || 0,
+    cofins: (apoio && apoio.valor_cofins) || 0, cofins_mais: (apoio && apoio.valor_cofins_mais) || 0,
+    vmld: (apoio && apoio.vmld_total) || 0, frete: (apoio && apoio.frete_total) || 0, capatazia: (apoio && apoio.capatazia_total) || 0,
+    afrmm: (apoio && apoio.marinha_mercante) || 0,
+    despesas_embarque: 0, taxa_exportador: 1560, taxas_agente_carga: 0, taxas_nacionais: 0,
+    sda: 895.82, atual_comex_assessoria: 2000, atual_comex_honorarios: 1000, atual_comex_escolta: 3200,
+    atual_comex_credito_irrf: 45, atual_comex_credito_pis: 19.5, atual_comex_credito_cofins: 90, atual_comex_credito_csll: 30,
+    armazenagem: 0, transporte_fox: 0, despesa_extra: 6000
+  };
+}
+window.fechSelecionarContainer = async function(containerId){
+  FECH_CONTAINER_ID = containerId || null;
+  FECH_CONTAINER = FIN_CONTAINERS.find(c => String(c.id) === String(containerId)) || null;
+  const el = document.getElementById("fechConteudo");
+  const chip = document.getElementById("fechStatusChip");
+  if (!containerId){
+    el.innerHTML = `<div class="fin-empty-hint"><div class="ico">📊</div>Selecione um contêiner acima pra começar.</div>`;
+    chip.innerHTML = "";
+    return;
+  }
+  el.innerHTML = `<div class="fin-empty-hint"><div class="ico">⏳</div>Carregando…</div>`;
+  const [{ data: fechData }, { data: apoioData }] = await Promise.all([
+    db.from("imp_fechamento_container").select("*").eq("container_id", containerId).maybeSingle(),
+    db.from("imp_nfe_apoio").select("*").eq("container_id", containerId).maybeSingle()
+  ]);
+  FECH_APOIO = apoioData || null;
+  FECH_DATA = fechData || fechDefaults(containerId, FECH_APOIO);
+  chip.innerHTML = FECH_APOIO
+    ? `<span class="fin-status-chip ok">✅ Apoio NF-e vinculado</span>`
+    : `<span class="fin-status-chip pend">⚠ Apoio NF-e ainda não preenchido — campos automáticos ficam zerados até lá</span>`;
+  fechRender();
+};
+window.fechRepuxarApoio = function(){
+  if (!FECH_APOIO){ toast("Esse contêiner ainda não tem Apoio NF-e preenchido.", "error"); return; }
+  Object.assign(FECH_DATA, {
+    icms: FECH_APOIO.valor_icms||0, ii: FECH_APOIO.valor_ii||0, ipi: FECH_APOIO.valor_ipi||0,
+    tx_siscomex: FECH_APOIO.tx_siscomex||0, pis: FECH_APOIO.valor_pis||0, cofins: FECH_APOIO.valor_cofins||0,
+    cofins_mais: FECH_APOIO.valor_cofins_mais||0, vmld: FECH_APOIO.vmld_total||0, frete: FECH_APOIO.frete_total||0,
+    capatazia: FECH_APOIO.capatazia_total||0, afrmm: FECH_APOIO.marinha_mercante||0
+  });
+  fechRender();
+  fechSalvarDebounced();
+  toast("Valores repuxados do Apoio NF-e.");
+};
+function fechComputar(dIn){
+  const d = dIn || FECH_DATA || {};
+  const guiaIcms = d.icms||0;
+  const siscomex = (d.ii||0)+(d.ipi||0)+(d.tx_siscomex||0)+(d.pis||0)+(d.cofins||0)+(d.cofins_mais||0);
+  const totalImpostos = guiaIcms + siscomex;
+  const localCharge = (d.despesas_embarque||0)+(d.taxa_exportador||0);
+  const agente = (d.frete||0)+(d.capatazia||0)+(d.taxas_agente_carga||0)+(d.taxas_nacionais||0);
+  const sda = d.sda||0;
+  const servicosAtualComex = (d.atual_comex_assessoria||0)+(d.atual_comex_honorarios||0)+(d.afrmm||0)+(d.atual_comex_escolta||0);
+  const creditosAtualComex = (d.atual_comex_credito_irrf||0)+(d.atual_comex_credito_pis||0)+(d.atual_comex_credito_cofins||0)+(d.atual_comex_credito_csll||0);
+  const atualComex = servicosAtualComex - creditosAtualComex;
+  const totalDespesas = localCharge + agente + sda + atualComex + (d.despesa_extra||0) + (d.armazenagem||0) + (d.transporte_fox||0);
+  const custoProduto = (d.vmld||0) - (d.frete||0) - (d.capatazia||0);
+  const totalCmvContabil = (d.vmld||0) + (d.ii||0) + (d.tx_siscomex||0) + (d.afrmm||0) + (d.cofins_mais||0);
+  return { guiaIcms, siscomex, totalImpostos, localCharge, agente, sda, servicosAtualComex, creditosAtualComex, atualComex, totalDespesas, custoProduto, totalCmvContabil };
+}
+function fechRender(){
+  const el = document.getElementById("fechConteudo");
+  if (!el || !FECH_DATA) return;
+  const c = fechComputar(FECH_DATA);
+  const d = FECH_DATA;
+  const auto = `<span class="fin-tag auto">auto (Apoio NF-e)</span>`;
+  const def = `<span class="fin-tag default">padrão</span>`;
+  const campo = (id, label, tag) => `
+    <div class="fin-mini-field"><label>${label} ${tag||""}</label>
+      <input type="text" inputmode="decimal" value="${fmtN(d[id]||0,2)}" onchange="fechEditarCampo('${id}', this.value)"></div>`;
+
+  el.innerHTML = `
+    <div class="fin-kpis">
+      <div class="fin-kpi" style="--fin-color:#dc2626;"><div class="fin-kpi-label">Total Impostos</div><div class="fin-kpi-value">${fmtN(c.totalImpostos,0)}</div><div class="fin-kpi-sub">R$ · ICMS + Siscomex</div></div>
+      <div class="fin-kpi" style="--fin-color:#d97706;"><div class="fin-kpi-label">Total Despesas</div><div class="fin-kpi-value">${fmtN(c.totalDespesas,0)}</div><div class="fin-kpi-sub">R$ · importação</div></div>
+      <div class="fin-kpi" style="--fin-color:#2563eb;"><div class="fin-kpi-label">Custo Produto</div><div class="fin-kpi-value">${fmtN(c.custoProduto,0)}</div><div class="fin-kpi-sub">R$ · VMLD − Frete − Capatazia</div></div>
+      <div class="fin-kpi" style="--fin-color:#7c3aed;"><div class="fin-kpi-label">CMV Contábil</div><div class="fin-kpi-value">${fmtN(c.totalCmvContabil,0)}</div><div class="fin-kpi-sub">R$ · total do contêiner</div></div>
+    </div>
+
+    <div class="fin-section">
+      <div class="fin-section-head"><div class="fin-section-title">🧾 Impostos</div><button class="btn btn-ghost btn-sm" onclick="fechRepuxarApoio()">🔄 Repuxar do Apoio NF-e</button></div>
+      <div class="fin-section-body">
+        <div class="fin-grid-fields">
+          ${campo("icms","Guia ICMS",auto)}${campo("ii","I.I. (Importação)",auto)}${campo("ipi","IPI",auto)}
+          ${campo("tx_siscomex","Taxa Siscomex",auto)}${campo("pis","PIS",auto)}${campo("cofins","Cofins (9,65%)",auto)}${campo("cofins_mais","Cofins (+)",auto)}
+        </div>
+        <div class="fin-total-row"><span>Guia ICMS</span><span class="val">R$ ${fmtN(c.guiaIcms,2)}</span></div>
+        <div class="fin-total-row"><span>Siscomex (I.I + IPI + Tx Siscomex + PIS + Cofins + Cofins (+))</span><span class="val">R$ ${fmtN(c.siscomex,2)}</span></div>
+        <div class="fin-total-row grand"><span>Total Impostos</span><span class="val">R$ ${fmtN(c.totalImpostos,2)}</span></div>
+      </div>
+    </div>
+
+    <div class="fin-section">
+      <div class="fin-section-head"><div class="fin-section-title">🚚 Despesas de Importação</div></div>
+      <div class="fin-section-body">
+        <div class="fin-field-block">
+          <div class="fin-field-block-title">Local Charge</div>
+          <div class="fin-grid-fields">${campo("despesas_embarque","Despesas Embarque")}${campo("taxa_exportador","Taxa Exportador",def)}</div>
+        </div>
+        <div class="fin-field-block">
+          <div class="fin-field-block-title">Agente de Carga</div>
+          <div class="fin-grid-fields">${campo("frete","Frete",auto)}${campo("capatazia","Capatazia",auto)}${campo("taxas_agente_carga","Taxas Agente de Carga")}${campo("taxas_nacionais","Taxas Nacionais")}</div>
+        </div>
+        <div class="fin-field-block">
+          <div class="fin-field-block-title">S.D.A. & Atual Comex</div>
+          <div class="fin-grid-fields">
+            ${campo("sda","S.D.A.",def)}${campo("atual_comex_assessoria","Assessoria",def)}${campo("atual_comex_honorarios","Honorários",def)}${campo("afrmm","A.F.R.M.M.",auto)}${campo("atual_comex_escolta","Escolta",def)}
+            ${campo("atual_comex_credito_irrf","Crédito IRRF",def)}${campo("atual_comex_credito_pis","Crédito PIS",def)}${campo("atual_comex_credito_cofins","Crédito COFINS",def)}${campo("atual_comex_credito_csll","Crédito CSLL",def)}
+          </div>
+          <div class="fin-total-row"><span>Serviços Atual Comex</span><span class="val">R$ ${fmtN(c.servicosAtualComex,2)}</span></div>
+          <div class="fin-total-row"><span>Créditos Atual Comex</span><span class="val">− R$ ${fmtN(c.creditosAtualComex,2)}</span></div>
+          <div class="fin-total-row"><span>Atual Comex (líquido)</span><span class="val">R$ ${fmtN(c.atualComex,2)}</span></div>
+        </div>
+        <div class="fin-field-block">
+          <div class="fin-field-block-title">Outras</div>
+          <div class="fin-grid-fields">${campo("despesa_extra","— (sem nome)",def)}${campo("armazenagem","Armazenagem")}${campo("transporte_fox","Transporte Fox")}</div>
+        </div>
+        <div class="fin-total-row grand"><span>Total Despesas de Importação</span><span class="val">R$ ${fmtN(c.totalDespesas,2)}</span></div>
+      </div>
+    </div>
+
+    <div class="fin-section">
+      <div class="fin-section-head"><div class="fin-section-title">📗 CMV Contábil</div></div>
+      <div class="fin-section-body">
+        <div class="fin-grid-fields">${campo("vmld","VMLD Total",auto)}</div>
+        <div class="fin-cmv-box" style="margin-top:14px;">
+          <div class="fin-cmv-card"><div class="lbl">VMLD (Custo Produto + Frete + Capatazia)</div><div class="val">R$ ${fmtN(d.vmld||0,2)}</div></div>
+          <div class="fin-cmv-card"><div class="lbl">Custo Produto (VMLD − Frete − Capatazia)</div><div class="val">R$ ${fmtN(c.custoProduto,2)}</div></div>
+          <div class="fin-cmv-card destaque"><div class="lbl">Total CMV Contábil (VMLD + I.I. + Tx Siscomex + AFRMM + Cofins (+))</div><div class="val">R$ ${fmtN(c.totalCmvContabil,2)}</div></div>
+        </div>
+      </div>
+    </div>`;
+}
+window.fechEditarCampo = function(campo, valorStr){
+  FECH_DATA[campo] = parseNum(valorStr) || 0;
+  fechRender();
+  fechSalvarDebounced();
+};
+let _FECH_SALVAR_TIMER = null;
+function fechSalvarDebounced(){ clearTimeout(_FECH_SALVAR_TIMER); _FECH_SALVAR_TIMER = setTimeout(fechSalvarAgora, 600); }
+async function fechSalvarAgora(){
+  if (!FECH_CONTAINER_ID || !FECH_DATA) return;
+  const payload = { ...FECH_DATA, container_id: FECH_CONTAINER_ID, atualizado_em: new Date().toISOString() };
+  delete payload.id; delete payload.criado_em;
+  const { data, error } = await db.from("imp_fechamento_container").upsert(payload, { onConflict: "container_id" }).select().single();
+  if (error){ toast("Erro ao salvar Fechamento Container: " + error.message, "error"); return; }
+  FECH_DATA.id = data.id;
+  const chip = document.getElementById("fechStatusChip");
+  if (chip) chip.innerHTML = FECH_APOIO ? `<span class="fin-status-chip ok">✅ Salvo · Apoio NF-e vinculado</span>` : `<span class="fin-status-chip pend">✅ Salvo · Apoio NF-e pendente</span>`;
+}
+
+/* ---------------------------------------------------------------- */
+/* ------------------- PRECIFICAÇÃO CONTAINER ----------------------- */
+/* ---------------------------------------------------------------- */
+let PREC_CONTAINER_ID = null, PREC_CONTAINER = null, PREC_APOIO = null, PREC_FECH = null;
+
+async function loadPrecificacaoContainer(){
+  await finGarantirContainers(true);
+  finPopularSelect("precContainerSelect", FIN_CONTAINERS, PREC_CONTAINER_ID);
+  if (PREC_CONTAINER_ID){
+    const sel = document.getElementById("precContainerSelect");
+    if (sel) sel.value = PREC_CONTAINER_ID;
+    await precSelecionarContainer(PREC_CONTAINER_ID);
+  }
+}
+window.precSelecionarContainer = async function(containerId){
+  PREC_CONTAINER_ID = containerId || null;
+  PREC_CONTAINER = FIN_CONTAINERS.find(c => String(c.id) === String(containerId)) || null;
+  const el = document.getElementById("precConteudo");
+  const chip = document.getElementById("precStatusChip");
+  if (!containerId){
+    el.innerHTML = `<div class="fin-empty-hint"><div class="ico">💰</div>Selecione um contêiner acima pra começar.</div>`;
+    chip.innerHTML = "";
+    return;
+  }
+  el.innerHTML = `<div class="fin-empty-hint"><div class="ico">⏳</div>Carregando…</div>`;
+  const [{ data: apoioData }, { data: fechData }] = await Promise.all([
+    db.from("imp_nfe_apoio").select("*, imp_nfe_apoio_itens(*)").eq("container_id", containerId).maybeSingle(),
+    db.from("imp_fechamento_container").select("*").eq("container_id", containerId).maybeSingle()
+  ]);
+  PREC_APOIO = apoioData || null;
+  PREC_FECH = fechData || null;
+  const temApoio = PREC_APOIO && (PREC_APOIO.imp_nfe_apoio_itens||[]).length;
+  if (!temApoio || !PREC_FECH){
+    chip.innerHTML = `<span class="fin-status-chip pend">⚠ Dados incompletos</span>`;
+    el.innerHTML = `<div class="fin-empty-hint"><div class="ico">⚠</div>
+      ${!temApoio ? "Preencha o <b>Apoio NF-e</b> desse contêiner primeiro.<br>" : ""}
+      ${!PREC_FECH ? "Preencha o <b>Fechamento Container</b> desse contêiner primeiro." : ""}
+    </div>`;
+    return;
+  }
+  chip.innerHTML = `<span class="fin-status-chip ok">✅ ${PREC_APOIO.imp_nfe_apoio_itens.length} SKU(s)</span>`;
+  precRender();
+};
+function precComputar(){
+  if (!PREC_APOIO || !PREC_FECH) return [];
+  const itens = PREC_APOIO.imp_nfe_apoio_itens || [];
+  const vmldTotal = itens.reduce((s,it) => s + (Number(it.vmld)||0), 0);
+  const c = fechComputar(PREC_FECH);
+  const transporteTotal = Number(PREC_FECH.transporte_fox)||0;
+  // Armazenagem entra junto com a linha "Outras" (despesa_extra) do Fechamento — ambas rateadas
+  // pela mesma cota de VMLD, senão a soma dos itens não bate com o Total de Despesas do container.
+  const armazenagemTotal = (Number(PREC_FECH.armazenagem)||0) + (Number(PREC_FECH.despesa_extra)||0);
+  return itens.map(it => {
+    const share = vmldTotal ? (Number(it.vmld)||0) / vmldTotal : 0;
+    const localCharge = c.localCharge*share, agente = c.agente*share, sda = c.sda*share,
+          atualComex = c.atualComex*share, transporteBrasil = transporteTotal*share, armazenagem = armazenagemTotal*share;
+    const diretos = (Number(it.valor_ii)||0)+(Number(it.tx_siscomex)||0)+(Number(it.marinha_mercante)||0)+(Number(it.valor_ipi)||0)+(Number(it.valor_pis)||0)+(Number(it.valor_icms)||0)+(Number(it.valor_cofins)||0)+(Number(it.valor_cofins_mais)||0);
+    const valorTotal = (Number(it.vmld)||0) + localCharge + agente + sda + atualComex + transporteBrasil + armazenagem + diretos;
+    const custoBase = it.qtde ? valorTotal/it.qtde : 0;
+    const valorTotalContabil = (Number(it.vmld)||0) + (Number(it.valor_ii)||0) + (Number(it.tx_siscomex)||0) + (Number(it.marinha_mercante)||0) + (Number(it.valor_cofins_mais)||0);
+    const custoContabil = it.qtde ? valorTotalContabil/it.qtde : 0;
+    return { ...it, share, localCharge, agente, sda, atualComex, transporteBrasil, armazenagem, diretos, valorTotal, custoBase, valorTotalContabil, custoContabil };
+  });
+}
+function precRender(){
+  const el = document.getElementById("precConteudo");
+  if (!el) return;
+  const itens = precComputar().sort((a,b) => compareNatural(a.sku||a.descricao_despachante, b.sku||b.descricao_despachante));
+  const totalGeral = itens.reduce((s,it) => s + it.valorTotal, 0);
+  const totalContabil = itens.reduce((s,it) => s + it.valorTotalContabil, 0);
+  const c = fechComputar(PREC_FECH);
+  const totalImpostosDiretos = itens.reduce((s,it) => s + it.diretos, 0);
+  const bateGeral = Math.abs(totalGeral - ((PREC_APOIO.vmld_total||0) + c.totalDespesas + totalImpostosDiretos)) < 0.5;
+  const bateContabil = Math.abs(totalContabil - c.totalCmvContabil) < 0.5;
+
+  const linhas = itens.map(it => `
+    <tr>
+      <td class="left"><b>${escapeHtml(it.sku||"—")}</b><div style="font-size:10.5px; color:var(--text-faint);">${escapeHtml((it.descricao_despachante||"").slice(0,34))}</div></td>
+      <td>${fmtN(it.qtde,0)}</td>
+      <td class="mono">${fmtN(it.vmld,2)}</td>
+      <td class="mono">${fmtN(it.localCharge,2)}</td>
+      <td class="mono">${fmtN(it.agente,2)}</td>
+      <td class="mono">${fmtN(it.sda,2)}</td>
+      <td class="mono">${fmtN(it.atualComex,2)}</td>
+      <td class="mono">${fmtN(it.transporteBrasil,2)}</td>
+      <td class="mono">${fmtN(it.armazenagem,2)}</td>
+      <td class="mono">${fmtN(it.diretos,2)}</td>
+      <td class="mono" style="font-weight:800;">${fmtN(it.valorTotal,2)}</td>
+      <td class="mono" style="font-weight:800; color:var(--accent-dark);">${fmtN(it.custoBase,4)}</td>
+    </tr>`).join("");
+  const linhasContabil = itens.map(it => `
+    <tr>
+      <td class="left"><b>${escapeHtml(it.sku||"—")}</b></td>
+      <td class="mono">${fmtN(it.vmld,2)}</td>
+      <td class="mono">${fmtN(it.valor_ii,2)}</td>
+      <td class="mono">${fmtN(it.tx_siscomex,2)}</td>
+      <td class="mono">${fmtN(it.marinha_mercante,2)}</td>
+      <td class="mono">${fmtN(it.valor_cofins_mais,2)}</td>
+      <td class="mono" style="font-weight:800;">${fmtN(it.valorTotalContabil,2)}</td>
+      <td class="mono" style="font-weight:800; color:var(--accent-dark);">${fmtN(it.custoContabil,4)}</td>
+      <td class="left" style="color:var(--text-faint); font-size:11px;">IPI ${fmtN(it.valor_ipi,2)} · PIS ${fmtN(it.valor_pis,2)} · COFINS ${fmtN(it.valor_cofins,2)} · ICMS ${fmtN(it.valor_icms,2)}</td>
+    </tr>`).join("");
+
+  el.innerHTML = `
+    <div class="fin-kpis">
+      <div class="fin-kpi" style="--fin-color:#2563eb;"><div class="fin-kpi-label">SKUs</div><div class="fin-kpi-value">${itens.length}</div></div>
+      <div class="fin-kpi" style="--fin-color:#16a34a;"><div class="fin-kpi-label">Custo Total (Base de Dados)</div><div class="fin-kpi-value">${fmtN(totalGeral,0)}</div><div class="fin-kpi-sub">${bateGeral ? "✅ bate com o Fechamento" : "⚠ confira o Fechamento"}</div></div>
+      <div class="fin-kpi" style="--fin-color:#7c3aed;"><div class="fin-kpi-label">Custo Total (Contábil)</div><div class="fin-kpi-value">${fmtN(totalContabil,0)}</div><div class="fin-kpi-sub">${bateContabil ? "✅ bate com a CMV Contábil" : "⚠ confira o Fechamento"}</div></div>
+    </div>
+
+    <div class="fin-section">
+      <div class="fin-section-head"><div class="fin-section-title">💰 Precificação — Custo Base de Dados</div></div>
+      <div class="table-wrap" style="box-shadow:none; border:none;">
+        <table class="fin-table">
+          <thead><tr><th class="left">SKU</th><th>Qtde</th><th>VMLD</th><th>Local Charge</th><th>Agente</th><th>S.D.A.</th><th>Atual Comex</th><th>Transp. Brasil</th><th>Armazenagem + Outras</th><th>Impostos Diretos</th><th>Valor Total</th><th>Custo/Unid.</th></tr></thead>
+          <tbody>${linhas || `<tr><td colspan="12" class="empty-state">Nenhum item.</td></tr>`}</tbody>
+          <tfoot><tr><td class="left">TOTAL</td><td class="mono">${fmtN(itens.reduce((s,it)=>s+(Number(it.qtde)||0),0),0)}</td><td colspan="8"></td><td class="mono">${fmtN(totalGeral,2)}</td><td></td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="fin-section">
+      <div class="fin-section-head"><div class="fin-section-title">📗 Contábil (CMV)</div></div>
+      <div class="table-wrap" style="box-shadow:none; border:none;">
+        <table class="fin-table">
+          <thead><tr><th class="left">SKU</th><th>VMLD</th><th>I.I.</th><th>Tx Siscomex</th><th>AFRMM</th><th>Cofins (+)</th><th>Valor Total</th><th>Custo/Unid.</th><th class="left">Referência (não soma)</th></tr></thead>
+          <tbody>${linhasContabil || `<tr><td colspan="9" class="empty-state">Nenhum item.</td></tr>`}</tbody>
+          <tfoot><tr><td class="left">TOTAL</td><td colspan="4"></td><td></td><td class="mono">${fmtN(totalContabil,2)}</td><td colspan="2"></td></tr></tfoot>
+        </table>
+      </div>
+    </div>`;
 }
 
 /* ======================= INIT ======================= */
