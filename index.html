@@ -4455,7 +4455,9 @@ async function loadPackingList(fonte){
   const { data: prodData } = await db.from(TABLE_PRODUTOS).select("id,sku,nome_produto,marca,empresa,nome_ingles,ncm").contains("empresa", [PL_EMPRESA[fonte]]).eq("ativo", true);
   PL_PRODUTOS[fonte] = prodData || [];
 
-  const { data: aliasData } = await db.from("imp_sku_aliases").select("modelo_original,sku").eq("fonte", fonte);
+  // aliases com ambiguo=true (mesma descrição já ligada a 2+ SKUs diferentes, ex.: cores) ficam de
+  // fora do cache de sugestão automática — precisam de escolha manual toda vez, nunca mais "adivinha" sozinho.
+  const { data: aliasData } = await db.from("imp_sku_aliases").select("modelo_original,sku").eq("fonte", fonte).eq("ambiguo", false);
   PL_ALIASES[fonte] = {};
   (aliasData || []).forEach(a => { PL_ALIASES[fonte][a.modelo_original] = a.sku; });
 
@@ -5766,22 +5768,39 @@ window.plVincularSku = async function(fonte, itemId, sku){
   if (error){ toast("Erro ao vincular SKU.", "error"); return; }
 
   let aplicados = 0;
+  let ambiguo = false;
   if (modeloNorm){
-    // salva o aprendizado (só nesta fonte) pra próximos containers já virem vinculados
-    await db.from("imp_sku_aliases").upsert({ fonte, modelo_original: modeloNorm, sku }, { onConflict: "fonte,modelo_original" });
-    PL_ALIASES[fonte][modeloNorm] = sku;
+    // checa o estado ATUAL do alias direto no banco (não só o cache filtrado local) pra decidir se
+    // essa descrição já é ambígua (2+ SKUs diferentes historicamente, ex.: cores) ou virou ambígua agora
+    const { data: aliasAtual } = await db.from("imp_sku_aliases").select("sku,ambiguo").eq("fonte", fonte).eq("modelo_original", modeloNorm).maybeSingle();
+    ambiguo = !!(aliasAtual && (aliasAtual.ambiguo || (aliasAtual.sku && aliasAtual.sku !== sku)));
 
-    // aplica retroativamente nos outros pendentes da mesma fonte com o mesmo modelo
-    const outrosPendentes = PL_CONTAINERS[fonte]
-      .flatMap(c => c.imp_container_itens || [])
-      .filter(it => it.id !== itemId && !it.sku && normModelo(it.modelo_original) === modeloNorm);
-    if (outrosPendentes.length){
-      const { error: eLote } = await db.from("imp_container_itens").update({ sku }).in("id", outrosPendentes.map(it => it.id));
-      if (!eLote) aplicados = outrosPendentes.length;
+    if (ambiguo){
+      // mesma descrição do despachante já ligada a mais de um SKU (variação por cor sem distinção no
+      // texto, por ex.) — marca como ambígua e NUNCA MAIS aplica/sugere sozinha: cada item com essa
+      // descrição passa a exigir escolha manual, pra sempre (não tenta "aprender" de novo depois).
+      await db.from("imp_sku_aliases").upsert({ fonte, modelo_original: modeloNorm, sku, ambiguo: true }, { onConflict: "fonte,modelo_original" });
+      delete PL_ALIASES[fonte][modeloNorm];
+      delete NFE_ALIASES[modeloNorm]; // mesma tabela; mantém o cache do Apoio NF-e sincronizado se já estiver carregado
+    } else {
+      // salva o aprendizado (só nesta fonte) pra próximos containers já virem vinculados
+      await db.from("imp_sku_aliases").upsert({ fonte, modelo_original: modeloNorm, sku, ambiguo: false }, { onConflict: "fonte,modelo_original" });
+      PL_ALIASES[fonte][modeloNorm] = sku;
+
+      // aplica retroativamente nos outros pendentes da mesma fonte com o mesmo modelo
+      const outrosPendentes = PL_CONTAINERS[fonte]
+        .flatMap(c => c.imp_container_itens || [])
+        .filter(it => it.id !== itemId && !it.sku && normModelo(it.modelo_original) === modeloNorm);
+      if (outrosPendentes.length){
+        const { error: eLote } = await db.from("imp_container_itens").update({ sku }).in("id", outrosPendentes.map(it => it.id));
+        if (!eLote) aplicados = outrosPendentes.length;
+      }
     }
   }
 
-  toast(`SKU ${sku} vinculado${aplicados ? ` · aplicado em mais ${aplicados} item${aplicados > 1 ? "s" : ""} pendente${aplicados > 1 ? "s" : ""}` : ""}.`);
+  toast(ambiguo
+    ? `SKU ${sku} vinculado só nesse item — essa descrição já teve outro SKU antes (parece variação por cor), então o Hub parou de vincular sozinho: os outros itens pendentes com essa mesma descrição vão ficar aguardando você escolher manualmente.`
+    : `SKU ${sku} vinculado${aplicados ? ` · aplicado em mais ${aplicados} item${aplicados > 1 ? "s" : ""} pendente${aplicados > 1 ? "s" : ""}` : ""}.`);
   document.getElementById("plResolverSkuOverlay")?.remove();
   document.getElementById("plPendenciasOverlay")?.remove();
   await loadPackingList(fonte);
@@ -5991,7 +6010,8 @@ let NFE_APOIO = null;          // linha agregada (imp_nfe_apoio) em edição
 let NFE_RAW = [];              // linhas cruas lidas do espelho do despachante
 let NFE_MERGED = [];           // linhas por SKU, já mescladas e calculadas (o que é salvo em imp_nfe_apoio_itens)
 let NFE_ALIASES = {};          // modelo_original normalizado -> sku, aprendido (por fonte)
-let NFE_SKU_OVERRIDES = {};    // vínculos manuais feitos nesta sessão, antes de confirmarem o "aprendizado"
+let NFE_SKU_OVERRIDES = {};    // vínculos manuais feitos nesta sessão, aplicados a TODAS as linhas cruas com a mesma descrição
+let NFE_SKU_OVERRIDES_ROW = {}; // vínculo manual só de UMA linha crua específica (índice em NFE_RAW) — usado quando a descrição é ambígua (2+ SKUs), pra não vazar pras outras linhas iguais
 let NFE_ESPELHO_NOTA = null;   // totais lidos direto da aba "ESPELHO DA NOTA" do despachante (fac-símile da DANFE)
 let NFE_FRETE_CAPATAZIA_REAIS = null; // {frete, capatazia} em R$, lidos 2 linhas acima do cabeçalho da aba rateio (a coluna do item é em US$)
 let NFE_EXPANDIDOS = new Set(); // índices dos cards de SKU abertos (Apoio NF-e)
@@ -6010,7 +6030,7 @@ async function loadApoioNfe(){
 window.nfeSelecionarContainer = async function(containerId){
   NFE_CONTAINER_ID = containerId || null;
   NFE_CONTAINER = FIN_CONTAINERS.find(c => String(c.id) === String(containerId)) || null;
-  NFE_RAW = []; NFE_MERGED = []; NFE_SKU_OVERRIDES = {}; NFE_ESPELHO_NOTA = null; NFE_FRETE_CAPATAZIA_REAIS = null; NFE_EXPANDIDOS = new Set();
+  NFE_RAW = []; NFE_MERGED = []; NFE_SKU_OVERRIDES = {}; NFE_SKU_OVERRIDES_ROW = {}; NFE_ESPELHO_NOTA = null; NFE_FRETE_CAPATAZIA_REAIS = null; NFE_EXPANDIDOS = new Set();
   const el = document.getElementById("nfeConteudo");
   const chip = document.getElementById("nfeStatusChip");
   if (!containerId){
@@ -6020,7 +6040,9 @@ window.nfeSelecionarContainer = async function(containerId){
   }
   el.innerHTML = `<div class="fin-empty-hint"><div class="ico">⏳</div>Carregando…</div>`;
 
-  const { data: aliasData } = await db.from("imp_sku_aliases").select("modelo_original,sku").eq("fonte", (NFE_CONTAINER && NFE_CONTAINER.fonte) || "logbox");
+  // aliases marcados como ambíguos (mesma descrição já com 2+ SKUs diferentes) ficam de fora do
+  // cache de sugestão automática — o Hub nunca mais tenta "adivinhar" sozinho pra essa descrição.
+  const { data: aliasData } = await db.from("imp_sku_aliases").select("modelo_original,sku").eq("fonte", (NFE_CONTAINER && NFE_CONTAINER.fonte) || "logbox").eq("ambiguo", false);
   NFE_ALIASES = {};
   (aliasData || []).forEach(a => { NFE_ALIASES[a.modelo_original] = a.sku; });
 
@@ -6263,10 +6285,14 @@ window.nfeArquivoSelecionado = async function(evt){
 
 /* ---------- mescla de duplicados por SKU + cálculo (COFINS split, BC IBS/CBS) ---------- */
 function nfeRecalcular(){
-  NFE_RAW.forEach(r => {
+  NFE_RAW.forEach((r, idx) => {
+    r.__idx = idx; // referência estável da linha crua nesta leitura — usada pelo vínculo manual "só esta linha" (descrição ambígua)
     const chave = normModelo(r.model || r.descricao);
     r._chave = chave;
-    r.sku = NFE_SKU_OVERRIDES[chave] || NFE_ALIASES[chave] || nfeMatchContainerItem(chave) || null;
+    // NFE_SKU_OVERRIDES_ROW (por linha) tem prioridade sobre NFE_SKU_OVERRIDES (por descrição, vale pra
+    // todas as linhas iguais) — é o que usamos quando a descrição é ambígua, pra vincular só ESTA linha
+    // sem "vazar" o SKU escolhido pras outras linhas com o mesmo texto (ex.: outra cor do mesmo modelo).
+    r.sku = NFE_SKU_OVERRIDES_ROW[idx] || NFE_SKU_OVERRIDES[chave] || NFE_ALIASES[chave] || nfeMatchContainerItem(chave) || null;
     // split do COFINS: o despachante manda o valor real (podendo ser 9,65% ou 10,25%); aqui separamos
     // sempre o "padrão" (9,65% da base) do excedente ("Cofins (+)"), pra bater com a planilha do Wissam.
     const base = r.aliq_cofins > 0 ? r.valor_cofins_desp / r.aliq_cofins : 0;
@@ -6304,7 +6330,8 @@ function nfeRecalcular(){
       aliq_cofins: first.aliq_cofins, valor_cofins: soma("valor_cofins"), valor_cofins_mais: soma("valor_cofins_mais"),
       base_icms: soma("base_icms"), aliq_icms: first.aliq_icms, valor_icms: soma("valor_icms"),
       _frete: soma("frete"), _capatazia: soma("capatazia"),
-      _rawCount: rows.length, _pendente: !first.sku
+      _rawCount: rows.length, _pendente: !first.sku,
+      _rawIdx: rows.length === 1 ? first.__idx : null // só definido quando é 1 linha crua só (sempre o caso pra item pendente) — usado no vínculo "só esta linha"
     };
     item.bc_ibscbs = item.vmld + item.marinha_mercante + item.valor_ii + item.tx_siscomex;
     item.valor_cbs = item.bc_ibscbs * 0.009;
@@ -6371,13 +6398,44 @@ window.nfeEscolherSku = async function(idx, sku){
   const item = NFE_MERGED[idx];
   if (!item || !sku) return;
   const chave = item._chave;
-  NFE_SKU_OVERRIDES[chave] = sku;
   const fonte = (NFE_CONTAINER && NFE_CONTAINER.fonte) || "logbox";
-  const { error } = await db.from("imp_sku_aliases").upsert({ fonte, modelo_original: chave, sku }, { onConflict: "fonte,modelo_original" });
-  if (error) toast("Vínculo aplicado, mas não consegui salvar como aprendizado: " + error.message, "error");
-  NFE_ALIASES[chave] = sku;
-  toast("SKU vinculado — aplicado a todas as linhas com essa descrição.");
-  nfeRecalcular();
+
+  // checa o estado ATUAL do alias direto no banco (não só o cache local) pra saber se essa descrição
+  // já é ambígua (2+ SKUs diferentes historicamente, ex.: cores) ou virou ambígua agora
+  const { data: aliasAtual } = await db.from("imp_sku_aliases").select("sku,ambiguo").eq("fonte", fonte).eq("modelo_original", chave).maybeSingle();
+  const ambiguo = !!(aliasAtual && (aliasAtual.ambiguo || (aliasAtual.sku && aliasAtual.sku !== sku)));
+
+  // container carregado de dados já salvos (sem a planilha crua em memória nessa sessão) — não dá
+  // pra reagrupar tudo do zero a partir do que não existe mais; atualiza só o item escolhido.
+  const carregadoSalvo = !NFE_RAW.length;
+
+  if (ambiguo){
+    await db.from("imp_sku_aliases").upsert({ fonte, modelo_original: chave, sku, ambiguo: true }, { onConflict: "fonte,modelo_original" });
+    delete NFE_ALIASES[chave];
+    if (PL_ALIASES[fonte]) delete PL_ALIASES[fonte][chave]; // mesma tabela; mantém o cache do Packing List sincronizado se já carregado
+    toast("SKU vinculado só nesse item — essa descrição já teve outro SKU antes (parece variação por cor), então o Hub parou de vincular sozinho: as próximas linhas iguais vão ficar pendentes, aguardando escolha manual.");
+  } else {
+    const { error } = await db.from("imp_sku_aliases").upsert({ fonte, modelo_original: chave, sku, ambiguo: false }, { onConflict: "fonte,modelo_original" });
+    if (error) toast("Vínculo aplicado, mas não consegui salvar como aprendizado: " + error.message, "error");
+    NFE_ALIASES[chave] = sku;
+    toast(carregadoSalvo ? "SKU vinculado." : "SKU vinculado — aplicado a todas as linhas com essa descrição.");
+  }
+
+  if (carregadoSalvo){
+    item.sku = sku;
+    item._pendente = false;
+    nfeRecalcularTotais();
+    nfeRenderTabela();
+    nfeSalvarDebounced();
+  } else if (ambiguo){
+    // vincula só ESTA linha crua específica (nunca a descrição inteira), pra não vazar pras outras
+    // linhas iguais (ex.: outra cor do mesmo modelo, ainda pendente de escolha própria)
+    if (item._rawIdx != null) NFE_SKU_OVERRIDES_ROW[item._rawIdx] = sku;
+    nfeRecalcular();
+  } else {
+    NFE_SKU_OVERRIDES[chave] = sku;
+    nfeRecalcular();
+  }
 };
 window.nfeEditarItem = function(idx, campo, valorStr, isPct){
   const item = NFE_MERGED[idx];
