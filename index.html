@@ -1629,6 +1629,10 @@ function fmtN(n, decimals=2){
   return Number(n).toLocaleString("pt-BR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 function fmtR(n){ return n===null||n===undefined||isNaN(n) ? "R$ —" : "R$ " + fmtN(n,2); }
+// arredondamento REAL (não só de exibição) pra valores TOTAIS em dinheiro — usado no Apoio NF-e,
+// Fechamento Container e Precificação Container. Preço Unit. (8 casas), quantidade e alíquotas/%
+// ficam de fora de propósito (por pedido do Wissam, pra não perder precisão nesses três).
+function round2(n){ const v = Number(n); return Number.isFinite(v) ? Math.round((v + Number.EPSILON) * 100) / 100 : 0; }
 function escapeHtml(str){
   if (str === null || str === undefined) return "";
   return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -6346,23 +6350,25 @@ function nfeRecalcular(){
       descricao_despachante: first.descricao || first.model || "",
       ncm: first.ncm || "",
       qtde,
+      // Preço Unit. fica de fora do arredondamento de propósito (precisão de 8 casas, calculado a
+      // partir do totalProduto CRU, não do valor_total já arredondado abaixo) — pedido do Wissam.
       preco_unit: qtde ? totalProduto / qtde : (first.unit || 0),
-      valor_total: totalProduto,
-      vmld: soma("vmld"),
-      aliq_ii: first.aliq_ii, valor_ii: soma("valor_ii"),
-      tx_siscomex: soma("tx_siscomex"),
-      marinha_mercante: soma("marinha_mercante"),
-      aliq_ipi: first.aliq_ipi, valor_ipi: soma("valor_ipi"),
-      aliq_pis: first.aliq_pis, valor_pis: soma("valor_pis"),
-      aliq_cofins: first.aliq_cofins, valor_cofins: soma("valor_cofins"), valor_cofins_mais: soma("valor_cofins_mais"),
-      base_icms: soma("base_icms"), aliq_icms: first.aliq_icms, valor_icms: soma("valor_icms"),
-      _frete: soma("frete"), _capatazia: soma("capatazia"),
+      valor_total: round2(totalProduto),
+      vmld: round2(soma("vmld")),
+      aliq_ii: first.aliq_ii, valor_ii: round2(soma("valor_ii")),
+      tx_siscomex: round2(soma("tx_siscomex")),
+      marinha_mercante: round2(soma("marinha_mercante")),
+      aliq_ipi: first.aliq_ipi, valor_ipi: round2(soma("valor_ipi")),
+      aliq_pis: first.aliq_pis, valor_pis: round2(soma("valor_pis")),
+      aliq_cofins: first.aliq_cofins, valor_cofins: round2(soma("valor_cofins")), valor_cofins_mais: round2(soma("valor_cofins_mais")),
+      base_icms: round2(soma("base_icms")), aliq_icms: first.aliq_icms, valor_icms: round2(soma("valor_icms")),
+      _frete: round2(soma("frete")), _capatazia: round2(soma("capatazia")),
       _rawCount: rows.length, _pendente: !first.sku,
       _rawIdxs: rows.map(r => r.__idx) // todos os índices crus que formam esse card — usado no vínculo manual (linha única pra pendente, ou o grupo inteiro já mesclado ao trocar o SKU de um item que já tinha vinculado)
     };
-    item.bc_ibscbs = item.vmld + item.marinha_mercante + item.valor_ii + item.tx_siscomex;
-    item.valor_cbs = item.bc_ibscbs * 0.009;
-    item.valor_ibs_uf = item.bc_ibscbs * 0.001;
+    item.bc_ibscbs = round2(item.vmld + item.marinha_mercante + item.valor_ii + item.tx_siscomex);
+    item.valor_cbs = round2(item.bc_ibscbs * 0.009);
+    item.valor_ibs_uf = round2(item.bc_ibscbs * 0.001);
     merged.push(item);
   });
   merged.sort((a,b) => compareNatural(a.sku || a.descricao_despachante, b.sku || b.descricao_despachante));
@@ -6375,8 +6381,8 @@ function nfeRecalcular(){
   // confirmado por Wissam) — usamos esse valor quando existir; senão caímos pro somatório em dólar.
   const freteReais = NFE_FRETE_CAPATAZIA_REAIS && NFE_FRETE_CAPATAZIA_REAIS.frete;
   const capataziaReais = NFE_FRETE_CAPATAZIA_REAIS && NFE_FRETE_CAPATAZIA_REAIS.capatazia;
-  NFE_APOIO.frete_total = (freteReais !== null && freteReais !== undefined) ? freteReais : merged.reduce((s,it) => s + (it._frete || 0), 0);
-  NFE_APOIO.capatazia_total = (capataziaReais !== null && capataziaReais !== undefined) ? capataziaReais : merged.reduce((s,it) => s + (it._capatazia || 0), 0);
+  NFE_APOIO.frete_total = round2((freteReais !== null && freteReais !== undefined) ? freteReais : merged.reduce((s,it) => s + (it._frete || 0), 0));
+  NFE_APOIO.capatazia_total = round2((capataziaReais !== null && capataziaReais !== undefined) ? capataziaReais : merged.reduce((s,it) => s + (it._capatazia || 0), 0));
 
   // Totais "do cabeçalho da nota" — vêm direto da aba ESPELHO DA NOTA do despachante (fac-símile
   // da DANFE) quando encontrados lá; senão caem pro somatório das linhas do rateio, como reserva.
@@ -6385,18 +6391,18 @@ function nfeRecalcular(){
   const somaMerged = campo => merged.reduce((s,it) => s + (Number(it[campo]) || 0), 0);
   const E = NFE_ESPELHO_NOTA || {};
   const pegar = (campoEspelho, somaCampo) => (E[campoEspelho] !== null && E[campoEspelho] !== undefined) ? E[campoEspelho] : somaMerged(somaCampo);
-  NFE_APOIO.total_produtos = pegar("total_produtos", "valor_total");
-  NFE_APOIO.base_icms = pegar("base_icms", "base_icms");
-  NFE_APOIO.valor_icms = pegar("valor_icms", "valor_icms");
-  NFE_APOIO.valor_ipi = pegar("valor_ipi", "valor_ipi");
+  NFE_APOIO.total_produtos = round2(pegar("total_produtos", "valor_total"));
+  NFE_APOIO.base_icms = round2(pegar("base_icms", "base_icms"));
+  NFE_APOIO.valor_icms = round2(pegar("valor_icms", "valor_icms"));
+  NFE_APOIO.valor_ipi = round2(pegar("valor_ipi", "valor_ipi"));
   // Valor do II não entra no painel ESPELHO nem na somatória do Total da Nota (confirmado por
   // Wissam) — aqui é só a soma simples dos itens, trava depois de calculado como os demais campos,
   // mas segue sendo usado por trás no Fechamento Container.
-  NFE_APOIO.valor_ii = somaMerged("valor_ii");
-  NFE_APOIO.marinha_mercante = pegar("marinha_mercante", "marinha_mercante");
-  NFE_APOIO.despesas_acessorias = (E.despesas_acessorias !== null && E.despesas_acessorias !== undefined) ? E.despesas_acessorias : 0;
+  NFE_APOIO.valor_ii = round2(somaMerged("valor_ii"));
+  NFE_APOIO.marinha_mercante = round2(pegar("marinha_mercante", "marinha_mercante"));
+  NFE_APOIO.despesas_acessorias = round2((E.despesas_acessorias !== null && E.despesas_acessorias !== undefined) ? E.despesas_acessorias : 0);
   const totalNotaFallback = NFE_APOIO.total_produtos + NFE_APOIO.valor_ipi + somaMerged("valor_pis") + somaMerged("valor_cofins") + somaMerged("valor_cofins_mais");
-  NFE_APOIO.total_nota = (E.total_nota !== null && E.total_nota !== undefined) ? E.total_nota : totalNotaFallback;
+  NFE_APOIO.total_nota = round2((E.total_nota !== null && E.total_nota !== undefined) ? E.total_nota : totalNotaFallback);
 
   nfeRecalcularTotais();
   nfeRenderTabela();
@@ -6405,20 +6411,23 @@ function nfeRecalcular(){
 function nfeRecalcularTotais(){
   const soma = campo => NFE_MERGED.reduce((s,it) => s + (Number(it[campo]) || 0), 0);
   const A = NFE_APOIO;
-  A.vmld_total = soma("vmld");
-  A.tx_siscomex = soma("tx_siscomex");
-  A.valor_pis = soma("valor_pis");
-  A.valor_cofins = soma("valor_cofins");
-  A.valor_cofins_mais = soma("valor_cofins_mais");
-  A.bc_ibscbs = soma("bc_ibscbs");
-  A.valor_cbs = soma("valor_cbs");
-  A.valor_ibs_uf = soma("valor_ibs_uf");
+  A.vmld_total = round2(soma("vmld"));
+  A.tx_siscomex = round2(soma("tx_siscomex"));
+  A.valor_pis = round2(soma("valor_pis"));
+  A.valor_cofins = round2(soma("valor_cofins"));
+  A.valor_cofins_mais = round2(soma("valor_cofins_mais"));
+  A.bc_ibscbs = round2(soma("bc_ibscbs"));
+  A.valor_cbs = round2(soma("valor_cbs"));
+  A.valor_ibs_uf = round2(soma("valor_ibs_uf"));
   A.valor_ibs = A.valor_ibs_uf;
   A.n_itens = NFE_MERGED.length;
   // total_produtos, base_icms, valor_icms, valor_ipi, valor_ii, marinha_mercante, despesas_acessorias
   // e total_nota NÃO são recalculados aqui — são fixados uma vez em nfeRecalcular() (vindos do
   // ESPELHO DA NOTA ou somados como reserva) e depois só mudam se o usuário editar o campo direto.
-  A.total_nf_ibscbs = (A.total_nota||0) + A.valor_cbs + A.valor_ibs;
+  // "Total NF com IBS/CBS" NÃO soma CBS/IBS ao Total da Nota (apesar do nome) — fase de teste da
+  // reforma tributária, os valores de IBS/CBS ficam só como destaque/referência, sem entrar na conta
+  // (confirmado por Wissam 28/09). Fica sempre igual ao Total da Nota.
+  A.total_nf_ibscbs = round2(A.total_nota||0);
 }
 
 window.nfeEscolherSku = async function(idx, sku){
@@ -6468,15 +6477,19 @@ window.nfeEscolherSku = async function(idx, sku){
     nfeRecalcular();
   }
 };
+// campos de TOTAL em dinheiro (arredondam de verdade, não só na exibição) — Preço Unit., Quantidade
+// e as Alíquotas/% (isPct) ficam de fora de propósito, por pedido do Wissam.
+const NFE_CAMPOS_MONEY_TOTAL = new Set(["valor_total","vmld","valor_ii","tx_siscomex","marinha_mercante","valor_ipi","valor_pis","valor_cofins","valor_cofins_mais","base_icms","valor_icms"]);
 window.nfeEditarItem = function(idx, campo, valorStr, isPct){
   const item = NFE_MERGED[idx];
   if (!item) return;
   const n = parseNum(valorStr) || 0;
   item[campo] = isPct ? n / 100 : n;
+  if (!isPct && NFE_CAMPOS_MONEY_TOTAL.has(campo)) item[campo] = round2(item[campo]);
   if (["vmld","marinha_mercante","valor_ii","tx_siscomex"].includes(campo)){
-    item.bc_ibscbs = (item.vmld||0) + (item.marinha_mercante||0) + (item.valor_ii||0) + (item.tx_siscomex||0);
-    item.valor_cbs = item.bc_ibscbs * 0.009;
-    item.valor_ibs_uf = item.bc_ibscbs * 0.001;
+    item.bc_ibscbs = round2((item.vmld||0) + (item.marinha_mercante||0) + (item.valor_ii||0) + (item.tx_siscomex||0));
+    item.valor_cbs = round2(item.bc_ibscbs * 0.009);
+    item.valor_ibs_uf = round2(item.bc_ibscbs * 0.001);
   }
   if (campo === "qtde" || campo === "valor_total"){
     item.preco_unit = item.qtde ? item.valor_total / item.qtde : item.preco_unit;
@@ -6493,7 +6506,8 @@ window.nfeEditarItemTexto = function(idx, campo, valor){
   nfeSalvarDebounced();
 };
 window.nfeEditarHeaderCampo = function(campo, valorStr){
-  NFE_APOIO[campo] = parseNum(valorStr) || 0;
+  // todos os campos editáveis do painel de totais são valores em dinheiro — arredonda de verdade
+  NFE_APOIO[campo] = round2(parseNum(valorStr) || 0);
   nfeRecalcularTotais();
   nfeRenderTabela();
   nfeSalvarDebounced();
@@ -6825,18 +6839,20 @@ window.fechRepuxarApoio = function(){
 };
 function fechComputar(dIn){
   const d = dIn || FECH_DATA || {};
-  const guiaIcms = d.icms||0;
-  const siscomex = (d.ii||0)+(d.ipi||0)+(d.tx_siscomex||0)+(d.pis||0)+(d.cofins||0)+(d.cofins_mais||0);
-  const totalImpostos = guiaIcms + siscomex;
-  const localCharge = (d.despesas_embarque||0)+(d.taxa_exportador||0);
-  const agente = (d.frete||0)+(d.capatazia||0)+(d.taxas_agente_carga||0)+(d.taxas_nacionais||0);
-  const sda = d.sda||0;
-  const servicosAtualComex = (d.atual_comex_assessoria||0)+(d.atual_comex_honorarios||0)+(d.afrmm||0)+(d.atual_comex_escolta||0);
-  const creditosAtualComex = (d.atual_comex_credito_irrf||0)+(d.atual_comex_credito_pis||0)+(d.atual_comex_credito_cofins||0)+(d.atual_comex_credito_csll||0);
-  const atualComex = servicosAtualComex - creditosAtualComex;
-  const totalDespesas = localCharge + agente + sda + atualComex + (d.despesa_extra||0) + (d.armazenagem||0) + (d.transporte_fox||0);
-  const custoProduto = (d.vmld||0) - (d.frete||0) - (d.capatazia||0);
-  const totalCmvContabil = (d.vmld||0) + (d.ii||0) + (d.tx_siscomex||0) + (d.afrmm||0) + (d.cofins_mais||0);
+  // Fechamento Container é 100% valores em dinheiro (nenhum campo aqui é quantidade/alíquota) —
+  // todo subtotal calculado passa por round2, pra não acumular casas decimais além de 2.
+  const guiaIcms = round2(d.icms||0);
+  const siscomex = round2((d.ii||0)+(d.ipi||0)+(d.tx_siscomex||0)+(d.pis||0)+(d.cofins||0)+(d.cofins_mais||0));
+  const totalImpostos = round2(guiaIcms + siscomex);
+  const localCharge = round2((d.despesas_embarque||0)+(d.taxa_exportador||0));
+  const agente = round2((d.frete||0)+(d.capatazia||0)+(d.taxas_agente_carga||0)+(d.taxas_nacionais||0));
+  const sda = round2(d.sda||0);
+  const servicosAtualComex = round2((d.atual_comex_assessoria||0)+(d.atual_comex_honorarios||0)+(d.afrmm||0)+(d.atual_comex_escolta||0));
+  const creditosAtualComex = round2((d.atual_comex_credito_irrf||0)+(d.atual_comex_credito_pis||0)+(d.atual_comex_credito_cofins||0)+(d.atual_comex_credito_csll||0));
+  const atualComex = round2(servicosAtualComex - creditosAtualComex);
+  const totalDespesas = round2(localCharge + agente + sda + atualComex + (d.despesa_extra||0) + (d.armazenagem||0) + (d.transporte_fox||0));
+  const custoProduto = round2((d.vmld||0) - (d.frete||0) - (d.capatazia||0));
+  const totalCmvContabil = round2((d.vmld||0) + (d.ii||0) + (d.tx_siscomex||0) + (d.afrmm||0) + (d.cofins_mais||0));
   return { guiaIcms, siscomex, totalImpostos, localCharge, agente, sda, servicosAtualComex, creditosAtualComex, atualComex, totalDespesas, custoProduto, totalCmvContabil };
 }
 function fechRender(){
@@ -6927,7 +6943,8 @@ function fechRender(){
     </div>`;
 }
 window.fechEditarCampo = function(campo, valorStr){
-  FECH_DATA[campo] = parseNum(valorStr) || 0;
+  // todo campo do Fechamento Container é dinheiro — arredonda de verdade
+  FECH_DATA[campo] = round2(parseNum(valorStr) || 0);
   fechRender();
   fechSalvarDebounced();
 };
@@ -6998,12 +7015,15 @@ function precComputar(){
   const armazenagemTotal = (Number(PREC_FECH.armazenagem)||0) + (Number(PREC_FECH.despesa_extra)||0);
   return itens.map(it => {
     const share = vmldTotal ? (Number(it.vmld)||0) / vmldTotal : 0;
-    const localCharge = c.localCharge*share, agente = c.agente*share, sda = c.sda*share,
-          atualComex = c.atualComex*share, transporteBrasil = transporteTotal*share, armazenagem = armazenagemTotal*share;
-    const diretos = (Number(it.valor_ii)||0)+(Number(it.tx_siscomex)||0)+(Number(it.marinha_mercante)||0)+(Number(it.valor_ipi)||0)+(Number(it.valor_pis)||0)+(Number(it.valor_icms)||0)+(Number(it.valor_cofins)||0)+(Number(it.valor_cofins_mais)||0);
-    const valorTotal = (Number(it.vmld)||0) + localCharge + agente + sda + atualComex + transporteBrasil + armazenagem + diretos;
+    // rateio proporcional por VMLD — os valores em dinheiro arredondam de verdade (round2); Custo/Unid.
+    // (custoBase/custoContabil) ficam de fora de propósito, igual ao Preço Unit. do Apoio NF-e, pra não
+    // perder precisão no valor unitário.
+    const localCharge = round2(c.localCharge*share), agente = round2(c.agente*share), sda = round2(c.sda*share),
+          atualComex = round2(c.atualComex*share), transporteBrasil = round2(transporteTotal*share), armazenagem = round2(armazenagemTotal*share);
+    const diretos = round2((Number(it.valor_ii)||0)+(Number(it.tx_siscomex)||0)+(Number(it.marinha_mercante)||0)+(Number(it.valor_ipi)||0)+(Number(it.valor_pis)||0)+(Number(it.valor_icms)||0)+(Number(it.valor_cofins)||0)+(Number(it.valor_cofins_mais)||0));
+    const valorTotal = round2((Number(it.vmld)||0) + localCharge + agente + sda + atualComex + transporteBrasil + armazenagem + diretos);
     const custoBase = it.qtde ? valorTotal/it.qtde : 0;
-    const valorTotalContabil = (Number(it.vmld)||0) + (Number(it.valor_ii)||0) + (Number(it.tx_siscomex)||0) + (Number(it.marinha_mercante)||0) + (Number(it.valor_cofins_mais)||0);
+    const valorTotalContabil = round2((Number(it.vmld)||0) + (Number(it.valor_ii)||0) + (Number(it.tx_siscomex)||0) + (Number(it.marinha_mercante)||0) + (Number(it.valor_cofins_mais)||0));
     const custoContabil = it.qtde ? valorTotalContabil/it.qtde : 0;
     return { ...it, share, localCharge, agente, sda, atualComex, transporteBrasil, armazenagem, diretos, valorTotal, custoBase, valorTotalContabil, custoContabil };
   });
@@ -7012,8 +7032,8 @@ function precRender(){
   const el = document.getElementById("precConteudo");
   if (!el) return;
   const itens = precComputar().sort((a,b) => compareNatural(a.sku||a.descricao_despachante, b.sku||b.descricao_despachante));
-  const totalGeral = itens.reduce((s,it) => s + it.valorTotal, 0);
-  const totalContabil = itens.reduce((s,it) => s + it.valorTotalContabil, 0);
+  const totalGeral = round2(itens.reduce((s,it) => s + it.valorTotal, 0));
+  const totalContabil = round2(itens.reduce((s,it) => s + it.valorTotalContabil, 0));
   const c = fechComputar(PREC_FECH);
   const totalImpostosDiretos = itens.reduce((s,it) => s + it.diretos, 0);
   const bateGeral = Math.abs(totalGeral - ((PREC_APOIO.vmld_total||0) + c.totalDespesas + totalImpostosDiretos)) < 0.5;
