@@ -4580,7 +4580,12 @@ function renderPackingList(fonte){
   }
 
   // ---- badge de pendências (soma dos contêineres ainda ativos, não arquivados) ----
-  const ativos = PL_CONTAINERS[fonte].filter(c => !c.chegou_em);
+  // "ativos" exclui os cards provisórios que só existem porque marcaram "Booking feito" no
+  // Planejamento mas ainda não importaram de verdade (0 itens, staging ainda 'disponivel') — esses
+  // continuam aparecendo certinho no Kanban (é pra isso que existem), mas não devem aparecer aqui na
+  // Packing List: aqui é só pra contêiner já realmente importado (com itens reais pra conferir/editar).
+  const stagingDisponivelIds = new Set((PL_STAGING[fonte] || []).map(s => String(s.id)));
+  const ativos = PL_CONTAINERS[fonte].filter(c => !c.chegou_em && !(c.origem_staging_id && stagingDisponivelIds.has(String(c.origem_staging_id))));
   const totalPend = ativos.reduce((s, c) => s + plContainerPendentes(c), 0);
   const badgeEl = document.getElementById(`plPendBadge_${fonte}`);
   if (badgeEl){
@@ -6010,11 +6015,11 @@ let NFE_APOIO = null;          // linha agregada (imp_nfe_apoio) em edição
 let NFE_RAW = [];              // linhas cruas lidas do espelho do despachante
 let NFE_MERGED = [];           // linhas por SKU, já mescladas e calculadas (o que é salvo em imp_nfe_apoio_itens)
 let NFE_ALIASES = {};          // modelo_original normalizado -> sku, aprendido (por fonte)
-let NFE_SKU_OVERRIDES = {};    // vínculos manuais feitos nesta sessão, aplicados a TODAS as linhas cruas com a mesma descrição
-let NFE_SKU_OVERRIDES_ROW = {}; // vínculo manual só de UMA linha crua específica (índice em NFE_RAW) — usado quando a descrição é ambígua (2+ SKUs), pra não vazar pras outras linhas iguais
+let NFE_SKU_OVERRIDES_ROW = {}; // vínculo manual de UMA linha crua específica (índice em NFE_RAW) — todo vínculo manual passa por aqui, nunca por descrição inteira, pra nunca vazar/mesclar sozinho com outras linhas iguais (ex.: cores diferentes do mesmo modelo)
 let NFE_ESPELHO_NOTA = null;   // totais lidos direto da aba "ESPELHO DA NOTA" do despachante (fac-símile da DANFE)
 let NFE_FRETE_CAPATAZIA_REAIS = null; // {frete, capatazia} em R$, lidos 2 linhas acima do cabeçalho da aba rateio (a coluna do item é em US$)
 let NFE_EXPANDIDOS = new Set(); // índices dos cards de SKU abertos (Apoio NF-e)
+let NFE_TROCANDO_SKU = new Set(); // índices (NFE_MERGED) com o campo SKU aberto pra trocar um vínculo já feito
 
 async function loadApoioNfe(){
   await finGarantirContainers(true);
@@ -6030,7 +6035,7 @@ async function loadApoioNfe(){
 window.nfeSelecionarContainer = async function(containerId){
   NFE_CONTAINER_ID = containerId || null;
   NFE_CONTAINER = FIN_CONTAINERS.find(c => String(c.id) === String(containerId)) || null;
-  NFE_RAW = []; NFE_MERGED = []; NFE_SKU_OVERRIDES = {}; NFE_SKU_OVERRIDES_ROW = {}; NFE_ESPELHO_NOTA = null; NFE_FRETE_CAPATAZIA_REAIS = null; NFE_EXPANDIDOS = new Set();
+  NFE_RAW = []; NFE_MERGED = []; NFE_SKU_OVERRIDES_ROW = {}; NFE_ESPELHO_NOTA = null; NFE_FRETE_CAPATAZIA_REAIS = null; NFE_EXPANDIDOS = new Set(); NFE_TROCANDO_SKU = new Set();
   const el = document.getElementById("nfeConteudo");
   const chip = document.getElementById("nfeStatusChip");
   if (!containerId){
@@ -6097,8 +6102,16 @@ function nfePct(v){
 function nfeCellStr(v){ return v === null || v === undefined ? "" : String(v).trim(); }
 function nfeMatchContainerItem(chave){
   if (!chave || !NFE_CONTAINER) return null;
-  const item = (NFE_CONTAINER.imp_container_itens || []).find(it => normModelo(it.modelo_original) === chave);
-  return item ? item.sku : null;
+  // pega os SKUs DISTINTOS do Packing List desse mesmo container que batem com essa descrição — se
+  // tiver mais de 1 (ex.: duas cores diferentes do mesmo modelo, texto do despachante não distingue),
+  // não dá pra adivinhar sozinho qual linha crua é qual: fica pendente, esperando escolha manual linha
+  // a linha. Só vincula automático quando existe exatamente 1 SKU possível pra essa descrição.
+  const skusDistintos = new Set(
+    (NFE_CONTAINER.imp_container_itens || [])
+      .filter(it => it.sku && normModelo(it.modelo_original) === chave)
+      .map(it => it.sku)
+  );
+  return skusDistintos.size === 1 ? [...skusDistintos][0] : null;
 }
 
 function nfeParsear(wb){
@@ -6289,10 +6302,11 @@ function nfeRecalcular(){
     r.__idx = idx; // referência estável da linha crua nesta leitura — usada pelo vínculo manual "só esta linha" (descrição ambígua)
     const chave = normModelo(r.model || r.descricao);
     r._chave = chave;
-    // NFE_SKU_OVERRIDES_ROW (por linha) tem prioridade sobre NFE_SKU_OVERRIDES (por descrição, vale pra
-    // todas as linhas iguais) — é o que usamos quando a descrição é ambígua, pra vincular só ESTA linha
-    // sem "vazar" o SKU escolhido pras outras linhas com o mesmo texto (ex.: outra cor do mesmo modelo).
-    r.sku = NFE_SKU_OVERRIDES_ROW[idx] || NFE_SKU_OVERRIDES[chave] || NFE_ALIASES[chave] || nfeMatchContainerItem(chave) || null;
+    // NFE_SKU_OVERRIDES_ROW (por linha) tem prioridade — é o vínculo manual que o usuário acabou de
+    // fazer nesta leitura, e vale só pra ESTA linha, nunca pras outras com o mesmo texto (ex.: outra
+    // cor do mesmo modelo, ainda pendente). NFE_ALIASES é o aprendizado de CONTÊINERES/leituras
+    // anteriores (recarregado do banco ao trocar de contêiner ou abrir um arquivo novo).
+    r.sku = NFE_SKU_OVERRIDES_ROW[idx] || NFE_ALIASES[chave] || nfeMatchContainerItem(chave) || null;
     // split do COFINS: o despachante manda o valor real (podendo ser 9,65% ou 10,25%); aqui separamos
     // sempre o "padrão" (9,65% da base) do excedente ("Cofins (+)"), pra bater com a planilha do Wissam.
     const base = r.aliq_cofins > 0 ? r.valor_cofins_desp / r.aliq_cofins : 0;
@@ -6331,7 +6345,7 @@ function nfeRecalcular(){
       base_icms: soma("base_icms"), aliq_icms: first.aliq_icms, valor_icms: soma("valor_icms"),
       _frete: soma("frete"), _capatazia: soma("capatazia"),
       _rawCount: rows.length, _pendente: !first.sku,
-      _rawIdx: rows.length === 1 ? first.__idx : null // só definido quando é 1 linha crua só (sempre o caso pra item pendente) — usado no vínculo "só esta linha"
+      _rawIdxs: rows.map(r => r.__idx) // todos os índices crus que formam esse card — usado no vínculo manual (linha única pra pendente, ou o grupo inteiro já mesclado ao trocar o SKU de um item que já tinha vinculado)
     };
     item.bc_ibscbs = item.vmld + item.marinha_mercante + item.valor_ii + item.tx_siscomex;
     item.valor_cbs = item.bc_ibscbs * 0.009;
@@ -6417,9 +6431,14 @@ window.nfeEscolherSku = async function(idx, sku){
   } else {
     const { error } = await db.from("imp_sku_aliases").upsert({ fonte, modelo_original: chave, sku, ambiguo: false }, { onConflict: "fonte,modelo_original" });
     if (error) toast("Vínculo aplicado, mas não consegui salvar como aprendizado: " + error.message, "error");
-    NFE_ALIASES[chave] = sku;
-    toast(carregadoSalvo ? "SKU vinculado." : "SKU vinculado — aplicado a todas as linhas com essa descrição.");
+    // não seta NFE_ALIASES[chave] aqui de propósito: o aprendizado fica salvo pro PRÓXIMO contêiner
+    // (recarregado do banco quando ele for selecionado), mas dentro dessa mesma leitura/planilha o
+    // vínculo nunca deve vazar sozinho pra outras linhas com a mesma descrição — só se o usuário
+    // vincular cada uma manualmente (evita mesclar cards que na verdade são cores/variações diferentes)
+    toast(carregadoSalvo ? "SKU vinculado." : "SKU vinculado nesse item. Se tiver outra linha igual, vincule ela separadamente — o Hub não aplica mais sozinho pras outras.");
   }
+
+  NFE_TROCANDO_SKU.delete(idx); // fecha o modo de edição, se estava trocando um já vinculado
 
   if (carregadoSalvo){
     item.sku = sku;
@@ -6427,13 +6446,12 @@ window.nfeEscolherSku = async function(idx, sku){
     nfeRecalcularTotais();
     nfeRenderTabela();
     nfeSalvarDebounced();
-  } else if (ambiguo){
-    // vincula só ESTA linha crua específica (nunca a descrição inteira), pra não vazar pras outras
-    // linhas iguais (ex.: outra cor do mesmo modelo, ainda pendente de escolha própria)
-    if (item._rawIdx != null) NFE_SKU_OVERRIDES_ROW[item._rawIdx] = sku;
-    nfeRecalcular();
   } else {
-    NFE_SKU_OVERRIDES[chave] = sku;
+    // vincula só as linhas cruas que já formam ESTE card (nunca a descrição inteira/outros cards),
+    // pra não vazar pra outra linha igual ainda pendente (ex.: outra cor do mesmo modelo) — vale tanto
+    // pra vínculo novo (pendente, 1 linha só) quanto pra troca de SKU de um item já mesclado (aplica
+    // no grupo inteiro que já estava junto, já que essas linhas já eram reconhecidas como o mesmo produto)
+    (item._rawIdxs || []).forEach(i => { NFE_SKU_OVERRIDES_ROW[i] = sku; });
     nfeRecalcular();
   }
 };
@@ -6471,6 +6489,11 @@ window.nfeToggleCard = function(idx){
   if (NFE_EXPANDIDOS.has(idx)) NFE_EXPANDIDOS.delete(idx); else NFE_EXPANDIDOS.add(idx);
   nfeRenderTabela();
 };
+window.nfeAbrirTrocarSku = function(idx){
+  NFE_TROCANDO_SKU.add(idx);
+  nfeRenderTabela();
+  setTimeout(() => document.querySelector(`#finSkuAcLista_${idx}`)?.previousElementSibling?.focus(), 30);
+};
 
 function nfeOpcoesSku(){
   const vistos = new Set();
@@ -6507,7 +6530,13 @@ window.nfeFiltrarSku = function(idx, q){
 };
 window.nfeFecharSkuLista = function(idx){
   // delay pra dar tempo do onmousedown da opção disparar antes do blur fechar a lista
-  setTimeout(() => { const el = document.getElementById(`finSkuAcLista_${idx}`); if (el) el.classList.remove("open"); }, 180);
+  setTimeout(() => {
+    const el = document.getElementById(`finSkuAcLista_${idx}`);
+    if (el) el.classList.remove("open");
+    // se estava no modo "trocar SKU" (item já tinha vínculo) e o usuário só clicou fora sem escolher
+    // nada novo, volta pro chip de leitura em vez de deixar a busca aberta à toa
+    if (NFE_TROCANDO_SKU.has(idx)){ NFE_TROCANDO_SKU.delete(idx); nfeRenderTabela(); }
+  }, 180);
 };
 
 /* ---------- cards por SKU (Apoio NF-e) ---------- */
@@ -6527,13 +6556,17 @@ function nfeCardSecao(titulo, camposHtml){
 }
 function nfeSkuCardHtml(it, idx){
   const aberto = NFE_EXPANDIDOS.has(idx);
+  const trocando = NFE_TROCANDO_SKU.has(idx);
   const skuBadge = it.sku
     ? `<span class="fin-sku-badge ${it._rawCount>1?"merged":"match"}">${escapeHtml(it.sku)}${it._rawCount>1?` ×${it._rawCount}`:""}</span>`
     : `<span class="fin-sku-badge pend">pendente</span>`;
   const nomeResumo = escapeHtml((it.descricao_despachante||"(sem descrição)").slice(0,70));
 
-  const skuCampo = it.sku
-    ? nfeCardCampoRO("SKU", `<span class="ref-ro">${escapeHtml(it.sku)}${it._rawCount>1?` (mescla ${it._rawCount} linhas)`:""}</span>`)
+  const skuCampo = (it.sku && !trocando)
+    ? nfeCardCampoRO("SKU", `<div style="display:flex; align-items:center; gap:6px;">
+        <span class="ref-ro">${escapeHtml(it.sku)}${it._rawCount>1?` (mescla ${it._rawCount} linhas)`:""}</span>
+        <button type="button" class="btn-icon" style="width:22px; height:22px; flex-shrink:0;" title="Trocar SKU vinculado" onclick="event.stopPropagation(); nfeAbrirTrocarSku(${idx})">✎</button>
+      </div>`)
     : nfeCardCampoRO("SKU", `<div class="fin-sku-ac">
         <input type="text" class="fin-sku-ac-input" placeholder="Buscar SKU ou nome do produto…" autocomplete="off"
           oninput="nfeFiltrarSku(${idx}, this.value)"
