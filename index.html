@@ -1658,6 +1658,18 @@ function ordemEspecialDoSku(sku){
 function compareNatural(a, b){
   return String(a || "").localeCompare(String(b || ""), "pt-BR", { numeric: true, sensitivity: "base" });
 }
+// compara 2 datas (string "YYYY-MM-DD" ou vazio/null) pra ordenar cards de contêiner — quando as datas
+// empatam (ou nenhuma tem data), desempata pelo código/nome do contêiner em ordem natural crescente, em
+// vez de deixar a ordem "ao acaso" (efeito colateral do banco). Sem data sempre vai pro final. Usado em
+// Kanban, Packing List, Disponíveis pra Importar e no resumo do Dashboard (correção 29/09, Wissam notou
+// em vários lugares: com ETA/ETD igual, o número maior aparecia em cima)
+function compareDataComDesempate(dateA, dateB, codeA, codeB){
+  if (!dateA && !dateB) return compareNatural(codeA, codeB);
+  if (!dateA) return 1;
+  if (!dateB) return -1;
+  const cmp = dateA.localeCompare(dateB);
+  return cmp !== 0 ? cmp : compareNatural(codeA, codeB);
+}
 // Aplica a ordem especial DEPOIS de qualquer sort normal: descobre em quais
 // posições da lista os itens de cada grupo caíram e realoca só esses itens entre
 // si (mantendo a ordem A-Z dentro de cada família) — o resto da lista não muda.
@@ -4448,7 +4460,8 @@ async function loadPackingList(fonte){
   if (grid) grid.innerHTML = `<div class="empty-state">Carregando…</div>`;
   const { data: stagingData, error: e1 } = await db.from("imp_containers_staging").select("*").eq("fonte", fonte).eq("status", "disponivel").order("etd_sugerido");
   if (e1){ toast("Erro ao carregar contêineres disponíveis pra importar.", "error"); }
-  PL_STAGING[fonte] = stagingData || [];
+  // desempate por código quando o ETD sugerido empata (correção 29/09)
+  PL_STAGING[fonte] = (stagingData || []).slice().sort((a,b) => compareDataComDesempate(a.etd_sugerido, b.etd_sugerido, a.codigo, b.codigo));
   PL_SEL[fonte] = new Set();
 
   const { data: contData, error: e2 } = await db.from("imp_containers").select("*, imp_container_itens(*)").eq("fonte", fonte).order("etd", { ascending: true, nullsFirst: false });
@@ -4542,9 +4555,18 @@ function urgenciaInfo(etaStr){
 function docsFaltando(container){
   if (!container) return [];
   if (container.fonte === "mti"){
+    // MTI não tem "câmbio fechado" (trabalha em R$ direto) — o que existe é pagamento por parcelas.
+    // "Pagamento concluído" = NF enviada + todas as parcelas cadastradas marcadas como pagas (o PDF do
+    // comprovante em si é opcional). docsFaltando(c).length===0 é usado em todo lugar como sinônimo de
+    // "MTI pago" (substitui cambio_fechado só pra essa fonte) — correção 29/09, pedido do Wissam.
     const f = [];
     if (!container.doc_nf_url) f.push("NF");
-    if (!(container.doc_boletos && container.doc_boletos.length)) f.push("Boletos");
+    const parcelas = container.doc_boletos || [];
+    if (!parcelas.length) f.push("parcelas cadastradas");
+    else {
+      const pendentes = parcelas.filter(p => !p.paga).length;
+      if (pendentes > 0) f.push(`${pendentes} parcela${pendentes > 1 ? "s" : ""} a pagar`);
+    }
     return f;
   }
   const f = [];
@@ -4602,12 +4624,7 @@ function renderPackingList(fonte){
   const grid = document.getElementById(`plContainersGrid_${fonte}`);
   const gridInvoice = document.getElementById(`plContainersGridInvoice_${fonte}`);
   if (!grid) return;
-  const containers = ativos.slice().sort((a, b) => {
-    if (!a.eta && !b.eta) return 0;
-    if (!a.eta) return 1;
-    if (!b.eta) return -1;
-    return a.eta.localeCompare(b.eta);
-  });
+  const containers = ativos.slice().sort((a, b) => compareDataComDesempate(a.eta, b.eta, a.nome, b.nome));
 
   const cardHtml = (c) => {
     const itens = c.imp_container_itens || [];
@@ -4828,8 +4845,12 @@ function renderArquivo(){
     return (b.chegou_em || "").localeCompare(a.chegou_em || "");
   };
 
-  const naoPagos = arquivados.filter(c => !c.cambio_fechado).sort(ordenarFn);
-  const pagos = arquivados.filter(c => c.cambio_fechado).sort(ordenarFn);
+  // MTI não tem "câmbio fechado" — o critério de "pago" pra MTI é o pagamento de parcelas concluído
+  // (NF + todas as parcelas marcadas, via docsFaltando); LOGBOX continua usando cambio_fechado normal
+  // (correção 29/09, pedido do Wissam)
+  const estaPago = c => c.fonte === "mti" ? docsFaltando(c).length === 0 : !!c.cambio_fechado;
+  const naoPagos = arquivados.filter(c => !estaPago(c)).sort(ordenarFn);
+  const pagos = arquivados.filter(c => estaPago(c)).sort(ordenarFn);
 
   const cardHtml = (c, pago) => {
     const itens = c.imp_container_itens || [];
@@ -4839,16 +4860,27 @@ function renderArquivo(){
       ? `${moeda} ${fmtN(c.valor_container, 2)}`
       : `<span style="color:#d97706; font-size:14px; font-weight:700;">valor pendente</span>`;
     const falt = docsFaltando(c);
-    const cambioLinha = pago
-      ? `<div style="margin-top:10px;">
-          <span style="font-size:11.5px; font-weight:700; color:#166534;">💰 Câmbio fechado${c.doc_comprovante_cambio_url ? "" : " · <span style='color:#b45309;'>comprovante pendente</span>"}</span>
-        </div>
-        <div style="margin-top:6px;">
-          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); abrirCambioComprovantePopup('${c.fonte}','${c.id}')">📎 ${c.doc_comprovante_cambio_url ? "Ver / substituir comprovante" : "Enviar comprovante"}</button>
-        </div>`
-      : `<label style="margin-top:10px; display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; cursor:pointer;" onclick="event.stopPropagation();">
-          <input type="checkbox" onclick="event.stopPropagation()" onchange="toggleCambioFechado('${c.fonte}','${c.id}', this.checked)"> Câmbio fechado
-        </label>`;
+    let statusPagamentoLinha;
+    if (c.fonte === "mti"){
+      const parcelas = c.doc_boletos || [];
+      const pagas = parcelas.filter(p => p.paga).length;
+      statusPagamentoLinha = pago
+        ? `<div style="margin-top:10px;"><span style="font-size:11.5px; font-weight:700; color:#166534;">💰 Pagamento concluído · ${pagas}/${parcelas.length} parcela${parcelas.length === 1 ? "" : "s"}</span></div>
+           <div style="margin-top:6px;"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); abrirDocumentosPopup('${c.fonte}','${c.id}', false)">📎 Ver parcelas</button></div>`
+        : `<div style="margin-top:10px; font-size:12.5px; color:var(--text-muted); font-weight:600;">💳 ${pagas}/${parcelas.length} parcela${parcelas.length === 1 ? "" : "s"} paga${pagas === 1 ? "" : "s"}</div>
+           <div style="margin-top:6px;"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); abrirDocumentosPopup('${c.fonte}','${c.id}', false)">📎 Gerenciar parcelas</button></div>`;
+    } else {
+      statusPagamentoLinha = pago
+        ? `<div style="margin-top:10px;">
+            <span style="font-size:11.5px; font-weight:700; color:#166534;">💰 Câmbio fechado${c.doc_comprovante_cambio_url ? "" : " · <span style='color:#b45309;'>comprovante pendente</span>"}</span>
+          </div>
+          <div style="margin-top:6px;">
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); abrirCambioComprovantePopup('${c.fonte}','${c.id}')">📎 ${c.doc_comprovante_cambio_url ? "Ver / substituir comprovante" : "Enviar comprovante"}</button>
+          </div>`
+        : `<label style="margin-top:10px; display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; cursor:pointer;" onclick="event.stopPropagation();">
+            <input type="checkbox" onclick="event.stopPropagation()" onchange="toggleCambioFechado('${c.fonte}','${c.id}', this.checked)"> Câmbio fechado
+          </label>`;
+    }
     return `<div class="arq-card" onclick="abrirContainerDetalhe('${c.fonte}','${c.id}')">
       <div class="arq-head">
         <div class="arq-nome">${escapeHtml(c.nome)}</div>
@@ -4862,19 +4894,19 @@ function renderArquivo(){
       <div class="arq-meta">📦 ${itens.length} ${itens.length === 1 ? "item" : "itens"} · 📐 CBM ${fmtN(totalCbm, 2)}</div>
       <div class="arq-valor">${valorHtml}</div>
       ${falt.length ? `<div class="arq-docs-pend">📄 documentos incompletos</div>` : `<div class="arq-docs-ok">📄 documentos ok</div>`}
-      ${cambioLinha}
+      ${statusPagamentoLinha}
     </div>`;
   };
 
   if (grid){
     grid.innerHTML = naoPagos.length
       ? naoPagos.map(c => cardHtml(c, false)).join("")
-      : `<div class="empty-state">${arquivados.length ? "Todos os contêineres arquivados já têm câmbio fechado." : (filtroEmpresa ? "Nenhum contêiner arquivado dessa empresa." : "Nenhum contêiner chegou ainda. Quando você marcar um como chegado, ele aparece aqui.")}</div>`;
+      : `<div class="empty-state">${arquivados.length ? "Todos os contêineres arquivados já estão pagos." : (filtroEmpresa ? "Nenhum contêiner arquivado dessa empresa." : "Nenhum contêiner chegou ainda. Quando você marcar um como chegado, ele aparece aqui.")}</div>`;
   }
   if (gridPagos){
     gridPagos.innerHTML = pagos.length
       ? pagos.map(c => cardHtml(c, true)).join("")
-      : `<div class="empty-state">Nenhum contêiner com câmbio fechado ainda.</div>`;
+      : `<div class="empty-state">Nenhum contêiner pago ainda.</div>`;
   }
 }
 
@@ -5020,12 +5052,7 @@ function renderKanban(){
   }
 
   KB_STATUSES.forEach(status => {
-    const lista = ativos.filter(c => (c.status_embarque || "em_rota") === status).sort((a, b) => {
-      if (!a.eta && !b.eta) return 0;
-      if (!a.eta) return 1;
-      if (!b.eta) return -1;
-      return a.eta.localeCompare(b.eta);
-    });
+    const lista = ativos.filter(c => (c.status_embarque || "em_rota") === status).sort((a, b) => compareDataComDesempate(a.eta, b.eta, a.nome, b.nome));
     const countEl = document.getElementById(`kbCount_${status}`);
     if (countEl) countEl.textContent = lista.length;
     const listEl = document.getElementById(`kbList_${status}`);
@@ -5371,7 +5398,7 @@ function containerDetalheFooterHtml(container, fonte, containerId){
         ${container.chegou_em
           ? `<button class="btn btn-ghost btn-sm" onclick="plDesfazerChegada('${fonte}','${containerId}')">↩ Desfazer chegada (chegou em ${new Date(container.chegou_em).toLocaleDateString("pt-BR")})</button>`
           : `<button class="btn btn-ghost btn-sm" onclick="abrirDocumentosPopup('${fonte}','${containerId}', true)">✅ Marcar como chegou</button>`}
-        ${container.cambio_fechado ? `<button class="btn btn-ghost btn-sm" onclick="detalheDesmarcarCambio('${fonte}','${containerId}')">↩ Desmarcar câmbio fechado</button>` : ""}
+        ${(fonte !== "mti" && container.cambio_fechado) ? `<button class="btn btn-ghost btn-sm" onclick="detalheDesmarcarCambio('${fonte}','${containerId}')">↩ Desmarcar câmbio fechado</button>` : ""}
       </div>
       <div style="display:flex; gap:10px;">
         <button class="btn btn-ghost btn-sm" onclick="abrirNovoItemContainer()">+ Adicionar Produto</button>
@@ -5494,7 +5521,7 @@ window.salvarNovoAgenteDetalhe = async function(){
   if (document.getElementById("cfg_agentes_list")) renderTagList("cfg_agentes_list", CONFIG.agentes_carga, "agentes_carga");
 };
 
-/* ---------- Documentos de chegada (LOGBOX: Comercial Invoice/DUIMP/Chave de Acesso · MTI: NF/Boletos) ---------- */
+/* ---------- Documentos de chegada (LOGBOX: Comercial Invoice/DUIMP/Chave de Acesso · MTI: NF/Parcelas) ---------- */
 let DOCS_POPUP_FINALIZAR = false;
 window.abrirDocumentosPopup = function(fonte, containerId, finalizarChegada){
   DOCS_POPUP_FINALIZAR = !!finalizarChegada;
@@ -5515,23 +5542,35 @@ function renderDocumentosPopupBody(fonte, containerId){
   };
   let camposHtml;
   if (fonte === "mti"){
-    const boletos = container.doc_boletos || [];
+    // MTI não fecha câmbio (já trabalha em R$) — em vez disso paga o contêiner por parcelas. Cada
+    // parcela tem data de vencimento (editável), checkbox "Paga" e comprovante em PDF OPCIONAL —
+    // marcar o check já conta como paga, o PDF é só apoio. "+ Adicionar parcela" cria uma linha em
+    // branco (é assim que o Wissam "sinaliza quantas parcelas tem"). Parcelas antigas (de antes dessa
+    // correção, só com nome/url) entram sem vencimento e como "não paga" (correção 29/09).
+    const parcelas = container.doc_boletos || [];
+    const linhasParcelas = parcelas.map((p,i) => `
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 0; ${i < parcelas.length - 1 ? "border-bottom:1px solid var(--border);" : ""}">
+        <span style="font-size:11.5px; color:var(--text-faint); width:16px;">${i+1}.</span>
+        <input type="date" class="mono-field" style="font-size:13px; padding:5px 7px; width:140px;" value="${p.vencimento || ""}" onchange="docsAlterarParcelaData(event,'${fonte}','${containerId}',${i})">
+        <label style="display:flex; align-items:center; gap:5px; font-size:12.5px; font-weight:600; cursor:pointer; margin:0;">
+          <input type="checkbox" ${p.paga ? "checked" : ""} onchange="docsTogglePagaParcela(event,'${fonte}','${containerId}',${i})"> Paga
+        </label>
+        ${p.url
+          ? `<a href="${p.url}" target="_blank" class="btn btn-ghost btn-sm">📄 ${escapeHtml(p.nome || ("Comprovante " + (i+1)))}</a><button class="btn-icon" title="Remover comprovante" onclick="docsRemoverComprovanteParcela('${fonte}','${containerId}',${i})">🗑</button>`
+          : `<label class="btn btn-ghost btn-sm" style="cursor:pointer; margin:0;">📎 Comprovante (opcional)<input type="file" accept="application/pdf" style="display:none;" onchange="docsUploadComprovanteParcela(event,'${fonte}','${containerId}',${i})"></label>`}
+        <button class="btn-icon" title="Remover parcela" style="margin-left:auto;" onclick="docsRemoverParcela('${fonte}','${containerId}',${i})">🗑</button>
+      </div>`).join("") || `<span style="color:var(--text-faint); font-size:12px;">Nenhuma parcela cadastrada ainda.</span>`;
     camposHtml = campoHtml("doc_nf_url", "NF") + `
       <div class="field">
-        <label>Boletos (${boletos.length})</label>
-        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
-          ${boletos.map((b,i) => `
-            <div style="display:flex; align-items:center; gap:8px;">
-              <a href="${b.url}" target="_blank" class="btn btn-ghost btn-sm">📄 ${escapeHtml(b.nome || ("Boleto " + (i+1)))}</a>
-              <button class="btn-icon" title="Remover" onclick="docsRemoverBoleto('${fonte}','${containerId}',${i})">🗑</button>
-            </div>`).join("") || `<span style="color:var(--text-faint); font-size:12px;">Nenhum boleto enviado</span>`}
-        </div>
-        <label class="btn btn-ghost btn-sm" style="cursor:pointer; margin:0;">📎 + Adicionar boleto<input type="file" accept="application/pdf" style="display:none;" onchange="docsUploadBoleto(event,'${fonte}','${containerId}')"></label>
+        <label>Parcelas (${parcelas.length})</label>
+        <div style="display:flex; flex-direction:column; margin-bottom:8px;">${linhasParcelas}</div>
+        <button class="btn btn-ghost btn-sm" onclick="docsAdicionarParcela('${fonte}','${containerId}')">➕ Adicionar parcela</button>
       </div>`;
   } else {
     camposHtml = campoHtml("doc_comercial_invoice_url", "Comercial Invoice") + campoHtml("doc_duimp_url", "DUIMP") + campoHtml("doc_chave_acesso_url", "Chave de Acesso");
   }
   const falt = docsFaltando(container);
+  const msgTudoOk = fonte === "mti" ? "✅ Pagamento concluído" : "✅ Todos os documentos enviados";
   const hojeStr = new Date().toISOString().slice(0, 10);
   abrirOverlayDinamico("docsPopupOverlay", `
     <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
@@ -5541,7 +5580,7 @@ function renderDocumentosPopupBody(fonte, containerId){
     <div style="padding:20px 24px;">
       ${DOCS_POPUP_FINALIZAR ? `<div class="field" style="margin-bottom:14px;"><label>Data de Recebimento no Galpão</label><input type="date" id="docs_data_recebimento" value="${container.chegou_em ? container.chegou_em.slice(0,10) : hojeStr}"></div>` : ""}
       ${camposHtml}
-      ${falt.length ? `<div style="margin-top:6px; font-size:12px; color:#b45309; font-weight:600;">⚠ Faltando: ${falt.join(", ")}</div>` : `<div style="margin-top:6px; font-size:12px; color:#166534; font-weight:600;">✅ Todos os documentos enviados</div>`}
+      ${falt.length ? `<div style="margin-top:6px; font-size:12px; color:#b45309; font-weight:600;">⚠ Faltando: ${falt.join(", ")}</div>` : `<div style="margin-top:6px; font-size:12px; color:#166534; font-weight:600;">${msgTudoOk}</div>`}
     </div>
     <div style="padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px;">
       <button class="btn btn-ghost" onclick="document.getElementById('docsPopupOverlay').remove()">${DOCS_POPUP_FINALIZAR ? "Cancelar" : "Fechar"}</button>
@@ -5576,35 +5615,66 @@ window.docsRemoverArquivo = async function(fonte, containerId, campo){
   await refrescarTelasContainer(fonte);
   refrescarDetalheSeAberto();
 };
-window.docsUploadBoleto = async function(evt, fonte, containerId){
+/* ---------- Parcelas MTI (substitui o antigo "Boletos" simples de upload) ---------- */
+// salva o array de parcelas inteiro (doc_boletos) e atualiza tudo que depende dele (card do Arquivo,
+// badge de pendência, popup aberto) — usada por todas as ações de parcela abaixo
+async function docsSalvarParcelas(fonte, containerId, parcelas){
+  const { error } = await db.from("imp_containers").update({ doc_boletos: parcelas }).eq("id", containerId);
+  if (error){ toast("Erro ao salvar parcela: " + error.message, "error"); return false; }
+  const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
+  if (container) container.doc_boletos = parcelas;
+  renderDocumentosPopupBody(fonte, containerId);
+  await refrescarTelasContainer(fonte);
+  refrescarDetalheSeAberto();
+  return true;
+}
+window.docsAdicionarParcela = async function(fonte, containerId){
+  const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
+  const parcelas = [...(container?.doc_boletos || []), { vencimento: null, paga: false, nome: null, url: null }];
+  await docsSalvarParcelas(fonte, containerId, parcelas);
+};
+window.docsRemoverParcela = async function(fonte, containerId, idx){
+  const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
+  const parcelas = (container?.doc_boletos || []).slice();
+  parcelas.splice(idx, 1);
+  const ok = await docsSalvarParcelas(fonte, containerId, parcelas);
+  if (ok) toast("Parcela removida.");
+};
+window.docsAlterarParcelaData = async function(evt, fonte, containerId, idx){
+  const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
+  const parcelas = (container?.doc_boletos || []).slice();
+  if (!parcelas[idx]) return;
+  parcelas[idx] = { ...parcelas[idx], vencimento: evt.target.value || null };
+  await docsSalvarParcelas(fonte, containerId, parcelas);
+};
+window.docsTogglePagaParcela = async function(evt, fonte, containerId, idx){
+  const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
+  const parcelas = (container?.doc_boletos || []).slice();
+  if (!parcelas[idx]) return;
+  parcelas[idx] = { ...parcelas[idx], paga: !!evt.target.checked };
+  await docsSalvarParcelas(fonte, containerId, parcelas);
+};
+window.docsUploadComprovanteParcela = async function(evt, fonte, containerId, idx){
   const file = evt.target.files[0];
   if (!file) return;
-  toast("Enviando boleto…");
-  const path = `${fonte}/${containerId}/boleto-${Date.now()}-${sanitizeFileName(file.name)}`;
+  toast("Enviando comprovante…");
+  const path = `${fonte}/${containerId}/parcela${idx}-${Date.now()}-${sanitizeFileName(file.name)}`;
   const { error: upErr } = await db.storage.from("container-docs").upload(path, file, { upsert: true, contentType: "application/pdf" });
-  if (upErr){ toast("Erro ao enviar boleto: " + upErr.message, "error"); return; }
+  if (upErr){ toast("Erro ao enviar comprovante: " + upErr.message, "error"); return; }
   const { data: pub } = db.storage.from("container-docs").getPublicUrl(path);
   const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
-  const boletos = [...(container?.doc_boletos || []), { nome: file.name, url: pub.publicUrl }];
-  const { error } = await db.from("imp_containers").update({ doc_boletos: boletos }).eq("id", containerId);
-  if (error){ toast("Erro ao salvar boleto.", "error"); return; }
-  if (container) container.doc_boletos = boletos;
-  toast("Boleto adicionado.");
-  renderDocumentosPopupBody(fonte, containerId);
-  await refrescarTelasContainer(fonte);
-  refrescarDetalheSeAberto();
+  const parcelas = (container?.doc_boletos || []).slice();
+  if (!parcelas[idx]) return;
+  parcelas[idx] = { ...parcelas[idx], nome: file.name, url: pub.publicUrl };
+  const ok = await docsSalvarParcelas(fonte, containerId, parcelas);
+  if (ok) toast("Comprovante anexado.");
 };
-window.docsRemoverBoleto = async function(fonte, containerId, idx){
+window.docsRemoverComprovanteParcela = async function(fonte, containerId, idx){
   const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
-  const boletos = (container?.doc_boletos || []).slice();
-  boletos.splice(idx, 1);
-  const { error } = await db.from("imp_containers").update({ doc_boletos: boletos }).eq("id", containerId);
-  if (error){ toast("Erro ao remover boleto.", "error"); return; }
-  if (container) container.doc_boletos = boletos;
-  toast("Boleto removido.");
-  renderDocumentosPopupBody(fonte, containerId);
-  await refrescarTelasContainer(fonte);
-  refrescarDetalheSeAberto();
+  const parcelas = (container?.doc_boletos || []).slice();
+  if (!parcelas[idx]) return;
+  parcelas[idx] = { ...parcelas[idx], nome: null, url: null };
+  await docsSalvarParcelas(fonte, containerId, parcelas);
 };
 window.docsFinalizarChegada = async function(fonte, containerId){
   const dataRecebimento = document.getElementById("docs_data_recebimento")?.value || new Date().toISOString().slice(0, 10);
@@ -5866,9 +5936,7 @@ async function loadDashboard(){
   skusAtivos.forEach(s => { if (!skusVinculados.has(s)) semVinculoEstoque++; });
 
   const statusInfo = KB_STATUSES.map(st => {
-    const lista = ativos.filter(c => (c.status_embarque || "em_rota") === st).sort((a, b) => {
-      if (!a.eta && !b.eta) return 0; if (!a.eta) return 1; if (!b.eta) return -1; return a.eta.localeCompare(b.eta);
-    });
+    const lista = ativos.filter(c => (c.status_embarque || "em_rota") === st).sort((a, b) => compareDataComDesempate(a.eta, b.eta, a.nome, b.nome));
     return { status: st, label: KB_LABELS[st], count: lista.length, proximo: lista[0] || null };
   });
 
@@ -5985,7 +6053,11 @@ let FIN_PRODUTOS_CACHE = null;
 
 async function finGarantirContainers(forcar){
   if (FIN_CONTAINERS && !forcar) return FIN_CONTAINERS;
+  // Apoio NF-e / Fechamento Container / Precificação Container são só do fluxo de importação LOGBOX
+  // (impostos de importação); MTI já trabalha em R$ direto, sem esse fluxo — fica fora dos 3 seletores
+  // (correção 29/09, pedido do Wissam)
   const { data, error } = await db.from("imp_containers").select("*, imp_container_itens(*)")
+    .neq("fonte", "mti")
     .or("status_embarque.eq.desembaraco,chegou_em.not.is.null")
     .order("etd", { ascending: false });
   if (error){ toast("Erro ao carregar contêineres.", "error"); FIN_CONTAINERS = FIN_CONTAINERS || []; return FIN_CONTAINERS; }
