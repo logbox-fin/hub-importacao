@@ -7077,6 +7077,13 @@ async function fechSalvarAgora(){
 /* ------------------- PRECIFICAÇÃO CONTAINER ----------------------- */
 /* ---------------------------------------------------------------- */
 let PREC_CONTAINER_ID = null, PREC_CONTAINER = null, PREC_APOIO = null, PREC_FECH = null;
+// modo de visão das 2 tabelas (Precificação + Contábil) — "completa" (todas as colunas) ou "resumida"
+// (só SKU/Qtde/Custo por Unidade); um único alternador controla as duas juntas (correção 29/09, Wissam)
+let PREC_MODO_VISAO = "completa";
+window.precDefinirModo = function(modo){
+  PREC_MODO_VISAO = (modo === "resumida") ? "resumida" : "completa";
+  precRender();
+};
 
 async function loadPrecificacaoContainer(){
   await finGarantirContainers(true);
@@ -7170,25 +7177,39 @@ function precRender(){
   const bateGeral = Math.abs(totalRateadoItens - totalDespesasRateaveis) < 0.5;
   const bateContabil = Math.abs(totalContabil - c.totalCmvContabil) < 0.5;
 
-  const linhas = itens.map(it => `
+  const resumida = PREC_MODO_VISAO === "resumida";
+  // Custo/Unid. e Custo Contábil/Unid. passam a EXIBIR só 2 casas decimais (antes 4) — o cálculo por
+  // trás (custoBase/custoContabil em precComputar) continua com precisão cheia, só a exibição arredonda
+  // (correção 29/09, pedido do Wissam)
+  const linhas = itens.map(it => resumida ? `
+    <tr>
+      <td class="left"><b>${escapeHtml(it.sku||"—")}</b><div style="font-size:10.5px; color:var(--text-faint);">${escapeHtml((it.descricao_despachante||"").slice(0,34))}</div></td>
+      <td>${fmtN(it.qtde,0)}</td>
+      <td class="mono" style="font-weight:800; color:var(--accent-dark);">${fmtN(it.custoBase,2)}</td>
+    </tr>` : `
     <tr>
       <td class="left"><b>${escapeHtml(it.sku||"—")}</b><div style="font-size:10.5px; color:var(--text-faint);">${escapeHtml((it.descricao_despachante||"").slice(0,34))}</div></td>
       <td>${fmtN(it.qtde,0)}</td>
       <td class="mono">${fmtN(it.vmld,2)}</td>
       <td class="mono">${fmtN(it.localCharge,2)}</td>
       <td class="mono">${fmtN(it.agente,2)}</td>
+      <td class="mono">${fmtN(it.marinha_mercante,2)}</td>
+      <td class="mono">${fmtN(it.tx_siscomex,2)}</td>
       <td class="mono">${fmtN(it.sda,2)}</td>
       <td class="mono">${fmtN(it.atualComex,2)}</td>
       <td class="mono">${fmtN(it.transporteBrasil,2)}</td>
       <td class="mono">${fmtN(it.armazenagem,2)}</td>
       <td class="mono">${fmtN(it.valor_ii,2)}</td>
-      <td class="mono">${fmtN(it.tx_siscomex,2)}</td>
-      <td class="mono">${fmtN(it.marinha_mercante,2)}</td>
       <td class="mono">${fmtN(it.valor_cofins_mais,2)}</td>
       <td class="mono" style="font-weight:800;">${fmtN(it.valorTotal,2)}</td>
-      <td class="mono" style="font-weight:800; color:var(--accent-dark);">${fmtN(it.custoBase,4)}</td>
+      <td class="mono" style="font-weight:800; color:var(--accent-dark);">${fmtN(it.custoBase,2)}</td>
     </tr>`).join("");
-  const linhasContabil = itens.map(it => `
+  const linhasContabil = itens.map(it => resumida ? `
+    <tr>
+      <td class="left"><b>${escapeHtml(it.sku||"—")}</b></td>
+      <td>${fmtN(it.qtde,0)}</td>
+      <td class="mono" style="font-weight:800; color:var(--accent-dark);">${fmtN(it.custoContabil,2)}</td>
+    </tr>` : `
     <tr>
       <td class="left"><b>${escapeHtml(it.sku||"—")}</b></td>
       <td class="mono">${fmtN(it.vmld,2)}</td>
@@ -7197,9 +7218,23 @@ function precRender(){
       <td class="mono">${fmtN(it.marinha_mercante,2)}</td>
       <td class="mono">${fmtN(it.valor_cofins_mais,2)}</td>
       <td class="mono" style="font-weight:800;">${fmtN(it.valorTotalContabil,2)}</td>
-      <td class="mono" style="font-weight:800; color:var(--accent-dark);">${fmtN(it.custoContabil,4)}</td>
+      <td class="mono" style="font-weight:800; color:var(--accent-dark);">${fmtN(it.custoContabil,2)}</td>
       <td class="left" style="color:var(--text-faint); font-size:11px;">IPI ${fmtN(it.valor_ipi,2)} · PIS ${fmtN(it.valor_pis,2)} · COFINS ${fmtN(it.valor_cofins,2)} · ICMS ${fmtN(it.valor_icms,2)}</td>
     </tr>`).join("");
+
+  const theadPrec = resumida
+    ? `<tr><th class="left">SKU</th><th>Qtde</th><th>Custo/Unid.</th></tr>`
+    : `<tr><th class="left">SKU</th><th>Qtde</th><th>VMLD</th><th>Local Charge</th><th>Agente</th><th>AFRMM</th><th>Tx Siscomex</th><th>S.D.A.</th><th>Atual Comex</th><th>Transp. Brasil</th><th>Armazenagem</th><th>I.I.</th><th>Cofins (+)</th><th>Valor Total</th><th>Custo/Unid.</th></tr>`;
+  const tfootPrec = resumida
+    ? `<tr><td class="left">TOTAL</td><td class="mono">${fmtN(itens.reduce((s,it)=>s+(Number(it.qtde)||0),0),0)}</td><td></td></tr>`
+    : `<tr><td class="left">TOTAL</td><td class="mono">${fmtN(itens.reduce((s,it)=>s+(Number(it.qtde)||0),0),0)}</td><td colspan="11"></td><td class="mono">${fmtN(totalGeral,2)}</td><td></td></tr>`;
+
+  const theadContabil = resumida
+    ? `<tr><th class="left">SKU</th><th>Qtde</th><th>Custo/Unid.</th></tr>`
+    : `<tr><th class="left">SKU</th><th>VMLD</th><th>I.I.</th><th>Tx Siscomex</th><th>AFRMM</th><th>Cofins (+)</th><th>Valor Total</th><th>Custo/Unid.</th><th class="left">Tributáveis (referência, não soma)</th></tr>`;
+  const tfootContabil = resumida
+    ? `<tr><td class="left">TOTAL</td><td class="mono">${fmtN(itens.reduce((s,it)=>s+(Number(it.qtde)||0),0),0)}</td><td></td></tr>`
+    : `<tr><td class="left">TOTAL</td><td colspan="4"></td><td></td><td class="mono">${fmtN(totalContabil,2)}</td><td colspan="2"></td></tr>`;
 
   el.innerHTML = `
     <div class="fin-kpis">
@@ -7208,14 +7243,19 @@ function precRender(){
       <div class="fin-kpi" style="--fin-color:#7c3aed;"><div class="fin-kpi-label">Custo Total (Contábil)</div><div class="fin-kpi-value">${fmtN(totalContabil,0)}</div><div class="fin-kpi-sub">${bateContabil ? "✅ bate com a CMV Contábil" : "⚠ confira o Fechamento"}</div></div>
     </div>
 
+    <div style="display:flex; justify-content:flex-end; gap:6px; margin:0 4px 10px;">
+      <button class="btn btn-sm ${!resumida ? "btn-primary" : "btn-ghost"}" onclick="precDefinirModo('completa')">📋 Completa</button>
+      <button class="btn btn-sm ${resumida ? "btn-primary" : "btn-ghost"}" onclick="precDefinirModo('resumida')">📄 Resumida</button>
+    </div>
+
     <div class="fin-section">
       <div class="fin-section-head"><div class="fin-section-title">💰 Precificação — Custo Base de Dados</div></div>
-      <div style="font-size:11.5px; color:var(--text-faint); padding:0 4px 10px;">Composição de CMV — cada custo com coluna própria. IPI/PIS/ICMS/Cofins (padrão) são "Tributáveis": ficam só de referência na tabela Contábil abaixo, não entram no Valor Total.</div>
+      ${!resumida ? `<div style="font-size:11.5px; color:var(--text-faint); padding:0 4px 10px;">Composição de CMV — cada custo com coluna própria. IPI/PIS/ICMS/Cofins (padrão) são "Tributáveis": ficam só de referência na tabela Contábil abaixo, não entram no Valor Total.</div>` : ""}
       <div class="table-wrap" style="box-shadow:none; border:none;">
         <table class="fin-table">
-          <thead><tr><th class="left">SKU</th><th>Qtde</th><th>VMLD</th><th>Local Charge</th><th>Agente</th><th>S.D.A.</th><th>Atual Comex</th><th>Transp. Brasil</th><th>Armazenagem</th><th>I.I.</th><th>Tx Siscomex</th><th>AFRMM</th><th>Cofins (+)</th><th>Valor Total</th><th>Custo/Unid.</th></tr></thead>
-          <tbody>${linhas || `<tr><td colspan="15" class="empty-state">Nenhum item.</td></tr>`}</tbody>
-          <tfoot><tr><td class="left">TOTAL</td><td class="mono">${fmtN(itens.reduce((s,it)=>s+(Number(it.qtde)||0),0),0)}</td><td colspan="11"></td><td class="mono">${fmtN(totalGeral,2)}</td><td></td></tr></tfoot>
+          <thead>${theadPrec}</thead>
+          <tbody>${linhas || `<tr><td colspan="${resumida ? 3 : 15}" class="empty-state">Nenhum item.</td></tr>`}</tbody>
+          <tfoot>${tfootPrec}</tfoot>
         </table>
       </div>
     </div>
@@ -7224,9 +7264,9 @@ function precRender(){
       <div class="fin-section-head"><div class="fin-section-title">📗 Contábil (CMV)</div></div>
       <div class="table-wrap" style="box-shadow:none; border:none;">
         <table class="fin-table">
-          <thead><tr><th class="left">SKU</th><th>VMLD</th><th>I.I.</th><th>Tx Siscomex</th><th>AFRMM</th><th>Cofins (+)</th><th>Valor Total</th><th>Custo/Unid.</th><th class="left">Tributáveis (referência, não soma)</th></tr></thead>
-          <tbody>${linhasContabil || `<tr><td colspan="9" class="empty-state">Nenhum item.</td></tr>`}</tbody>
-          <tfoot><tr><td class="left">TOTAL</td><td colspan="4"></td><td></td><td class="mono">${fmtN(totalContabil,2)}</td><td colspan="2"></td></tr></tfoot>
+          <thead>${theadContabil}</thead>
+          <tbody>${linhasContabil || `<tr><td colspan="${resumida ? 3 : 9}" class="empty-state">Nenhum item.</td></tr>`}</tbody>
+          <tfoot>${tfootContabil}</tfoot>
         </table>
       </div>
     </div>`;
