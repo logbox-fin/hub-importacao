@@ -6065,8 +6065,12 @@ window.nfeSelecionarContainer = async function(containerId){
 
   if (apoioData){
     NFE_APOIO = apoioData;
+    // chave_sku: calculada 1x na primeira leitura da planilha (prioriza Modelo, ver nfeRecalcular) e
+    // salva junto do item — usamos ela aqui, sem recalcular, pra nunca mais divergir entre uma sessão
+    // "planilha nova" e uma "contêiner recarregado" (correção 29/09, achado #3 da revisão). Item salvo
+    // antes dessa correção não tem chave_sku ainda — cai no fallback antigo só pra ele.
     NFE_MERGED = (apoioData.imp_nfe_apoio_itens || []).slice().sort((a,b) => (a.ordem||0) - (b.ordem||0))
-      .map(it => ({ ...it, _chave: normModelo(it.descricao_despachante), _rawCount: 1, _frete: 0, _capatazia: 0, _pendente: !it.sku }));
+      .map(it => ({ ...it, _chave: it.chave_sku || normModelo(it.descricao_despachante), _rawCount: 1, _frete: 0, _capatazia: 0, _pendente: !it.sku }));
     chip.innerHTML = `<span class="fin-status-chip ok">✅ ${NFE_APOIO.arquivo_nome ? escapeHtml(NFE_APOIO.arquivo_nome) : "Dados salvos"}</span>`;
     nfeRenderTabela();
   } else {
@@ -6463,8 +6467,33 @@ window.nfeEscolherSku = async function(idx, sku){
   NFE_TROCANDO_SKU.delete(idx); // fecha o modo de edição, se estava trocando um já vinculado
 
   if (carregadoSalvo){
-    item.sku = sku;
-    item._pendente = false;
+    // já existe outro card com esse SKU nessa mesma lista? mescla em vez de deixar 2 cards do mesmo
+    // produto (correção 29/09, achado #4 da revisão) — mesma regra de nunca somar alíquota, só valor
+    const outroIdx = NFE_MERGED.findIndex((o,i) => i !== idx && o.sku === sku);
+    if (outroIdx >= 0){
+      const alvo = NFE_MERGED[outroIdx];
+      const somaCampo = c => (Number(alvo[c])||0) + (Number(item[c])||0);
+      const novaQtde = somaCampo("qtde");
+      const novoValorTotal = round2(somaCampo("valor_total"));
+      Object.assign(alvo, {
+        qtde: novaQtde,
+        preco_unit: novaQtde ? novoValorTotal / novaQtde : alvo.preco_unit,
+        valor_total: novoValorTotal,
+        vmld: round2(somaCampo("vmld")), valor_ii: round2(somaCampo("valor_ii")),
+        tx_siscomex: round2(somaCampo("tx_siscomex")), marinha_mercante: round2(somaCampo("marinha_mercante")),
+        valor_ipi: round2(somaCampo("valor_ipi")), valor_pis: round2(somaCampo("valor_pis")),
+        valor_cofins: round2(somaCampo("valor_cofins")), valor_cofins_mais: round2(somaCampo("valor_cofins_mais")),
+        base_icms: round2(somaCampo("base_icms")), valor_icms: round2(somaCampo("valor_icms")),
+        bc_ibscbs: round2(somaCampo("bc_ibscbs")), valor_cbs: round2(somaCampo("valor_cbs")), valor_ibs_uf: round2(somaCampo("valor_ibs_uf")),
+        _rawCount: (alvo._rawCount||1) + (item._rawCount||1), _pendente: false
+      });
+      NFE_MERGED.splice(idx, 1);
+      NFE_EXPANDIDOS = new Set(); NFE_TROCANDO_SKU = new Set(); // índices mudaram com o splice, evita ficar apontando pro card errado
+      toast(`Esse SKU já existia em outro card — mesclado automaticamente (agora ${fmtN(novaQtde,0)} un.).`);
+    } else {
+      item.sku = sku;
+      item._pendente = false;
+    }
     nfeRecalcularTotais();
     nfeRenderTabela();
     nfeSalvarDebounced();
@@ -6578,11 +6607,64 @@ window.nfeFecharSkuLista = function(idx){
   }, 180);
 };
 
+/* ---------- alertas de conferência (nunca mudam valor, só avisam) — correção 29/09 ---------- */
+// faixa de sanidade pra alíquota: 0% é normal (isenção/ex-tarifário), só marca suspeito fora de
+// 0,1% a 60% — não dá pra saber de propósito se "1" na planilha era 1% ou 100%, então isso é só um
+// aviso pra conferência manual, nunca corrige sozinho (achado #10 da revisão)
+function nfeAliquotaSuspeita(v){
+  const n = Number(v) || 0;
+  return n > 0 && (n < 0.001 || n > 0.6);
+}
+function nfeAliquotaConfirmada(it, campo){
+  const conf = (it && it.aliq_confirmadas) || {};
+  return conf[campo] !== undefined && Math.abs(Number(conf[campo]) - (Number(it[campo])||0)) < 1e-9;
+}
+window.nfeConfirmarAliquota = function(idx, campo){
+  const item = NFE_MERGED[idx];
+  if (!item) return;
+  item.aliq_confirmadas = { ...(item.aliq_confirmadas||{}), [campo]: item[campo] };
+  document.getElementById("nfeAliqAvisoOverlay")?.remove();
+  nfeRenderTabela();
+  nfeSalvarDebounced();
+};
+window.nfeVerificarAliquota = function(idx){
+  NFE_EXPANDIDOS.add(idx);
+  nfeRenderTabela();
+  setTimeout(() => document.getElementById(`nfeCard_${idx}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+};
+window.nfeAbrirAvisoAliquota = function(idx, campo, label){
+  const item = NFE_MERGED[idx];
+  if (!item) return;
+  const pct = fmtN((Number(item[campo])||0) * 100, 2);
+  abrirOverlayDinamico("nfeAliqAvisoOverlay", `
+    <div style="padding:22px;">
+      <div style="font-weight:700; font-size:15px; margin-bottom:10px;">⚠ ${escapeHtml(label)} suspeita</div>
+      <div style="font-size:13px; color:var(--text-faint); margin-bottom:18px;">Essa alíquota foi lida como <b>${pct}%</b> — fora da faixa normal (0,1% a 60%). Confere se não é erro de leitura da planilha (ex.: "1" sendo lido como 100% em vez de 1%).</div>
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('nfeAliqAvisoOverlay').remove(); nfeVerificarAliquota(${idx})">🔍 Verificar</button>
+        <button class="btn btn-primary btn-sm" onclick="nfeConfirmarAliquota(${idx}, '${campo}')">✅ Tá certo</button>
+      </div>
+    </div>`, 420);
+};
+function nfeAvisoBadge(title){
+  return ` <span title="${escapeHtml(title)}" style="color:#d97706; cursor:help;">⚠</span>`;
+}
+function nfeValorTotalDivergente(it){
+  return Math.abs((Number(it.preco_unit)||0) * (Number(it.qtde)||0) - (Number(it.valor_total)||0)) > 0.01;
+}
+
 /* ---------- cards por SKU (Apoio NF-e) ---------- */
 function nfeCardCampoNum(idx, label, campo, decimals, isPct){
   const raw = Number(NFE_MERGED[idx][campo]) || 0;
   const shown = isPct ? raw * 100 : raw;
   return `<div class="fin-card-field"><label>${label}</label><input type="text" inputmode="decimal" value="${fmtN(shown, decimals===undefined?2:decimals)}" onchange="nfeEditarItem(${idx},'${campo}', this.value, ${isPct?"true":"false"})"></div>`;
+}
+function nfeCardCampoNumAliq(idx, label, campo, decimals){
+  const it = NFE_MERGED[idx];
+  const raw = Number(it[campo]) || 0;
+  const suspeita = nfeAliquotaSuspeita(raw) && !nfeAliquotaConfirmada(it, campo);
+  const avisoBtn = suspeita ? `<button type="button" class="btn-icon" style="width:18px; height:18px; padding:0; margin-left:4px; color:#d97706;" title="Alíquota fora do normal — clique pra conferir" onclick="event.stopPropagation(); nfeAbrirAvisoAliquota(${idx}, '${campo}', '${escapeHtml(label)}')">⚠</button>` : "";
+  return `<div class="fin-card-field"><label>${label}${avisoBtn}</label><input type="text" inputmode="decimal" value="${fmtN(raw*100, decimals===undefined?2:decimals)}" onchange="nfeEditarItem(${idx},'${campo}', this.value, true)"></div>`;
 }
 function nfeCardCampoTxt(idx, label, campo, valor, wide){
   return `<div class="fin-card-field${wide?" wide":""}"><label>${label}</label><input type="text" value="${escapeHtml(valor||"")}" onchange="nfeEditarItemTexto(${idx},'${campo}', this.value)"></div>`;
@@ -6624,11 +6706,11 @@ function nfeSkuCardHtml(it, idx){
         nfeCardCampoTxt(idx, "NCM", "ncm", it.ncm),
         nfeCardCampoNum(idx, "Quantidade", "qtde", 0),
         nfeCardCampoNum(idx, "Preço Unit.", "preco_unit", 8),
-        nfeCardCampoNum(idx, "Valor Total", "valor_total", 2)
+        nfeCardCampoNum(idx, "Valor Total" + (nfeValorTotalDivergente(it) ? nfeAvisoBadge("Preço Unit. × Quantidade não bate exatamente com o Valor Total (diferença > R$ 0,01). O Valor Total continua sendo o valor de origem — isso é só um aviso pra conferência.") : ""), "valor_total", 2)
       ].join(""))}
       ${nfeCardSecao("2 · Imposto de Importação", [
         nfeCardCampoNum(idx, "VMLD", "vmld", 2),
-        nfeCardCampoNum(idx, "Alíquota II", "aliq_ii", 2, true),
+        nfeCardCampoNumAliq(idx, "Alíquota II", "aliq_ii", 2),
         nfeCardCampoNum(idx, "Valor II", "valor_ii", 2)
       ].join(""))}
       ${nfeCardSecao("3 · IBS e CBS", [
@@ -6640,34 +6722,34 @@ function nfeSkuCardHtml(it, idx){
       ].join(""))}
       ${nfeCardSecao("4 · Cofins", [
         nfeCardCampoRO("VMLD", `<span class="ref-ro">R$ ${fmtN(it.vmld,2)}</span>`),
-        nfeCardCampoNum(idx, "Alíquota Cofins", "aliq_cofins", 2, true),
+        nfeCardCampoNumAliq(idx, "Alíquota Cofins", "aliq_cofins", 2),
         nfeCardCampoNum(idx, "Valor Cofins", "valor_cofins", 2)
       ].join(""))}
       ${nfeCardSecao("5 · PIS", [
         nfeCardCampoRO("VMLD", `<span class="ref-ro">R$ ${fmtN(it.vmld,2)}</span>`),
-        nfeCardCampoNum(idx, "Alíquota PIS", "aliq_pis", 2, true),
+        nfeCardCampoNumAliq(idx, "Alíquota PIS", "aliq_pis", 2),
         nfeCardCampoNum(idx, "Valor PIS", "valor_pis", 2)
       ].join(""))}
       ${nfeCardSecao("6 · IPI", [
         nfeCardCampoRO("VMLD", `<span class="ref-ro">R$ ${fmtN(it.vmld,2)}</span>`),
-        nfeCardCampoNum(idx, "Alíquota IPI", "aliq_ipi", 1, true),
+        nfeCardCampoNumAliq(idx, "Alíquota IPI", "aliq_ipi", 1),
         nfeCardCampoNum(idx, "Valor IPI", "valor_ipi", 2)
       ].join(""))}
       ${nfeCardSecao("7 · ICMS", [
-        nfeCardCampoNum(idx, "Alíq. ICMS", "aliq_icms", 1, true),
+        nfeCardCampoNumAliq(idx, "Alíq. ICMS", "aliq_icms", 1),
         nfeCardCampoNum(idx, "Valor ICMS", "valor_icms", 2),
         nfeCardCampoNum(idx, "Base ICMS", "base_icms", 2)
       ].join(""))}
     </div>`;
 
   return `
-    <div class="fin-sku-card ${it._pendente?"pend":""} ${aberto?"open":""}">
+    <div class="fin-sku-card ${it._pendente?"pend":""} ${aberto?"open":""}" id="nfeCard_${idx}">
       <div class="fin-sku-card-header" onclick="nfeToggleCard(${idx})">
         <div class="fin-sku-card-id">${skuBadge}</div>
         <div class="fin-sku-card-nome" title="${escapeHtml(it.descricao_despachante||"")}">${nomeResumo}</div>
         <div class="fin-sku-card-nums">
           <div class="grp"><span class="lbl">Qtde</span><span class="val">${fmtN(it.qtde,0)}</span></div>
-          <div class="grp"><span class="lbl">Total</span><span class="val">R$ ${fmtN(it.valor_total,2)}</span></div>
+          <div class="grp"><span class="lbl">Total</span><span class="val">R$ ${fmtN(it.valor_total,2)}${nfeValorTotalDivergente(it) ? nfeAvisoBadge("Preço Unit. × Quantidade não bate exatamente com o Valor Total — conferência, valor de origem mantido.") : ""}</span></div>
         </div>
         <div class="fin-sku-card-chevron">${aberto?"▲":"▼"}</div>
       </div>
@@ -6683,6 +6765,11 @@ function nfeEspelhoPanelHtml(A){
       <input class="fin-total-input" inputmode="decimal" value="${fmtN(A[campo]||0,2)}" onchange="nfeEditarHeaderCampo('${campo}', this.value)">
     </div>`;
   const linhaRO = (label, valorTxt, opts={}) => `<div class="fin-total-row${opts.grand?" grand":""}"><span>${label}</span><span class="val">${valorTxt}</span></div>`;
+  // Valor II não aparece nesse painel (fica só de uso interno pro Fechamento Container), mas continua
+  // travado desde o parse — se algum item mudar depois e a soma não bater mais com o valor travado,
+  // avisa aqui em vez de deixar passar batido (achado #5 da revisão, 29/09)
+  const somaValorII = NFE_MERGED.reduce((s,it) => s + (Number(it.valor_ii)||0), 0);
+  const valorIIDivergente = Math.abs((A.valor_ii||0) - somaValorII) > 0.01;
   return `
     <div class="fin-section">
       <div class="fin-section-head"><div class="fin-section-title">🧾 ESPELHO — Totais do Container</div></div>
@@ -6709,6 +6796,7 @@ function nfeEspelhoPanelHtml(A){
         ${linhaRO("Valor IBS", "R$ " + fmtN(A.valor_ibs||0,2))}
         ${linhaRO("Valor CBS", "R$ " + fmtN(A.valor_cbs||0,2))}
         ${linhaRO("Total NF com IBS/CBS", "R$ " + fmtN(A.total_nf_ibscbs||0,2), {grand:true})}
+        ${valorIIDivergente ? `<div class="fin-total-row" style="color:#b45309;"><span>⚠ Valor II (uso interno, Fechamento Container) não bate com a soma dos itens</span><span class="val">R$ ${fmtN(A.valor_ii||0,2)} travado · R$ ${fmtN(somaValorII,2)} soma dos itens</span></div>` : ""}
       </div>
     </div>`;
 }
@@ -6759,7 +6847,11 @@ async function nfeSalvarAgora(){
   const { data: apoioSalvo, error: e1 } = await db.from("imp_nfe_apoio").upsert(payloadHeader, { onConflict: "container_id" }).select().single();
   if (e1){ toast("Erro ao salvar Apoio NF-e: " + e1.message, "error"); return; }
   NFE_APOIO.id = apoioSalvo.id;
-  await db.from("imp_nfe_apoio_itens").delete().eq("apoio_id", NFE_APOIO.id);
+  // checa erro no delete ANTES de inserir por cima — se o delete falhar (rede caiu etc.), melhor parar
+  // e avisar do que tentar inserir em cima de um apagamento que pode não ter funcionado (correção 29/09,
+  // achado #11 da revisão: antes esse erro era ignorado silenciosamente)
+  const { error: eDel } = await db.from("imp_nfe_apoio_itens").delete().eq("apoio_id", NFE_APOIO.id);
+  if (eDel){ toast("Erro ao salvar itens do Apoio NF-e (não consegui limpar os itens antigos): " + eDel.message + " — tenta de novo.", "error"); return; }
   const itensPayload = NFE_MERGED.map((it,i) => ({
     apoio_id: NFE_APOIO.id, sku: it.sku, descricao_despachante: it.descricao_despachante, ncm: it.ncm,
     qtde: it.qtde||0, preco_unit: it.preco_unit||0, valor_total: it.valor_total||0, vmld: it.vmld||0,
@@ -6767,7 +6859,8 @@ async function nfeSalvarAgora(){
     aliq_ipi: it.aliq_ipi||0, valor_ipi: it.valor_ipi||0, aliq_pis: it.aliq_pis||0, valor_pis: it.valor_pis||0,
     aliq_cofins: it.aliq_cofins||0, valor_cofins: it.valor_cofins||0, valor_cofins_mais: it.valor_cofins_mais||0,
     base_icms: it.base_icms||0, aliq_icms: it.aliq_icms||0, valor_icms: it.valor_icms||0,
-    bc_ibscbs: it.bc_ibscbs||0, valor_cbs: it.valor_cbs||0, valor_ibs_uf: it.valor_ibs_uf||0, ordem: i
+    bc_ibscbs: it.bc_ibscbs||0, valor_cbs: it.valor_cbs||0, valor_ibs_uf: it.valor_ibs_uf||0, ordem: i,
+    chave_sku: it._chave || null, aliq_confirmadas: it.aliq_confirmadas || {}
   }));
   const { error: e2 } = await db.from("imp_nfe_apoio_itens").insert(itensPayload);
   if (e2){ toast("Erro ao salvar itens do Apoio NF-e: " + e2.message, "error"); return; }
@@ -6814,10 +6907,18 @@ window.fechSelecionarContainer = async function(containerId){
     return;
   }
   el.innerHTML = `<div class="fin-empty-hint"><div class="ico">⏳</div>Carregando…</div>`;
-  const [{ data: fechData }, { data: apoioData }] = await Promise.all([
+  const [{ data: fechData, error: eFech }, { data: apoioData, error: eApoio }] = await Promise.all([
     db.from("imp_fechamento_container").select("*").eq("container_id", containerId).maybeSingle(),
     db.from("imp_nfe_apoio").select("*").eq("container_id", containerId).maybeSingle()
   ]);
+  // erro de leitura de verdade (rede, banco etc.) não pode virar silenciosamente "contêiner novo, sem
+  // dados ainda" — avisa e para, em vez de mostrar os campos automáticos zerados como se fosse normal
+  // (correção 29/09, achado #12 da revisão)
+  if (eFech || eApoio){
+    chip.innerHTML = `<span class="fin-status-chip" style="background:#fee2e2; color:#b91c1c;">⚠ Erro ao carregar</span>`;
+    el.innerHTML = `<div class="fin-empty-hint"><div class="ico">⚠</div>Não consegui carregar os dados desse contêiner. Tenta de novo.</div>`;
+    return;
+  }
   FECH_APOIO = apoioData || null;
   FECH_DATA = fechData || fechDefaults(containerId, FECH_APOIO);
   chip.innerHTML = FECH_APOIO
@@ -6845,15 +6946,26 @@ function fechComputar(dIn){
   const siscomex = round2((d.ii||0)+(d.ipi||0)+(d.tx_siscomex||0)+(d.pis||0)+(d.cofins||0)+(d.cofins_mais||0));
   const totalImpostos = round2(guiaIcms + siscomex);
   const localCharge = round2((d.despesas_embarque||0)+(d.taxa_exportador||0));
-  const agente = round2((d.frete||0)+(d.capatazia||0)+(d.taxas_agente_carga||0)+(d.taxas_nacionais||0));
+  // Agente NÃO soma mais Frete/Capatazia — eles já estão embutidos dentro do VMLD (prova: CUSTO PRODUTO
+  // abaixo já faz VMLD−Frete−Capatazia), contar de novo aqui duplicava o custo (correção 29/09, plano
+  // confirmado com Wissam a partir da planilha real dele)
+  const agente = round2((d.taxas_agente_carga||0)+(d.taxas_nacionais||0));
   const sda = round2(d.sda||0);
-  const servicosAtualComex = round2((d.atual_comex_assessoria||0)+(d.atual_comex_honorarios||0)+(d.afrmm||0)+(d.atual_comex_escolta||0));
+  // A.F.R.M.M. saiu daqui — vira linha própria abaixo (não soma mais dentro de Atual Comex), porque na
+  // Precificação Container ele já é usado como custo DIRETO por item; somar aqui também inflava o custo
+  // em dobro (achado #2 da revisão da outra IA + planilha real do Wissam, correção 29/09)
+  const servicosAtualComex = round2((d.atual_comex_assessoria||0)+(d.atual_comex_honorarios||0)+(d.atual_comex_escolta||0));
   const creditosAtualComex = round2((d.atual_comex_credito_irrf||0)+(d.atual_comex_credito_pis||0)+(d.atual_comex_credito_cofins||0)+(d.atual_comex_credito_csll||0));
   const atualComex = round2(servicosAtualComex - creditosAtualComex);
-  const totalDespesas = round2(localCharge + agente + sda + atualComex + (d.despesa_extra||0) + (d.armazenagem||0) + (d.transporte_fox||0));
+  // Transporte Fox desconta um crédito FIXO de 12% de ICMS (gerado pela própria NF de transporte
+  // rodoviário) antes de entrar no total — confirmado por Wissam, 12%×7.914,02=949,68 batendo com a
+  // planilha real dele. O líquido é o que soma no Total de Despesas e o que rateia na Precificação.
+  const creditoIcmsTransporte = round2((d.transporte_fox||0) * 0.12);
+  const transporteLiquido = round2((d.transporte_fox||0) - creditoIcmsTransporte);
+  const totalDespesas = round2(localCharge + agente + sda + atualComex + (d.afrmm||0) + (d.despesa_extra||0) + (d.armazenagem||0) + transporteLiquido);
   const custoProduto = round2((d.vmld||0) - (d.frete||0) - (d.capatazia||0));
   const totalCmvContabil = round2((d.vmld||0) + (d.ii||0) + (d.tx_siscomex||0) + (d.afrmm||0) + (d.cofins_mais||0));
-  return { guiaIcms, siscomex, totalImpostos, localCharge, agente, sda, servicosAtualComex, creditosAtualComex, atualComex, totalDespesas, custoProduto, totalCmvContabil };
+  return { guiaIcms, siscomex, totalImpostos, localCharge, agente, sda, servicosAtualComex, creditosAtualComex, atualComex, creditoIcmsTransporte, transporteLiquido, totalDespesas, custoProduto, totalCmvContabil };
 }
 function fechRender(){
   const el = document.getElementById("fechConteudo");
@@ -6892,16 +7004,14 @@ function fechRender(){
     ${detalheEdit("DESPESAS EMBARQUE", "despesas_embarque")}
     ${detalheEdit("TAXA EXPORTADOR", "taxa_exportador")}
     ${subtotal("AGENTE DE CARGA", c.agente)}
-    ${detalheEdit("FRETE", "frete")}
-    ${detalheEdit("CAPATAZIA", "capatazia")}
     ${detalheEdit("TAXAS AGENTE DE CARGA", "taxas_agente_carga")}
     ${detalheEdit("TAXAS NACIONAIS", "taxas_nacionais")}
     ${editavel("S.D.A.", "sda")}
+    ${editavel("A.F.R.M.M.", "afrmm")}
     ${subtotal("ATUAL COMEX", c.atualComex)}
     ${subtotal("SERVIÇOS ATUAL COMEX", c.servicosAtualComex, "verde")}
     ${detalheEdit("ASSESSORIA", "atual_comex_assessoria")}
     ${detalheEdit("HONORÁRIOS", "atual_comex_honorarios")}
-    ${detalheEdit("A.F.R.M.M.", "afrmm")}
     ${detalheEdit("ESCOLTA", "atual_comex_escolta")}
     ${subtotal("CRÉDITOS ATUAL COMEX", c.creditosAtualComex, "verde")}
     ${detalheEdit("CRÉDITO IRRF", "atual_comex_credito_irrf")}
@@ -6911,6 +7021,8 @@ function fechRender(){
     ${editavel("—", "despesa_extra", "laranja")}
     ${editavel("ARMAZENAGEM", "armazenagem")}
     ${editavel("TRANSPORTE FOX", "transporte_fox")}
+    ${detalheRO("CRÉDITO ICMS 12% (transporte)", -c.creditoIcmsTransporte)}
+    ${detalheRO("TRANSPORTE LÍQUIDO", c.transporteLiquido)}
   `);
 
   const colCmv = coluna("CMV CONTÁBIL", c.totalCmvContabil, `
@@ -6986,10 +7098,16 @@ window.precSelecionarContainer = async function(containerId){
     return;
   }
   el.innerHTML = `<div class="fin-empty-hint"><div class="ico">⏳</div>Carregando…</div>`;
-  const [{ data: apoioData }, { data: fechData }] = await Promise.all([
+  const [{ data: apoioData, error: eApoio }, { data: fechData, error: eFech }] = await Promise.all([
     db.from("imp_nfe_apoio").select("*, imp_nfe_apoio_itens(*)").eq("container_id", containerId).maybeSingle(),
     db.from("imp_fechamento_container").select("*").eq("container_id", containerId).maybeSingle()
   ]);
+  // mesmo cuidado do Fechamento Container: erro de leitura de verdade não pode parecer "sem dados ainda"
+  if (eApoio || eFech){
+    chip.innerHTML = `<span class="fin-status-chip" style="background:#fee2e2; color:#b91c1c;">⚠ Erro ao carregar</span>`;
+    el.innerHTML = `<div class="fin-empty-hint"><div class="ico">⚠</div>Não consegui carregar os dados desse contêiner. Tenta de novo.</div>`;
+    return;
+  }
   PREC_APOIO = apoioData || null;
   PREC_FECH = fechData || null;
   const temApoio = PREC_APOIO && (PREC_APOIO.imp_nfe_apoio_itens||[]).length;
@@ -7009,23 +7127,31 @@ function precComputar(){
   const itens = PREC_APOIO.imp_nfe_apoio_itens || [];
   const vmldTotal = itens.reduce((s,it) => s + (Number(it.vmld)||0), 0);
   const c = fechComputar(PREC_FECH);
-  const transporteTotal = Number(PREC_FECH.transporte_fox)||0;
-  // Armazenagem entra junto com a linha "Outras" (despesa_extra) do Fechamento — ambas rateadas
-  // pela mesma cota de VMLD, senão a soma dos itens não bate com o Total de Despesas do container.
-  const armazenagemTotal = (Number(PREC_FECH.armazenagem)||0) + (Number(PREC_FECH.despesa_extra)||0);
+  // Transporte Brasil rateia já LÍQUIDO do crédito de ICMS de 12% (ver fechComputar) — nunca o valor
+  // bruto de Transporte Fox.
+  const transporteTotal = c.transporteLiquido;
+  // A despesa "—" (sem nome, default 6.000) entra no rateio do ATUAL COMEX, não mais junto da
+  // Armazenagem — Armazenagem passou a ratear sozinha, pura (correção 29/09, planilha real do Wissam).
+  const atualComexTotal = c.atualComex + (Number(PREC_FECH.despesa_extra)||0);
+  const armazenagemTotal = Number(PREC_FECH.armazenagem)||0;
   return itens.map(it => {
     const share = vmldTotal ? (Number(it.vmld)||0) / vmldTotal : 0;
     // rateio proporcional por VMLD — os valores em dinheiro arredondam de verdade (round2); Custo/Unid.
     // (custoBase/custoContabil) ficam de fora de propósito, igual ao Preço Unit. do Apoio NF-e, pra não
     // perder precisão no valor unitário.
     const localCharge = round2(c.localCharge*share), agente = round2(c.agente*share), sda = round2(c.sda*share),
-          atualComex = round2(c.atualComex*share), transporteBrasil = round2(transporteTotal*share), armazenagem = round2(armazenagemTotal*share);
-    const diretos = round2((Number(it.valor_ii)||0)+(Number(it.tx_siscomex)||0)+(Number(it.marinha_mercante)||0)+(Number(it.valor_ipi)||0)+(Number(it.valor_pis)||0)+(Number(it.valor_icms)||0)+(Number(it.valor_cofins)||0)+(Number(it.valor_cofins_mais)||0));
+          atualComex = round2(atualComexTotal*share), transporteBrasil = round2(transporteTotal*share), armazenagem = round2(armazenagemTotal*share);
+    // "Composição de CMV" — só o que forma custo de verdade (I.I./Tx Siscomex/AFRMM/Cofins(+)), cada
+    // um com coluna própria na tela. IPI/PIS/ICMS/Cofins-padrão viram bloco "Tributáveis", só
+    // referência — NÃO entram no Valor Total (correção 29/09, planilha real do Wissam: o antigo
+    // "Impostos Diretos" único inflava o custo somando os 4 tributáveis também)
+    const diretos = round2((Number(it.valor_ii)||0)+(Number(it.tx_siscomex)||0)+(Number(it.marinha_mercante)||0)+(Number(it.valor_cofins_mais)||0));
+    const tributaveis = round2((Number(it.valor_ipi)||0)+(Number(it.valor_pis)||0)+(Number(it.valor_icms)||0)+(Number(it.valor_cofins)||0));
     const valorTotal = round2((Number(it.vmld)||0) + localCharge + agente + sda + atualComex + transporteBrasil + armazenagem + diretos);
     const custoBase = it.qtde ? valorTotal/it.qtde : 0;
     const valorTotalContabil = round2((Number(it.vmld)||0) + (Number(it.valor_ii)||0) + (Number(it.tx_siscomex)||0) + (Number(it.marinha_mercante)||0) + (Number(it.valor_cofins_mais)||0));
     const custoContabil = it.qtde ? valorTotalContabil/it.qtde : 0;
-    return { ...it, share, localCharge, agente, sda, atualComex, transporteBrasil, armazenagem, diretos, valorTotal, custoBase, valorTotalContabil, custoContabil };
+    return { ...it, share, localCharge, agente, sda, atualComex, transporteBrasil, armazenagem, diretos, tributaveis, valorTotal, custoBase, valorTotalContabil, custoContabil };
   });
 }
 function precRender(){
@@ -7035,8 +7161,13 @@ function precRender(){
   const totalGeral = round2(itens.reduce((s,it) => s + it.valorTotal, 0));
   const totalContabil = round2(itens.reduce((s,it) => s + it.valorTotalContabil, 0));
   const c = fechComputar(PREC_FECH);
-  const totalImpostosDiretos = itens.reduce((s,it) => s + it.diretos, 0);
-  const bateGeral = Math.abs(totalGeral - ((PREC_APOIO.vmld_total||0) + c.totalDespesas + totalImpostosDiretos)) < 0.5;
+  // conferência: a soma das partes RATEADAS entre os itens (Local Charge/Agente/S.D.A./Atual Comex/
+  // Transp. Brasil/Armazenagem) tem que bater com a parcela rateável do Total de Despesas (tudo menos
+  // o A.F.R.M.M., que não é rateado — entra direto por item). Refeito em 29/09 porque a conta antiga
+  // "escondia" o antigo bug de AFRMM em dobro (dava ✅ mesmo estando errada).
+  const totalRateadoItens = itens.reduce((s,it) => s + it.localCharge + it.agente + it.sda + it.atualComex + it.transporteBrasil + it.armazenagem, 0);
+  const totalDespesasRateaveis = round2(c.totalDespesas - (Number(PREC_FECH.afrmm)||0));
+  const bateGeral = Math.abs(totalRateadoItens - totalDespesasRateaveis) < 0.5;
   const bateContabil = Math.abs(totalContabil - c.totalCmvContabil) < 0.5;
 
   const linhas = itens.map(it => `
@@ -7050,7 +7181,10 @@ function precRender(){
       <td class="mono">${fmtN(it.atualComex,2)}</td>
       <td class="mono">${fmtN(it.transporteBrasil,2)}</td>
       <td class="mono">${fmtN(it.armazenagem,2)}</td>
-      <td class="mono">${fmtN(it.diretos,2)}</td>
+      <td class="mono">${fmtN(it.valor_ii,2)}</td>
+      <td class="mono">${fmtN(it.tx_siscomex,2)}</td>
+      <td class="mono">${fmtN(it.marinha_mercante,2)}</td>
+      <td class="mono">${fmtN(it.valor_cofins_mais,2)}</td>
       <td class="mono" style="font-weight:800;">${fmtN(it.valorTotal,2)}</td>
       <td class="mono" style="font-weight:800; color:var(--accent-dark);">${fmtN(it.custoBase,4)}</td>
     </tr>`).join("");
@@ -7076,11 +7210,12 @@ function precRender(){
 
     <div class="fin-section">
       <div class="fin-section-head"><div class="fin-section-title">💰 Precificação — Custo Base de Dados</div></div>
+      <div style="font-size:11.5px; color:var(--text-faint); padding:0 4px 10px;">Composição de CMV — cada custo com coluna própria. IPI/PIS/ICMS/Cofins (padrão) são "Tributáveis": ficam só de referência na tabela Contábil abaixo, não entram no Valor Total.</div>
       <div class="table-wrap" style="box-shadow:none; border:none;">
         <table class="fin-table">
-          <thead><tr><th class="left">SKU</th><th>Qtde</th><th>VMLD</th><th>Local Charge</th><th>Agente</th><th>S.D.A.</th><th>Atual Comex</th><th>Transp. Brasil</th><th>Armazenagem + Outras</th><th>Impostos Diretos</th><th>Valor Total</th><th>Custo/Unid.</th></tr></thead>
-          <tbody>${linhas || `<tr><td colspan="12" class="empty-state">Nenhum item.</td></tr>`}</tbody>
-          <tfoot><tr><td class="left">TOTAL</td><td class="mono">${fmtN(itens.reduce((s,it)=>s+(Number(it.qtde)||0),0),0)}</td><td colspan="8"></td><td class="mono">${fmtN(totalGeral,2)}</td><td></td></tr></tfoot>
+          <thead><tr><th class="left">SKU</th><th>Qtde</th><th>VMLD</th><th>Local Charge</th><th>Agente</th><th>S.D.A.</th><th>Atual Comex</th><th>Transp. Brasil</th><th>Armazenagem</th><th>I.I.</th><th>Tx Siscomex</th><th>AFRMM</th><th>Cofins (+)</th><th>Valor Total</th><th>Custo/Unid.</th></tr></thead>
+          <tbody>${linhas || `<tr><td colspan="15" class="empty-state">Nenhum item.</td></tr>`}</tbody>
+          <tfoot><tr><td class="left">TOTAL</td><td class="mono">${fmtN(itens.reduce((s,it)=>s+(Number(it.qtde)||0),0),0)}</td><td colspan="11"></td><td class="mono">${fmtN(totalGeral,2)}</td><td></td></tr></tfoot>
         </table>
       </div>
     </div>
@@ -7089,7 +7224,7 @@ function precRender(){
       <div class="fin-section-head"><div class="fin-section-title">📗 Contábil (CMV)</div></div>
       <div class="table-wrap" style="box-shadow:none; border:none;">
         <table class="fin-table">
-          <thead><tr><th class="left">SKU</th><th>VMLD</th><th>I.I.</th><th>Tx Siscomex</th><th>AFRMM</th><th>Cofins (+)</th><th>Valor Total</th><th>Custo/Unid.</th><th class="left">Referência (não soma)</th></tr></thead>
+          <thead><tr><th class="left">SKU</th><th>VMLD</th><th>I.I.</th><th>Tx Siscomex</th><th>AFRMM</th><th>Cofins (+)</th><th>Valor Total</th><th>Custo/Unid.</th><th class="left">Tributáveis (referência, não soma)</th></tr></thead>
           <tbody>${linhasContabil || `<tr><td colspan="9" class="empty-state">Nenhum item.</td></tr>`}</tbody>
           <tfoot><tr><td class="left">TOTAL</td><td colspan="4"></td><td></td><td class="mono">${fmtN(totalContabil,2)}</td><td colspan="2"></td></tr></tfoot>
         </table>
