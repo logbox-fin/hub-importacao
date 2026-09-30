@@ -441,6 +441,31 @@
   .dash-grid-2{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
   input.mono-field{ font-family:'JetBrains Mono',monospace; }
 
+  /* ======================= DASHBOARD ANALÍTICO / PAINEL FINANCEIRO — visualização ======================= */
+  .an-bar-row{ display:grid; grid-template-columns: 76px 1fr 128px; align-items:center; gap:10px; padding:5px 0; }
+  .an-bar-label{ font-size:12px; font-weight:700; color:var(--text-muted); }
+  .an-bar-track{ position:relative; height:20px; background:var(--surface-alt); border-radius:5px; overflow:hidden; display:flex; }
+  .an-bar-fill{ height:100%; background:var(--accent); }
+  .an-bar-fill.an-fill-real{ background:#16a34a; }
+  .an-bar-fill.an-fill-previsto{ background:#93c5fd; }
+  .an-bar-fill.an-fill-mti{ background:#eab308; }
+  .an-bar-value{ font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:700; text-align:right; color:var(--text); }
+  .an-legend{ display:flex; gap:14px; font-size:11px; color:var(--text-muted); margin-bottom:8px; flex-wrap:wrap; }
+  .an-legend span{ display:inline-flex; align-items:center; gap:5px; }
+  .an-legend i{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+  table.an-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  table.an-table th{ text-align:right; padding:7px 9px; font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-faint); border-bottom:2px solid var(--border-strong); }
+  table.an-table th:first-child, table.an-table td:first-child{ text-align:left; }
+  table.an-table td{ text-align:right; padding:7px 9px; border-bottom:1px solid var(--border); font-family:'JetBrains Mono',monospace; }
+  table.an-table tr:last-child td{ border-bottom:none; }
+  table.an-table td.an-real{ color:#166534; font-weight:700; }
+  table.an-table td.an-previsto{ color:#78716c; }
+  table.an-table tr.an-total-row td{ font-weight:800; border-top:2px solid var(--border-strong); background:var(--surface-alt); }
+  .an-cell-click{ cursor:pointer; }
+  .an-cell-click:hover{ text-decoration:underline; }
+  .pg-kpi-real{ color:#166534; font-weight:800; }
+  .pg-kpi-previsto{ color:#b45309; font-weight:800; }
+
   /* ============ FÁBRICAS — cards ilustrados ============ */
   .fab-toolbar-count{ font-size:11.5px; color:var(--text-faint); font-weight:600; margin-left:2px; }
   .fab-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap:16px; }
@@ -496,6 +521,7 @@
   span.pc-calc-chip.pc-editavel{ border-bottom:none; }
   span.pc-calc-chip.pc-editavel:hover{ background:var(--accent); color:#fff; }
   span.pc-calc-chip.pc-travado{ background:var(--surface-alt); color:var(--text-muted); cursor:default; }
+  .pc-table input.pc-data-prevista{ color:#1d4ed8; border-color:#93c5fd; background:#eff6ff; font-weight:700; }
 
   /* ============ FINANCEIRO: Apoio NF-e / Fechamento / Precificação Container ============ */
   .fin-topbar{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 18px; box-shadow:var(--shadow); margin-bottom:16px; }
@@ -659,6 +685,9 @@
   <div class="nav-item built" data-view="dashboard" data-label="Dashboard" onclick="irPara('dashboard', true, 'Dashboard')">
     <span class="label">Dashboard</span><span class="soon-dot"></span>
   </div>
+  <div class="nav-item built" data-view="ph-dashanalitico" data-label="Dashboard Analítico" onclick="irPara('ph-dashanalitico', true, 'Dashboard Analítico')">
+    <span class="label">📊 Dashboard Analítico</span><span class="soon-dot"></span>
+  </div>
 
   <div class="nav-group">
     <div class="nav-group-label">Planejamento</div>
@@ -698,7 +727,7 @@
   </div>
 
   <div class="nav-group">
-    <div class="nav-item top-level" data-view="ph-painelgeral" onclick="irPara('ph-painelgeral', false, 'Painel Financeiro Geral')"><span class="label">Painel Financeiro Geral</span><span class="soon-dot"></span></div>
+    <div class="nav-item built top-level" data-view="ph-painelgeral" onclick="irPara('ph-painelgeral', true, 'Painel Financeiro Geral')"><span class="label">💵 Painel Financeiro Geral</span><span class="soon-dot"></span></div>
   </div>
 </nav>
 
@@ -721,6 +750,16 @@
     <!-- ============ DASHBOARD (placeholder de propósito, vem por último) ============ -->
     <div class="view" id="view-dashboard">
       <div id="dashboardContent"><div class="empty-state">Carregando painel…</div></div>
+    </div>
+
+    <!-- ============ DASHBOARD ANALÍTICO ============ -->
+    <div class="view" id="view-ph-dashanalitico">
+      <div id="dashAnaliticoContent"><div class="empty-state">Carregando painel analítico…</div></div>
+    </div>
+
+    <!-- ============ PAINEL FINANCEIRO GERAL ============ -->
+    <div class="view" id="view-ph-painelgeral">
+      <div id="painelGeralContent"><div class="empty-state">Carregando painel financeiro…</div></div>
     </div>
 
     <!-- ============ FÁBRICAS ============ -->
@@ -757,9 +796,9 @@
           <thead><tr>
             <th>Container</th><th>Status</th><th>Status Valor</th><th class="num">Valor USD</th><th>Data de Chegada ou Previsão</th>
             <th class="num">Estim. Dólar</th><th class="num">% Prev. IMP+Desp.</th><th class="num">Prev. IMP+Desp. (R$)</th><th class="num">Real IMP+Desp. (R$)</th>
-            <th class="num">Prev. Câmbio (R$)</th><th class="num">Real Câmbio (R$)</th>
+            <th class="num">Prev. Câmbio (R$)</th><th class="num">Data Câmbio</th><th class="num">Real Câmbio (R$)</th>
           </tr></thead>
-          <tbody id="pcTbody"><tr><td colspan="11" class="empty-state">Carregando…</td></tr></tbody>
+          <tbody id="pcTbody"><tr><td colspan="12" class="empty-state">Carregando…</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -1787,6 +1826,8 @@ function irPara(viewId, built, label){
     if (viewId === "ph-nfe") loadApoioNfe();
     if (viewId === "ph-fechcontainer") loadFechamentoContainer();
     if (viewId === "ph-precificacaocontainer") loadPrecificacaoContainer();
+    if (viewId === "ph-dashanalitico") loadDashboardAnalitico();
+    if (viewId === "ph-painelgeral") loadPainelGeral();
   } else {
     if (viewId === "v-precificacoes") { document.getElementById("precif-lista").style.display=""; document.getElementById("precif-editor").style.display="none"; }
     if (viewId === "v-pedidos") { document.getElementById("pedidos-lista").style.display=""; document.getElementById("pedido-detalhe").style.display="none"; renderPedStatCards(); renderPedidos(); }
@@ -1802,6 +1843,8 @@ function irPara(viewId, built, label){
     if (viewId === "ph-nfe") loadApoioNfe();
     if (viewId === "ph-fechcontainer") loadFechamentoContainer();
     if (viewId === "ph-precificacaocontainer") loadPrecificacaoContainer();
+    if (viewId === "ph-dashanalitico") loadDashboardAnalitico();
+    if (viewId === "ph-painelgeral") loadPainelGeral();
   }
 }
 
@@ -2252,7 +2295,7 @@ let PC_FECHAMENTOS = {};
 
 async function loadPrevisaoCustos(){
   const tbody = document.getElementById("pcTbody");
-  if (tbody) tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Carregando…</td></tr>`;
+  if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="empty-state">Carregando…</td></tr>`;
   const { data, error } = await db.from("imp_containers").select("*").eq("fonte", "logbox");
   if (error){ toast("Erro ao carregar previsão de custos.", "error"); return; }
   PC_CONTAINERS = data || [];
@@ -2288,9 +2331,23 @@ function pcStatusValor(c){
 function pcPrevisaoCambio(c){
   const lancado = pcCustoProdutoLancado(c);
   if (lancado !== null) return lancado;
+  if (c.prev_cambio_travado) return (c.prev_cambio_manual !== null && c.prev_cambio_manual !== undefined && c.prev_cambio_manual !== "") ? Number(c.prev_cambio_manual) : null;
   if (c.prev_cambio_manual !== null && c.prev_cambio_manual !== undefined && c.prev_cambio_manual !== "") return Number(c.prev_cambio_manual);
   if (c.valor_container === null || c.valor_container === undefined || c.estimativa_dolar === null || c.estimativa_dolar === undefined) return null;
   return Number(c.valor_container) * Number(c.estimativa_dolar);
+}
+// Valor travado (gray, não editável) pra exibição + motivo do cadeado — usado na Previsão de Custos e no Painel Financeiro Geral
+function pcCambioTravadoInfo(c){
+  const lancado = pcCustoProdutoLancado(c);
+  if (lancado !== null) return { valor: lancado, motivo: "Travado — vem do Fechamento Container lançado (Custo Produto = VMLD − Frete − Capatazia)" };
+  if (c.prev_cambio_travado) return { valor: (c.prev_cambio_manual !== null && c.prev_cambio_manual !== undefined && c.prev_cambio_manual !== "") ? Number(c.prev_cambio_manual) : null, motivo: "Travado manualmente" };
+  return null;
+}
+// Data efetiva do câmbio: fechamento lançado no comprovante trava; senão usa a estimativa manual
+function pcDataCambioInfo(c){
+  if (c.data_fechamento_cambio) return { data: c.data_fechamento_cambio, travado: true };
+  if (c.prev_data_cambio_manual) return { data: c.prev_data_cambio_manual, travado: false };
+  return { data: null, travado: false };
 }
 function pcPrevisaoImpDespesas(c){
   if (c.prev_imp_despesas_manual !== null && c.prev_imp_despesas_manual !== undefined && c.prev_imp_despesas_manual !== "") return Number(c.prev_imp_despesas_manual);
@@ -2311,7 +2368,7 @@ function renderPrevisaoCustos(){
   const fmtEdit = v => (v === null || v === undefined || v === "") ? "" : fmtN(v, 2);
 
   if (!lista.length){
-    tbody.innerHTML = `<tr><td colspan="11" class="empty-state">${PC_CONTAINERS.length ? "Nenhum contêiner com esse filtro." : "Nenhum contêiner LOGBOX cadastrado ainda."}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" class="empty-state">${PC_CONTAINERS.length ? "Nenhum contêiner com esse filtro." : "Nenhum contêiner LOGBOX cadastrado ainda."}</td></tr>`;
   } else {
     tbody.innerHTML = lista.map(c => {
       const cambio = pcPrevisaoCambio(c);
@@ -2325,6 +2382,8 @@ function renderPrevisaoCustos(){
         : `<span class="pc-valor-pill previa">⏳ Prévia</span>`;
       const temReal1 = c.real_imp_despesas !== null && c.real_imp_despesas !== undefined && c.real_imp_despesas !== "";
       const temReal2 = c.real_cambio !== null && c.real_cambio !== undefined && c.real_cambio !== "";
+      const travadoInfo = pcCambioTravadoInfo(c);
+      const dataCambioInfo = pcDataCambioInfo(c);
       return `<tr class="${c.cambio_fechado ? "pc-row-pago" : ""}">
         <td style="font-weight:700;">${escapeHtml(c.nome)}</td>
         <td><span class="pc-status-pill ${pcStatusClasse(c)}">${pcStatusIcone(c)} ${pcStatusLabel(c)}</span></td>
@@ -2339,11 +2398,14 @@ function renderPrevisaoCustos(){
           ? `<span class="pc-calc-chip pc-editavel" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_imp_despesas_manual',${impDesp})">${fmtN(impDesp, 2)}</span>`
           : `<span class="pc-editavel" style="color:var(--text-faint);" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_imp_despesas_manual',null)">—</span>`}</td>
         <td class="num"><input type="text" inputmode="decimal" class="mono-field pc-input real-field${temReal1 ? " filled" : ""}" style="width:100px;" placeholder="NÃO PAGO" value="${fmtEdit(c.real_imp_despesas)}" onchange="pcSalvarCampo('${c.id}','real_imp_despesas', this.value)"></td>
-        <td class="num" id="pcCell_prev_cambio_manual_${c.id}">${cambioLancado !== null
-          ? `<span class="pc-calc-chip pc-travado" title="Travado — vem do Fechamento Container lançado (Custo Produto = VMLD − Frete − Capatazia)">🔒 ${fmtN(cambioLancado, 2)}</span>`
+        <td class="num" id="pcCell_prev_cambio_manual_${c.id}">${travadoInfo !== null
+          ? `<span class="pc-calc-chip pc-travado" title="${escapeHtml(travadoInfo.motivo)}">${travadoInfo.valor !== null ? fmtN(travadoInfo.valor, 2) : "—"}</span>`
           : (cambio !== null
             ? `<span class="pc-calc-chip pc-editavel" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_cambio_manual',${cambio})">${fmtN(cambio, 2)}</span>`
             : `<span class="pc-editavel" style="color:var(--text-faint);" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_cambio_manual',null)">—</span>`)}</td>
+        <td class="num" id="pcCell_data_cambio_${c.id}">${dataCambioInfo.travado
+          ? `<span class="pc-calc-chip pc-travado" title="Travado — vem da data de fechamento lançada no Comprovante de câmbio">${fmtDate(String(dataCambioInfo.data).slice(0,10))}</span>`
+          : `<input type="date" class="mono-field pc-input pc-data-prevista" value="${dataCambioInfo.data ? String(dataCambioInfo.data).slice(0,10) : ""}" onchange="pcSalvarDataCambio('${c.id}', this.value)">`}</td>
         <td class="num"><input type="text" inputmode="decimal" class="mono-field pc-input real-field${temReal2 ? " filled" : ""}" style="width:100px;" placeholder="NÃO PAGO" value="${fmtEdit(c.real_cambio)}" onchange="pcSalvarCampo('${c.id}','real_cambio', this.value)"></td>
       </tr>`;
     }).join("");
@@ -2399,6 +2461,15 @@ window.pcSalvarCampo = async function(containerId, campo, valorStr){
   if (error){ toast("Erro ao salvar.", "error"); return; }
   const c = PC_CONTAINERS.find(x => String(x.id) === String(containerId));
   if (c) c[campo] = valor;
+  renderPrevisaoCustos();
+};
+window.pcSalvarDataCambio = async function(containerId, valorStr){
+  const valor = valorStr || null;
+  const { error } = await db.from("imp_containers").update({ prev_data_cambio_manual: valor }).eq("id", containerId);
+  if (error){ toast("Erro ao salvar data do câmbio.", "error"); return; }
+  const c = PC_CONTAINERS.find(x => String(x.id) === String(containerId));
+  if (c) c.prev_data_cambio_manual = valor;
+  toast("Data do câmbio salva.");
   renderPrevisaoCustos();
 };
 window.pcEditarCampo = function(containerId, campo, valorAtual){
@@ -5107,6 +5178,9 @@ function renderCambioPopupBody(fonte, containerId){
   const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
   if (!container) return;
   const url = container.doc_comprovante_cambio_url;
+  const temValor = container.real_cambio !== null && container.real_cambio !== undefined && container.real_cambio !== "";
+  const temData = !!container.data_fechamento_cambio;
+  const podeFechar = temValor && temData;
   abrirOverlayDinamico("cambioPopupOverlay", `
     <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
       <h2 class="modal-title" style="margin:0;">💰 Comprovante de câmbio — ${escapeHtml(container.nome)}</h2>
@@ -5122,16 +5196,33 @@ function renderCambioPopupBody(fonte, containerId){
       </div>
       ${url ? `<div style="margin-top:10px; font-size:12px; color:#166534; font-weight:600;">✅ Comprovante enviado</div>` : `<div style="margin-top:10px; font-size:12px; color:#b45309; font-weight:600;">⚠ Você pode deixar o câmbio marcado como fechado mesmo sem enviar o comprovante agora — é só enviar depois aqui.</div>`}
       <div class="field" style="margin-top:16px;">
-        <label>Valor real do câmbio (R$)</label>
-        <input type="text" inputmode="decimal" class="mono-field" style="max-width:200px;" placeholder="Opcional" value="${container.real_cambio !== null && container.real_cambio !== undefined && container.real_cambio !== "" ? fmtN(container.real_cambio, 2) : ""}" onchange="cambioSalvarRealCambio('${fonte}','${containerId}', this.value)">
+        <label>Valor real do câmbio (R$) <span style="color:#dc2626;">*</span></label>
+        <input type="text" inputmode="decimal" class="mono-field" style="max-width:200px;" placeholder="Obrigatório" value="${temValor ? fmtN(container.real_cambio, 2) : ""}" onchange="cambioSalvarRealCambio('${fonte}','${containerId}', this.value)">
         <div style="margin-top:4px; font-size:11.5px; color:var(--text-faint);">Atualiza o campo "Real Câmbio" na Previsão de Custos.</div>
       </div>
+      <div class="field" style="margin-top:16px;">
+        <label>Data de fechamento do câmbio <span style="color:#dc2626;">*</span></label>
+        <input type="date" class="mono-field" style="max-width:200px;" value="${temData ? String(container.data_fechamento_cambio).slice(0,10) : ""}" onchange="cambioSalvarDataFechamento('${fonte}','${containerId}', this.value)">
+        <div style="margin-top:4px; font-size:11.5px; color:var(--text-faint);">Trava a coluna "Data Câmbio" na Previsão de Custos com essa data.</div>
+      </div>
+      ${!podeFechar ? `<div style="margin-top:14px; font-size:12px; color:#b45309; font-weight:600;">⚠ Preencha o valor real e a data de fechamento pra poder fechar este popup.</div>` : ""}
     </div>
     <div style="padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end;">
-      <button class="btn btn-ghost" onclick="document.getElementById('cambioPopupOverlay').remove()">Fechar</button>
+      <button class="btn btn-ghost" ${podeFechar ? "" : "disabled style=\"opacity:.45; cursor:not-allowed;\""} onclick="document.getElementById('cambioPopupOverlay').remove()">Fechar</button>
     </div>
   `, 480);
 }
+window.cambioSalvarDataFechamento = async function(fonte, containerId, valorStr){
+  const valor = valorStr || null;
+  const { error } = await db.from("imp_containers").update({ data_fechamento_cambio: valor }).eq("id", containerId);
+  if (error){ toast("Erro ao salvar data de fechamento.", "error"); return; }
+  const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
+  if (container) container.data_fechamento_cambio = valor;
+  const pcCache = (typeof PC_CONTAINERS !== "undefined" && PC_CONTAINERS) ? PC_CONTAINERS.find(x => String(x.id) === String(containerId)) : null;
+  if (pcCache) pcCache.data_fechamento_cambio = valor;
+  toast("Data de fechamento do câmbio salva.");
+  renderCambioPopupBody(fonte, containerId);
+};
 window.cambioUploadComprovante = async function(evt, fonte, containerId){
   const file = evt.target.files[0];
   if (!file) return;
@@ -5157,6 +5248,7 @@ window.cambioSalvarRealCambio = async function(fonte, containerId, valorStr){
   const pcCache = (typeof PC_CONTAINERS !== "undefined" && PC_CONTAINERS) ? PC_CONTAINERS.find(x => String(x.id) === String(containerId)) : null;
   if (pcCache) pcCache.real_cambio = valor;
   toast("Valor real do câmbio salvo.");
+  renderCambioPopupBody(fonte, containerId);
 };
 window.cambioRemoverComprovante = async function(fonte, containerId){
   const { error } = await db.from("imp_containers").update({ doc_comprovante_cambio_url: null }).eq("id", containerId);
@@ -6159,16 +6251,6 @@ function renderDashboard(d){
         <div class="dash-kpi-value">${d.ativos.length}</div>
         <div class="dash-kpi-sub">${d.logboxAtivos.length} LOGBOX · ${d.mtiAtivos.length} MTI</div>
       </div>
-      <div class="dash-kpi">
-        <div class="dash-kpi-label">💰 Valor em trânsito</div>
-        <div class="dash-kpi-value">¥ ${fmtN(d.totalRmbTransito, 0)}</div>
-        <div class="dash-kpi-sub">≈ US$ ${fmtN(d.totalUsdTransito, 0)}</div>
-      </div>
-      <div class="dash-kpi">
-        <div class="dash-kpi-label">📐 CBM em trânsito</div>
-        <div class="dash-kpi-value">${fmtN(d.totalCbmTransito, 1)}</div>
-        <div class="dash-kpi-sub">soma dos contêineres ativos</div>
-      </div>
       <div class="dash-kpi ${d.atrasados.length ? "alerta" : ""}">
         <div class="dash-kpi-label">⏳ Chegando em 7 dias</div>
         <div class="dash-kpi-value">${d.chegando7.length}</div>
@@ -6205,25 +6287,13 @@ function renderDashboard(d){
         </div>`).join("")}
     </div>`;
 
-  const valorEmpresa = lista => lista.reduce((s, c) => s + (c.imp_container_itens || []).reduce((s2, it) => s2 + (Number(it.valor_rmb) || 0), 0), 0);
-  const cbmEmpresa = lista => lista.reduce((s, c) => s + (c.imp_container_itens || []).reduce((s2, it) => s2 + (Number(it.cbm_total) || 0), 0), 0);
-  const empresaHtml = `
-    <div class="dash-section">
-      <div class="dash-section-title">🏢 Resumo por empresa</div>
-      <div class="dash-grid-2">
-        <div class="dash-empresa-card logbox">
-          <div class="dash-empresa-nome">LOGBOX</div>
-          <div class="dash-empresa-linha"><span>Contêineres ativos</span><b>${d.logboxAtivos.length}</b></div>
-          <div class="dash-empresa-linha"><span>Valor total</span><b class="mono">¥ ${fmtN(valorEmpresa(d.logboxAtivos), 0)}</b></div>
-          <div class="dash-empresa-linha"><span>CBM total</span><b class="mono">${fmtN(cbmEmpresa(d.logboxAtivos), 1)}</b></div>
-        </div>
-        <div class="dash-empresa-card mti">
-          <div class="dash-empresa-nome">MTI</div>
-          <div class="dash-empresa-linha"><span>Contêineres ativos</span><b>${d.mtiAtivos.length}</b></div>
-          <div class="dash-empresa-linha"><span>Valor total</span><b class="mono">¥ ${fmtN(valorEmpresa(d.mtiAtivos), 0)}</b></div>
-          <div class="dash-empresa-linha"><span>CBM total</span><b class="mono">${fmtN(cbmEmpresa(d.mtiAtivos), 1)}</b></div>
-        </div>
+  const verAnaliticoHtml = `
+    <div class="dash-section" style="cursor:pointer; display:flex; align-items:center; justify-content:space-between;" onclick="irPara('ph-dashanalitico', true, 'Dashboard Analítico')">
+      <div>
+        <div class="dash-section-title" style="margin-bottom:2px;">📊 Quer ver valor em trânsito, CBM, frete por mês e outras análises?</div>
+        <div style="font-size:12.5px; color:var(--text-muted);">Acesse o Dashboard Analítico pra indicadores estratégicos e comparativos.</div>
       </div>
+      <span style="font-size:20px;">→</span>
     </div>`;
 
   const ultimosHtml = `
@@ -6239,8 +6309,429 @@ function renderDashboard(d){
       }).join("") : `<div class="empty-state">Nenhum contêiner chegou ainda.</div>`}
     </div>`;
 
-  el.innerHTML = kpisHtml + pendHtml + `<div class="dash-grid-2">${statusHtml}${empresaHtml}</div>` + ultimosHtml;
+  el.innerHTML = kpisHtml + pendHtml + `<div class="dash-grid-2">${statusHtml}${ultimosHtml}</div>` + verAnaliticoHtml;
 }
+
+/* ============================================================ */
+/* ======================= DASHBOARD ANALÍTICO ======================= */
+/* ============================================================ */
+function anMesChave(dataStr){
+  const d = new Date(String(dataStr).slice(0, 10) + "T00:00:00");
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+function anMesLabel(chave){
+  const [y, m] = chave.split("-");
+  return `${MESES_PT[Number(m) - 1].slice(0, 3)}/${y.slice(2)}`;
+}
+function anAddMeses(chave, n){
+  const [y, m] = chave.split("-").map(Number);
+  const d = new Date(y, (m - 1) + n, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+function anListaMeses(minChave, maxChave){
+  const meses = [];
+  let cursor = minChave, guard = 0;
+  while (cursor <= maxChave && guard < 240){ meses.push(cursor); cursor = anAddMeses(cursor, 1); guard++; }
+  return meses;
+}
+
+async function loadDashboardAnalitico(){
+  const el = document.getElementById("dashAnaliticoContent");
+  if (el) el.innerHTML = `<div class="empty-state">Carregando painel analítico…</div>`;
+  const [contRes, cfgRes, fechRes, prodRes] = await Promise.all([
+    db.from("imp_containers").select("*, imp_container_itens(*)"),
+    CONFIG ? Promise.resolve({ data: CONFIG }) : db.from("imp_config").select("*").limit(1).maybeSingle(),
+    db.from("imp_fechamento_container").select("container_id,vmld,frete,capatazia"),
+    db.from(TABLE_PRODUTOS).select("sku,marca")
+  ]);
+  if (contRes.error){ toast("Erro ao carregar painel analítico.", "error"); return; }
+  const containers = contRes.data || [];
+  const cfg = cfgRes.data || CONFIG || {};
+  const rmbUsd = Number(cfg.rmb_usd) || 7;
+  const usdBrl = Number(cfg.usd_brl) || 5.3;
+  const fechMap = {};
+  (fechRes.data || []).forEach(f => { fechMap[String(f.container_id)] = f; });
+  const marcaMap = {};
+  (prodRes.data || []).forEach(p => { marcaMap[p.sku] = p.marca || "Sem marca"; });
+
+  renderDashboardAnalitico({ containers, rmbUsd, usdBrl, fechMap, marcaMap });
+}
+
+function renderDashboardAnalitico(d){
+  const el = document.getElementById("dashAnaliticoContent");
+  if (!el) return;
+  const { containers, rmbUsd, usdBrl, fechMap, marcaMap } = d;
+  const ativos = containers.filter(c => !c.chegou_em);
+  const logboxAtivos = ativos.filter(c => c.fonte === "logbox");
+  const mtiAtivos = ativos.filter(c => c.fonte === "mti");
+  const somaItens = (lista, campo) => lista.reduce((s, c) => s + (c.imp_container_itens || []).reduce((s2, it) => s2 + (Number(it[campo]) || 0), 0), 0);
+  const totalRmbTransito = somaItens(ativos, "valor_rmb");
+  const totalCbmTransito = somaItens(ativos, "cbm_total");
+  const totalUsdTransito = totalRmbTransito / rmbUsd;
+
+  const logboxTodos = containers.filter(c => c.fonte === "logbox");
+  const custosPorCbm = [];
+  logboxTodos.forEach(c => {
+    const f = fechMap[String(c.id)];
+    if (!f) return;
+    const custoProduto = round2((Number(f.vmld) || 0) - (Number(f.frete) || 0) - (Number(f.capatazia) || 0));
+    const despesas = (c.real_imp_despesas !== null && c.real_imp_despesas !== undefined && c.real_imp_despesas !== "") ? Number(c.real_imp_despesas) : 0;
+    const cbm = (c.imp_container_itens || []).reduce((s, it) => s + (Number(it.cbm_total) || 0), 0);
+    if (cbm > 0) custosPorCbm.push({ nome: c.nome, valor: round2((custoProduto + despesas) / cbm) });
+  });
+  const custoMedioCbm = custosPorCbm.length ? round2(custosPorCbm.reduce((s, x) => s + x.valor, 0) / custosPorCbm.length) : null;
+
+  const kpisHtml = `
+    <div class="dash-kpis">
+      <div class="dash-kpi">
+        <div class="dash-kpi-label">💰 Valor em trânsito</div>
+        <div class="dash-kpi-value">¥ ${fmtN(totalRmbTransito, 0)}</div>
+        <div class="dash-kpi-sub">≈ US$ ${fmtN(totalUsdTransito, 0)}</div>
+      </div>
+      <div class="dash-kpi">
+        <div class="dash-kpi-label">📐 CBM em trânsito</div>
+        <div class="dash-kpi-value">${fmtN(totalCbmTransito, 1)}</div>
+        <div class="dash-kpi-sub">soma dos contêineres ativos</div>
+      </div>
+      <div class="dash-kpi">
+        <div class="dash-kpi-label">📦 Custo médio por CBM</div>
+        <div class="dash-kpi-value">${custoMedioCbm !== null ? `R$ ${fmtN(custoMedioCbm, 0)}` : "—"}</div>
+        <div class="dash-kpi-sub">${custosPorCbm.length} contêiner(es) com Fechamento lançado</div>
+      </div>
+    </div>`;
+
+  const valorEmpresa = lista => lista.reduce((s, c) => s + (c.imp_container_itens || []).reduce((s2, it) => s2 + (Number(it.valor_rmb) || 0), 0), 0);
+  const cbmEmpresa = lista => lista.reduce((s, c) => s + (c.imp_container_itens || []).reduce((s2, it) => s2 + (Number(it.cbm_total) || 0), 0), 0);
+  const empresaHtml = `
+    <div class="dash-section">
+      <div class="dash-section-title">🏢 Resumo por empresa (ativos)</div>
+      <div class="dash-grid-2">
+        <div class="dash-empresa-card logbox">
+          <div class="dash-empresa-nome">LOGBOX</div>
+          <div class="dash-empresa-linha"><span>Contêineres ativos</span><b>${logboxAtivos.length}</b></div>
+          <div class="dash-empresa-linha"><span>Valor total</span><b class="mono">¥ ${fmtN(valorEmpresa(logboxAtivos), 0)}</b></div>
+          <div class="dash-empresa-linha"><span>CBM total</span><b class="mono">${fmtN(cbmEmpresa(logboxAtivos), 1)}</b></div>
+        </div>
+        <div class="dash-empresa-card mti">
+          <div class="dash-empresa-nome">MTI</div>
+          <div class="dash-empresa-linha"><span>Contêineres ativos</span><b>${mtiAtivos.length}</b></div>
+          <div class="dash-empresa-linha"><span>Valor total</span><b class="mono">¥ ${fmtN(valorEmpresa(mtiAtivos), 0)}</b></div>
+          <div class="dash-empresa-linha"><span>CBM total</span><b class="mono">${fmtN(cbmEmpresa(mtiAtivos), 1)}</b></div>
+        </div>
+      </div>
+    </div>`;
+
+  const freteBuckets = {};
+  logboxTodos.forEach(c => {
+    const dataBase = c.chegou_em ? String(c.chegou_em).slice(0, 10) : c.etd;
+    if (!dataBase) return;
+    const chave = anMesChave(dataBase);
+    const f = fechMap[String(c.id)];
+    let valor = null, real = false;
+    if (f && f.frete !== null && f.frete !== undefined){ valor = Number(f.frete); real = true; }
+    else if (c.valor_frete_usd !== null && c.valor_frete_usd !== undefined){ valor = round2(Number(c.valor_frete_usd) * usdBrl); real = false; }
+    if (valor === null) return;
+    if (!freteBuckets[chave]) freteBuckets[chave] = { real: 0, previsto: 0 };
+    freteBuckets[chave][real ? "real" : "previsto"] += valor;
+  });
+  const freteChaves = Object.keys(freteBuckets).sort();
+  const freteMax = Math.max(1, ...freteChaves.map(k => freteBuckets[k].real + freteBuckets[k].previsto));
+  const freteHtml = `
+    <div class="dash-section">
+      <div class="dash-section-title">🚚 Frete por mês (LOGBOX)</div>
+      <div class="an-legend"><span><i style="background:#16a34a;"></i>Real (Fechamento lançado)</span><span><i style="background:#93c5fd;"></i>Estimado</span></div>
+      ${freteChaves.length ? freteChaves.map(k => {
+        const b = freteBuckets[k];
+        const total = b.real + b.previsto;
+        return `<div class="an-bar-row">
+          <div class="an-bar-label">${anMesLabel(k)}</div>
+          <div class="an-bar-track"><div class="an-bar-fill an-fill-real" style="width:${(b.real / freteMax) * 100}%;"></div><div class="an-bar-fill an-fill-previsto" style="width:${(b.previsto / freteMax) * 100}%;"></div></div>
+          <div class="an-bar-value">R$ ${fmtN(total, 0)}</div>
+        </div>`;
+      }).join("") : `<div class="empty-state">Sem dados de frete lançados ainda.</div>`}
+    </div>`;
+
+  const valorBuckets = {};
+  containers.forEach(c => {
+    const dataBase = c.chegou_em ? String(c.chegou_em).slice(0, 10) : (c.etd || c.eta);
+    if (!dataBase) return;
+    const chave = anMesChave(dataBase);
+    const valor = (c.imp_container_itens || []).reduce((s, it) => s + (Number(it.valor_rmb) || 0), 0);
+    if (!valorBuckets[chave]) valorBuckets[chave] = { logbox: 0, mti: 0 };
+    valorBuckets[chave][c.fonte === "mti" ? "mti" : "logbox"] += valor;
+  });
+  const valorChaves = Object.keys(valorBuckets).sort().slice(-12);
+  const valorMax = Math.max(1, ...valorChaves.map(k => valorBuckets[k].logbox + valorBuckets[k].mti));
+  const evolucaoHtml = `
+    <div class="dash-section">
+      <div class="dash-section-title">📈 Evolução do valor importado por mês</div>
+      <div class="an-legend"><span><i style="background:var(--accent);"></i>LOGBOX</span><span><i style="background:#eab308;"></i>MTI</span></div>
+      ${valorChaves.length ? valorChaves.map(k => {
+        const b = valorBuckets[k];
+        const total = b.logbox + b.mti;
+        return `<div class="an-bar-row">
+          <div class="an-bar-label">${anMesLabel(k)}</div>
+          <div class="an-bar-track"><div class="an-bar-fill" style="width:${(b.logbox / valorMax) * 100}%;"></div><div class="an-bar-fill an-fill-mti" style="width:${(b.mti / valorMax) * 100}%;"></div></div>
+          <div class="an-bar-value">¥ ${fmtN(total, 0)}</div>
+        </div>`;
+      }).join("") : `<div class="empty-state">Sem dados suficientes ainda.</div>`}
+    </div>`;
+
+  const cambioFechados = logboxTodos.filter(c => c.real_cambio !== null && c.real_cambio !== undefined && c.real_cambio !== "" && c.valor_container && c.estimativa_dolar)
+    .map(c => {
+      const estimado = round2(Number(c.valor_container) * Number(c.estimativa_dolar));
+      const real = Number(c.real_cambio);
+      const diffPct = estimado ? round2(((real - estimado) / estimado) * 100) : null;
+      return { nome: c.nome, estimado, real, diffPct };
+    }).sort((a, b) => (b.diffPct || 0) - (a.diffPct || 0));
+  const cambioHtml = `
+    <div class="dash-section">
+      <div class="dash-section-title">💱 Câmbio: estimado × real</div>
+      ${cambioFechados.length ? `<table class="an-table"><thead><tr><th style="text-align:left;">Contêiner</th><th>Estimado (R$)</th><th>Real (R$)</th><th>Variação</th></tr></thead><tbody>
+        ${cambioFechados.map(x => `<tr><td style="text-align:left; font-family:'Inter',sans-serif; font-weight:700;">${escapeHtml(x.nome)}</td><td>${fmtN(x.estimado, 0)}</td><td>${fmtN(x.real, 0)}</td><td style="color:${x.diffPct > 0 ? '#b91c1c' : '#166534'}; font-weight:700;">${x.diffPct > 0 ? '+' : ''}${fmtN(x.diffPct, 1)}%</td></tr>`).join("")}
+      </tbody></table>` : `<div class="empty-state">Nenhum câmbio fechado com estimativa pra comparar ainda.</div>`}
+    </div>`;
+
+  const marcaAgg = {};
+  containers.forEach(c => (c.imp_container_itens || []).forEach(it => {
+    const marca = marcaMap[it.sku] || "Sem marca";
+    if (!marcaAgg[marca]) marcaAgg[marca] = { valor: 0, cbm: 0 };
+    marcaAgg[marca].valor += Number(it.valor_rmb) || 0;
+    marcaAgg[marca].cbm += Number(it.cbm_total) || 0;
+  }));
+  const marcasOrdenadas = Object.entries(marcaAgg).sort((a, b) => b[1].valor - a[1].valor).slice(0, 6);
+  const marcaMaxValor = Math.max(1, ...marcasOrdenadas.map(([, v]) => v.valor));
+  const marcasHtml = `
+    <div class="dash-section">
+      <div class="dash-section-title">🏷 Ranking de marcas por volume importado</div>
+      ${marcasOrdenadas.length ? marcasOrdenadas.map(([marca, v]) => `
+        <div class="an-bar-row">
+          <div class="an-bar-label" title="${escapeHtml(marca)}">${escapeHtml(marca.length > 10 ? marca.slice(0, 9) + "…" : marca)}</div>
+          <div class="an-bar-track"><div class="an-bar-fill" style="width:${(v.valor / marcaMaxValor) * 100}%;"></div></div>
+          <div class="an-bar-value">¥ ${fmtN(v.valor, 0)} · ${fmtN(v.cbm, 1)} CBM</div>
+        </div>`).join("") : `<div class="empty-state">Sem itens vinculados a marca ainda.</div>`}
+    </div>`;
+
+  const comEtdEta = containers.filter(c => c.etd && c.eta);
+  const leadMedio = comEtdEta.length ? round2(comEtdEta.reduce((s, c) => s + (new Date(c.eta + "T00:00:00") - new Date(c.etd + "T00:00:00")) / 86400000, 0) / comEtdEta.length) : null;
+  const chegadosComEta = containers.filter(c => c.chegou_em && c.eta);
+  const atrasoMedio = chegadosComEta.length ? round2(chegadosComEta.reduce((s, c) => s + (new Date(String(c.chegou_em).slice(0, 10) + "T00:00:00") - new Date(c.eta + "T00:00:00")) / 86400000, 0) / chegadosComEta.length) : null;
+  const leadHtml = `
+    <div class="dash-section">
+      <div class="dash-section-title">⏱ Lead time médio</div>
+      <div class="dash-grid-2">
+        <div class="dash-empresa-card logbox">
+          <div class="dash-empresa-nome">ETD → ETA (trânsito)</div>
+          <div class="dash-kpi-value" style="font-size:24px;">${leadMedio !== null ? `${fmtN(leadMedio, 0)} dias` : "—"}</div>
+          <div style="font-size:11.5px; color:var(--text-muted); margin-top:4px;">média de ${comEtdEta.length} contêiner(es)</div>
+        </div>
+        <div class="dash-empresa-card ${atrasoMedio > 0 ? "mti" : "logbox"}">
+          <div class="dash-empresa-nome">Atraso médio na chegada</div>
+          <div class="dash-kpi-value" style="font-size:24px; ${atrasoMedio > 0 ? "color:#b91c1c;" : ""}">${atrasoMedio !== null ? `${atrasoMedio > 0 ? "+" : ""}${fmtN(atrasoMedio, 1)} dias` : "—"}</div>
+          <div style="font-size:11.5px; color:var(--text-muted); margin-top:4px;">vs. ETA estimado · ${chegadosComEta.length} contêiner(es) chegados</div>
+        </div>
+      </div>
+    </div>`;
+
+  el.innerHTML = kpisHtml + empresaHtml + `<div class="dash-grid-2">${freteHtml}${evolucaoHtml}</div>` + cambioHtml + `<div class="dash-grid-2">${marcasHtml}${leadHtml}</div>`;
+}
+
+/* ============================================================ */
+/* ======================= PAINEL FINANCEIRO GERAL ======================= */
+/* ============================================================ */
+let PG_DATA = null;
+
+async function loadPainelGeral(){
+  const el = document.getElementById("painelGeralContent");
+  if (el) el.innerHTML = `<div class="empty-state">Carregando painel financeiro…</div>`;
+  const [contRes, fechRes] = await Promise.all([
+    db.from("imp_containers").select("*"),
+    db.from("imp_fechamento_container").select("container_id,vmld,frete,capatazia")
+  ]);
+  if (contRes.error){ toast("Erro ao carregar painel financeiro.", "error"); return; }
+  const all = contRes.data || [];
+  const logbox = all.filter(c => c.fonte === "logbox");
+  const mti = all.filter(c => c.fonte === "mti");
+  const fechMap = {};
+  (fechRes.data || []).forEach(f => { fechMap[String(f.container_id)] = f; });
+
+  const custoProdutoLancado = c => {
+    const f = fechMap[String(c.id)];
+    if (!f) return null;
+    return round2((Number(f.vmld) || 0) - (Number(f.frete) || 0) - (Number(f.capatazia) || 0));
+  };
+  const previsaoCambio = c => {
+    const lancado = custoProdutoLancado(c);
+    if (lancado !== null) return lancado;
+    if (c.prev_cambio_manual !== null && c.prev_cambio_manual !== undefined && c.prev_cambio_manual !== "") return Number(c.prev_cambio_manual);
+    if (c.valor_container === null || c.valor_container === undefined || c.estimativa_dolar === null || c.estimativa_dolar === undefined) return null;
+    return Number(c.valor_container) * Number(c.estimativa_dolar);
+  };
+  const previsaoImpDespesas = c => {
+    if (c.prev_imp_despesas_manual !== null && c.prev_imp_despesas_manual !== undefined && c.prev_imp_despesas_manual !== "") return Number(c.prev_imp_despesas_manual);
+    const cambio = previsaoCambio(c);
+    if (cambio === null || c.perc_imp_despesas === null || c.perc_imp_despesas === undefined) return null;
+    return cambio * (Number(c.perc_imp_despesas) / 100);
+  };
+
+  const registros = [];
+
+  logbox.forEach(c => {
+    const dataBase = c.chegou_em ? String(c.chegou_em).slice(0, 10) : c.eta;
+    if (dataBase){
+      const temRealImp = c.real_imp_despesas !== null && c.real_imp_despesas !== undefined && c.real_imp_despesas !== "";
+      const valorImp = temRealImp ? Number(c.real_imp_despesas) : previsaoImpDespesas(c);
+      if (valorImp !== null && valorImp !== undefined) registros.push({ categoria: "despesas", real: temRealImp, data: dataBase, valor: valorImp, nome: c.nome });
+    }
+    const dataCambio = c.data_fechamento_cambio || c.prev_data_cambio_manual || dataBase;
+    if (dataCambio){
+      const temRealCambio = c.real_cambio !== null && c.real_cambio !== undefined && c.real_cambio !== "";
+      const valorCambio = temRealCambio ? Number(c.real_cambio) : previsaoCambio(c);
+      if (valorCambio !== null && valorCambio !== undefined) registros.push({ categoria: "cambio", real: temRealCambio, data: dataCambio, valor: valorCambio, nome: c.nome });
+    }
+  });
+
+  mti.forEach(c => {
+    const parcelas = c.doc_boletos || [];
+    if (!parcelas.length || !c.valor_container) return;
+    const valorParcela = round2(Number(c.valor_container) / parcelas.length);
+    parcelas.forEach((p, idx) => {
+      if (!p.vencimento) return;
+      registros.push({ categoria: "mti", real: !!p.paga, data: String(p.vencimento).slice(0, 10), valor: valorParcela, nome: `${c.nome} · Parcela ${idx + 1}/${parcelas.length}` });
+    });
+  });
+
+  if (!registros.length){
+    document.getElementById("painelGeralContent").innerHTML = `<div class="empty-state">Nenhum dado lançado ainda pra montar o fluxo de caixa. Lance Fechamentos de Container, Câmbio ou parcelas MTI pra ver o painel aqui.</div>`;
+    PG_DATA = null;
+    return;
+  }
+
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const hojeChave = anMesChave(hoje.toISOString().slice(0, 10));
+  const chaves = registros.map(r => anMesChave(r.data));
+  let minChave = chaves.reduce((a, b) => a < b ? a : b);
+  let maxChave = chaves.reduce((a, b) => a > b ? a : b);
+  if (hojeChave < minChave) minChave = hojeChave;
+  if (hojeChave > maxChave) maxChave = hojeChave;
+  maxChave = anAddMeses(maxChave, 2);
+  const meses = anListaMeses(minChave, maxChave);
+
+  PG_DATA = { registros, meses };
+  renderPainelGeral();
+}
+
+function renderPainelGeral(){
+  if (!PG_DATA) return;
+  const { registros, meses } = PG_DATA;
+  const el = document.getElementById("painelGeralContent");
+  if (!el) return;
+
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const somaJanela = (dias) => {
+    const limite = new Date(hoje.getTime() + dias * 86400000);
+    let real = 0, previsto = 0;
+    registros.forEach(r => {
+      const dt = new Date(r.data + "T00:00:00");
+      if (dt >= hoje && dt <= limite){ if (r.real) real += r.valor; else previsto += r.valor; }
+    });
+    return { real, previsto, total: real + previsto };
+  };
+  const j30 = somaJanela(30), j60 = somaJanela(60), j90 = somaJanela(90);
+  const kpiCard = (label, j) => `
+    <div class="dash-kpi">
+      <div class="dash-kpi-label">📅 ${label}</div>
+      <div class="dash-kpi-value">R$ ${fmtN(j.total, 0)}</div>
+      <div class="dash-kpi-sub"><span class="pg-kpi-real">✅ R$ ${fmtN(j.real, 0)} real</span> · <span class="pg-kpi-previsto">⏳ R$ ${fmtN(j.previsto, 0)} previsto</span></div>
+    </div>`;
+  const kpisHtml = `<div class="dash-kpis">${kpiCard("Próximos 30 dias", j30)}${kpiCard("Próximos 60 dias", j60)}${kpiCard("Próximos 90 dias", j90)}</div>`;
+
+  const somaCel = (categoria, mes, real) => registros.filter(r => r.categoria === categoria && anMesChave(r.data) === mes && r.real === real).reduce((s, r) => s + r.valor, 0);
+
+  const linhas = meses.map(mes => {
+    const despR = somaCel("despesas", mes, true), despP = somaCel("despesas", mes, false);
+    const camR = somaCel("cambio", mes, true), camP = somaCel("cambio", mes, false);
+    const mtiR = somaCel("mti", mes, true), mtiP = somaCel("mti", mes, false);
+    return { mes, despR, despP, camR, camP, mtiR, mtiP, totR: despR + camR + mtiR, totP: despP + camP + mtiP };
+  });
+
+  const totalGeral = linhas.reduce((acc, l) => ({
+    despR: acc.despR + l.despR, despP: acc.despP + l.despP, camR: acc.camR + l.camR, camP: acc.camP + l.camP,
+    mtiR: acc.mtiR + l.mtiR, mtiP: acc.mtiP + l.mtiP, totR: acc.totR + l.totR, totP: acc.totP + l.totP
+  }), { despR: 0, despP: 0, camR: 0, camP: 0, mtiR: 0, mtiP: 0, totR: 0, totP: 0 });
+
+  const cellHtml = (categoria, mes, real, valor) => valor > 0
+    ? `<td class="${real ? "an-real" : "an-previsto"} an-cell-click" onclick="pgAbrirDrilldown('${categoria}','${mes}',${real})">${fmtN(valor, 0)}</td>`
+    : `<td class="${real ? "an-real" : "an-previsto"}">—</td>`;
+
+  const tabelaHtml = `
+    <div class="dash-section">
+      <div class="dash-section-title">📊 Fluxo de caixa projetado por mês</div>
+      <div class="an-legend"><span class="pg-kpi-real">● Real (já lançado)</span><span class="pg-kpi-previsto">● Previsto (estimado)</span><span style="margin-left:auto; font-size:11px;">clique num valor pra ver o detalhe</span></div>
+      <div style="overflow-x:auto;">
+      <table class="an-table">
+        <thead>
+          <tr>
+            <th rowspan="2" style="text-align:left; vertical-align:bottom;">Mês</th>
+            <th colspan="2">Despesas + Impostos LOGBOX</th>
+            <th colspan="2">Câmbio LOGBOX</th>
+            <th colspan="2">Parcelas MTI</th>
+            <th colspan="2">TOTAL</th>
+          </tr>
+          <tr><th>Real</th><th>Previsto</th><th>Real</th><th>Previsto</th><th>Real</th><th>Previsto</th><th>Real</th><th>Previsto</th></tr>
+        </thead>
+        <tbody>
+          ${linhas.map(l => `<tr>
+            <td style="text-align:left; font-family:'Inter',sans-serif; font-weight:700;">${anMesLabel(l.mes)}</td>
+            ${cellHtml("despesas", l.mes, true, l.despR)}${cellHtml("despesas", l.mes, false, l.despP)}
+            ${cellHtml("cambio", l.mes, true, l.camR)}${cellHtml("cambio", l.mes, false, l.camP)}
+            ${cellHtml("mti", l.mes, true, l.mtiR)}${cellHtml("mti", l.mes, false, l.mtiP)}
+            <td class="an-real">${fmtN(l.totR, 0)}</td><td class="an-previsto">${fmtN(l.totP, 0)}</td>
+          </tr>`).join("")}
+          <tr class="an-total-row">
+            <td style="text-align:left;">TOTAL</td>
+            <td class="an-real">${fmtN(totalGeral.despR, 0)}</td><td class="an-previsto">${fmtN(totalGeral.despP, 0)}</td>
+            <td class="an-real">${fmtN(totalGeral.camR, 0)}</td><td class="an-previsto">${fmtN(totalGeral.camP, 0)}</td>
+            <td class="an-real">${fmtN(totalGeral.mtiR, 0)}</td><td class="an-previsto">${fmtN(totalGeral.mtiP, 0)}</td>
+            <td class="an-real">${fmtN(totalGeral.totR, 0)}</td><td class="an-previsto">${fmtN(totalGeral.totP, 0)}</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </div>`;
+
+  const dicasHtml = `
+    <div class="dash-section">
+      <div class="dash-section-title">💡 Dicas pra manter isso consistente</div>
+      <div style="font-size:13px; line-height:1.7; color:var(--text-muted);">
+        Lance o Fechamento Container e o Câmbio assim que fechar cada operação — o valor "Previsto" vira "Real" automaticamente aqui.<br>
+        Preencha a "Data Câmbio" (estimativa) na Previsão de Custos assim que negociar, mesmo antes de fechar — melhora a previsão deste painel.<br>
+        Marque as parcelas MTI como pagas assim que compensarem — isso também atualiza o Real automaticamente.<br>
+        Revise mensalmente os valores "Previsto" muito distantes do "Real" histórico pra recalibrar suas estimativas de câmbio e despesas.
+      </div>
+    </div>`;
+
+  el.innerHTML = kpisHtml + tabelaHtml + dicasHtml;
+}
+
+window.pgAbrirDrilldown = function(categoria, mes, real){
+  if (!PG_DATA) return;
+  const itens = PG_DATA.registros.filter(r => r.categoria === categoria && anMesChave(r.data) === mes && r.real === real);
+  const catLabel = { despesas: "Despesas + Impostos LOGBOX", cambio: "Câmbio LOGBOX", mti: "Parcelas MTI" }[categoria] || categoria;
+  const total = itens.reduce((s, i) => s + i.valor, 0);
+  abrirOverlayDinamico("pgDrilldownOverlay", `
+    <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <h2 class="modal-title" style="margin:0;">${catLabel} — ${anMesLabel(mes)} (${real ? "Real" : "Previsto"})</h2>
+      <button onclick="document.getElementById('pgDrilldownOverlay').remove()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
+    </div>
+    <div style="padding:16px 24px; max-height:420px; overflow-y:auto;">
+      ${itens.length ? itens.map(i => `<div class="dash-status-row"><span>${escapeHtml(i.nome)}</span><b class="mono">R$ ${fmtN(i.valor, 2)}</b></div>`).join("") : `<div class="empty-state">Nenhum item.</div>`}
+    </div>
+    <div style="padding:14px 24px; border-top:1px solid var(--border); display:flex; justify-content:space-between; font-weight:800;">
+      <span>Total</span><span class="mono">R$ ${fmtN(total, 2)}</span>
+    </div>
+  `, 480);
+};
 
 /* ============================================================ */
 /* ======================= FINANCEIRO: APOIO NF-e, FECHAMENTO E PRECIFICAÇÃO DE CONTAINER ======================= */
