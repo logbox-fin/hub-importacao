@@ -249,6 +249,10 @@
   .status-pill.rascunho{ background:var(--surface-alt); color:var(--text-muted); border:1px solid var(--border); }
   .status-pill.enviado{ background:#eef2ff; color:#4338ca; border:1px solid #c7d2fe; }
   .status-pill.confirmado{ background:var(--success-soft); color:#166534; border:1px solid #bbf7d0; }
+  .status-pill.em_producao{ background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; }
+  .status-pill.finalizado{ background:#f0fdfa; color:#0f766e; border:1px solid #99f6e4; }
+  .ped-data-inline{ font-size:12px; padding:3px 4px; border:1px solid transparent; border-radius:6px; background:transparent; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
+  .ped-data-inline:hover, .ped-data-inline:focus{ border-color:var(--border); background:var(--surface-alt); }
 
   /* Pedidos — cards de status */
   .ped-stat-card{ flex:1; min-width:160px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 18px; box-shadow:var(--shadow); cursor:pointer; transition:border-color .12s, transform .12s; }
@@ -277,6 +281,8 @@
   .ped-item-row input[type="text"]{ width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border-strong); font-size:12.5px; font-family:'JetBrains Mono',monospace; text-align:right; }
   .ped-item-row .pir-nome input[type="text"]{ text-align:left; font-family:'Inter',sans-serif; }
   .ped-item-drag{ cursor:grab; color:var(--text-faint); text-align:center; }
+  .ped-item-row.dragging{ opacity:.4; }
+  .ped-item-row.drag-over{ background:var(--accent-soft); border-top:2px solid var(--accent); }
 
   /* Estoque Futuro */
   .ef-wrap{ overflow:auto; border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); background:var(--surface); max-height:74vh; }
@@ -939,6 +945,8 @@
             <option value="rascunho">⏳ Rascunho</option>
             <option value="enviado">📤 Enviado</option>
             <option value="confirmado">✅ Confirmado</option>
+            <option value="em_producao">🏭 Em Produção</option>
+            <option value="finalizado">🏁 Finalizado</option>
           </select>
           <select id="pedFiltroMarca" onchange="renderPedidos()"><option value="">Todas as marcas</option></select>
           <select id="pedFiltroResp" onchange="renderPedidos()"><option value="">Todos os responsáveis</option></select>
@@ -951,8 +959,8 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Pedido</th><th>Marca</th><th>Responsável</th><th>Valor do Pedido</th><th>Est. CBM</th><th>Resp. Pagamento</th><th>Fábrica</th><th>Status</th><th>Data Envio</th><th></th></tr></thead>
-            <tbody id="pedidoTbody"><tr><td colspan="10" class="empty-state">Carregando…</td></tr></tbody>
+            <thead><tr><th>Pedido</th><th>Marca</th><th>Responsável</th><th>Valor do Pedido</th><th>Est. CBM</th><th>Resp. Pagamento</th><th>Fábrica</th><th>Status</th><th>Data Envio</th><th>Data Entrega</th><th></th></tr></thead>
+            <tbody id="pedidoTbody"><tr><td colspan="11" class="empty-state">Carregando…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -969,7 +977,16 @@
               </div>
               <div style="display:flex; align-items:center; gap:6px;">
                 <label style="font-size:11.5px; color:var(--text-faint);">Fábrica:</label>
-                <input type="text" id="pd_det_fabrica" onchange="pedidoDetSalvarMeta()" placeholder="—" style="font-size:12.5px; padding:3px 6px; width:150px;">
+                <select id="pd_det_fabrica" onchange="pedidoDetSalvarMeta(); pedidoDetAtualizarFabricaResumo();" style="font-size:12.5px; padding:3px 6px;"></select>
+                <span id="pd_det_fab_resumo" style="display:none; font-size:11.5px; color:var(--text-muted); background:var(--surface-alt); border:1px solid var(--border); border-radius:20px; padding:3px 10px;"></span>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <label style="font-size:11.5px; color:var(--text-faint);">Data Envio:</label>
+                <input type="date" id="pd_det_data_envio" onchange="pedidoDetSalvarMeta()" style="font-size:12.5px; padding:3px 6px;">
+              </div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <label style="font-size:11.5px; color:var(--text-faint);">Data Entrega:</label>
+                <input type="date" id="pd_det_data_entrega" onchange="pedidoDetSalvarMeta()" style="font-size:12.5px; padding:3px 6px;">
               </div>
             </div>
           </div>
@@ -980,6 +997,8 @@
                 <option value="rascunho">⏳ Rascunho</option>
                 <option value="enviado">📤 Enviado</option>
                 <option value="confirmado">✅ Confirmado</option>
+                <option value="em_producao">🏭 Em Produção</option>
+                <option value="finalizado">🏁 Finalizado</option>
               </select>
             </div>
             <button class="btn btn-ghost btn-sm" id="pd_det_verlote" onclick="pedidoDetVerLote()">📋 Ver Lote</button>
@@ -1285,7 +1304,7 @@
         <div class="field"><label>Marca</label><select id="pd_marca"></select></div>
         <div class="field"><label>Responsável</label><select id="pd_responsavel"></select></div>
         <div class="field"><label>Responsável de Pagamento</label><select id="pd_responsavel_pagamento"></select></div>
-        <div class="field"><label>Fábrica</label><input type="text" id="pd_fabrica" placeholder="Nome da fábrica"></div>
+        <div class="field"><label>Fábrica</label><select id="pd_fabrica"></select></div>
       </div>
     </div>
     <div class="modal-foot"><span></span><div style="display:flex; gap:10px;"><button class="btn btn-ghost" onclick="fecharModalPedido()">Cancelar</button><button class="btn btn-primary" onclick="criarPedido()">Criar e Abrir →</button></div></div>
@@ -2375,16 +2394,24 @@ async function popularSelectsMarcaResp(){
     const { data } = await db.from("imp_config").select("*").limit(1).maybeSingle();
     CONFIG = data;
   }
+  if (!FABRICAS.length) await loadFabricas();
   const marcas = (CONFIG && CONFIG.marcas) || [];
   const responsaveis = (CONFIG && CONFIG.responsaveis) || [];
+  const pagamentos = (CONFIG && CONFIG.formas_pagamento) || [];
   [["nl_marca",marcas], ["le_marca",marcas], ["pd_marca",marcas]].forEach(([id, arr]) => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = `<option value="">—</option>` + arr.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
   });
-  [["nl_responsavel",responsaveis], ["le_responsavel",responsaveis], ["pd_responsavel",responsaveis], ["pd_responsavel_pagamento",responsaveis], ["pd_det_resppag",responsaveis]].forEach(([id, arr]) => {
+  [["nl_responsavel",responsaveis], ["le_responsavel",responsaveis], ["pd_responsavel",responsaveis]].forEach(([id, arr]) => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = `<option value="">—</option>` + arr.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
   });
+  [["pd_responsavel_pagamento",pagamentos], ["pd_det_resppag",pagamentos]].forEach(([id, arr]) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = `<option value="">—</option>` + arr.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
+  });
+  const fabOpts = `<option value="">—</option>` + FABRICAS.map(f => `<option value="${escapeHtml(f.nome)}">${escapeHtml(f.nome)}</option>`).join("");
+  ["pd_fabrica","pd_det_fabrica"].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = fabOpts; });
   const pedMarcaSel = document.getElementById("pedFiltroMarca");
   if (pedMarcaSel){ const atual = pedMarcaSel.value; pedMarcaSel.innerHTML = `<option value="">Todas as marcas</option>` + marcas.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join(""); pedMarcaSel.value = atual; }
   const pedRespSel = document.getElementById("pedFiltroResp");
@@ -2988,8 +3015,8 @@ window.confirmarGerarPedido = async function(){
 /* ============================================================ */
 let PEDIDOS = [];
 let PED_CBM_MAP = {};
-const PED_STATUS_LABEL = { rascunho:"⏳ Rascunho", enviado:"📤 Enviado", confirmado:"✅ Confirmado" };
-const PED_STATUS_LABEL_EN = { rascunho:"⏳ Draft", enviado:"📤 Sent", confirmado:"✅ Confirmed" };
+const PED_STATUS_LABEL = { rascunho:"⏳ Rascunho", enviado:"📤 Enviado", confirmado:"✅ Confirmado", em_producao:"🏭 Em Produção", finalizado:"🏁 Finalizado" };
+const PED_STATUS_LABEL_EN = { rascunho:"⏳ Draft", enviado:"📤 Sent", confirmado:"✅ Confirmed", em_producao:"🏭 In Production", finalizado:"🏁 Completed" };
 // responsáveis pra quem o PDF do pedido sai em inglês em vez de português
 const PED_PDF_RESPONSAVEIS_EN = ["molly", "yongxing"];
 
@@ -3034,7 +3061,7 @@ function estimativaCbmPedido(p){
   return { cbm, incompleto, temAlgum };
 }
 function renderPedStatCards(){
-  const grupos = { rascunho:{peds:[]}, enviado:{peds:[]}, confirmado:{peds:[]} };
+  const grupos = { rascunho:{peds:[]}, enviado:{peds:[]}, confirmado:{peds:[]}, em_producao:{peds:[]}, finalizado:{peds:[]} };
   PEDIDOS.forEach(p => { if (grupos[p.status]) grupos[p.status].peds.push(p); });
   const filtroAtual = document.getElementById("pedFiltroStatus").value;
   const el = document.getElementById("pedStatCards");
@@ -3063,7 +3090,7 @@ function renderPedidos(){
     return ordenar === "antigo" ? da - db_ : db_ - da;
   });
   const tbody = document.getElementById("pedidoTbody");
-  if (!list.length){ tbody.innerHTML = `<tr><td colspan="10" class="empty-state">Nenhum pedido encontrado.</td></tr>`; return; }
+  if (!list.length){ tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Nenhum pedido encontrado.</td></tr>`; return; }
   tbody.innerHTML = list.map(p => {
     const { cbm, incompleto, temAlgum } = estimativaCbmPedido(p);
     const cbmTexto = temAlgum ? `${fmtN(cbm, 2)} m³${incompleto ? " *" : ""}` : (incompleto ? "—*" : "—");
@@ -3084,7 +3111,8 @@ function renderPedidos(){
           </select>
         </span>
       </td>
-      <td class="mono">${p.data_envio ? new Date(p.data_envio).toLocaleDateString("pt-BR") : "—"}</td>
+      <td onclick="event.stopPropagation()"><input type="date" class="ped-data-inline" value="${dataInputValue(p.data_envio)}" onchange="pedidoDataInline('${p.id}','data_envio',this.value)"></td>
+      <td onclick="event.stopPropagation()"><input type="date" class="ped-data-inline" value="${dataInputValue(p.data_entrega)}" onchange="pedidoDataInline('${p.id}','data_entrega',this.value)"></td>
       <td class="actions-cell" onclick="event.stopPropagation()">
         <button class="btn-icon" title="Excluir" onclick="confirmarExcluirPedido('${p.id}','${escapeHtml(p.nome)}')">🗑</button>
       </td>
@@ -3100,6 +3128,15 @@ window.pedidoStatusInline = async function(id, status){
   toast("Status atualizado.");
   renderPedStatCards();
   renderPedidos();
+};
+window.pedidoDataInline = async function(id, campo, valor){
+  const data = valor || null;
+  const { error } = await db.from("imp_pedidos").update({ [campo]: data }).eq("id", id);
+  if (error){ toast("Erro ao atualizar data.", "error"); return; }
+  const p = PEDIDOS.find(x => x.id === id);
+  if (p) p[campo] = data;
+  if (PEDIDO_ATUAL && PEDIDO_ATUAL.id === id) PEDIDO_ATUAL[campo] = data;
+  toast("Data atualizada.");
 };
 window.abrirNovoPedido = function(){
   ["pd_nome","pd_fabrica"].forEach(id => document.getElementById(id).value = "");
@@ -3153,6 +3190,30 @@ window.confirmarExcluirPedido = function(id, nome){
 
 /* ---------- Pedido — Detalhe (página, igual Quotes) ---------- */
 let PEDIDO_ATUAL = null;
+function dataInputValue(v){
+  if (!v) return "";
+  // string ISO ("YYYY-MM-DD..."): pega o dia calendário direto, sem passar por Date()
+  // (evita o fuso horário local empurrar a data um dia pra trás/frente)
+  if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0, 10);
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+}
+window.pedidoDetAtualizarFabricaResumo = function(){
+  const el = document.getElementById("pd_det_fab_resumo");
+  if (!el) return;
+  const nome = document.getElementById("pd_det_fabrica").value;
+  const f = nome ? FABRICAS.find(x => x.nome === nome) : null;
+  if (!f){ el.style.display = "none"; el.textContent = ""; return; }
+  const partes = [];
+  if (f.pagamento) partes.push(`💳 ${f.pagamento}`);
+  if (f.inicial !== null && f.inicial !== undefined && f.inicial !== "") partes.push(`Inicial ${fmtN(f.inicial, 0)}%`);
+  if (f.finalizacao !== null && f.finalizacao !== undefined && f.finalizacao !== "") partes.push(`Finalização ${fmtN(f.finalizacao, 0)}%`);
+  if (f.dias_30 !== null && f.dias_30 !== undefined && f.dias_30 !== "") partes.push(`30 dias ${fmtN(f.dias_30, 0)}%`);
+  if (f.dias_60 !== null && f.dias_60 !== undefined && f.dias_60 !== "") partes.push(`60 dias ${fmtN(f.dias_60, 0)}%`);
+  if (!partes.length){ el.style.display = "none"; el.textContent = ""; return; }
+  el.style.display = "";
+  el.textContent = partes.join(" · ");
+};
 window.abrirPedidoDetalhe = async function(id){
   const { data: p, error } = await db.from("imp_pedidos").select("*").eq("id", id).single();
   if (error){ toast("Erro ao abrir pedido.", "error"); return; }
@@ -3169,6 +3230,9 @@ window.abrirPedidoDetalhe = async function(id){
   document.getElementById("pd_det_obs").value = p.obs || "";
   document.getElementById("pd_det_resppag").value = p.responsavel_pagamento || "";
   document.getElementById("pd_det_fabrica").value = p.fabrica || "";
+  document.getElementById("pd_det_data_envio").value = dataInputValue(p.data_envio);
+  document.getElementById("pd_det_data_entrega").value = dataInputValue(p.data_entrega);
+  pedidoDetAtualizarFabricaResumo();
   document.getElementById("pd_det_verlote").style.opacity = p.lote_id ? "1" : ".45";
   document.getElementById("pd_det_verlote").style.cursor = p.lote_id ? "pointer" : "not-allowed";
   document.getElementById("pd_det_addlote").style.display = p.lote_id ? "" : "none";
@@ -3181,12 +3245,16 @@ window.pedidoDetSalvarMeta = async function(){
   if (!PEDIDO_ATUAL) return;
   const responsavel_pagamento = document.getElementById("pd_det_resppag").value;
   const fabrica = document.getElementById("pd_det_fabrica").value.trim();
+  const data_envio = document.getElementById("pd_det_data_envio").value || null;
+  const data_entrega = document.getElementById("pd_det_data_entrega").value || null;
   PEDIDO_ATUAL.responsavel_pagamento = responsavel_pagamento;
   PEDIDO_ATUAL.fabrica = fabrica;
-  const { error } = await db.from("imp_pedidos").update({ responsavel_pagamento, fabrica }).eq("id", PEDIDO_ATUAL.id);
+  PEDIDO_ATUAL.data_envio = data_envio;
+  PEDIDO_ATUAL.data_entrega = data_entrega;
+  const { error } = await db.from("imp_pedidos").update({ responsavel_pagamento, fabrica, data_envio, data_entrega }).eq("id", PEDIDO_ATUAL.id);
   if (error){ toast("Erro ao salvar.", "error"); return; }
   const p = PEDIDOS.find(x => x.id === PEDIDO_ATUAL.id);
-  if (p){ p.responsavel_pagamento = responsavel_pagamento; p.fabrica = fabrica; }
+  if (p){ p.responsavel_pagamento = responsavel_pagamento; p.fabrica = fabrica; p.data_envio = data_envio; p.data_entrega = data_entrega; }
   toast("Atualizado.");
 };
 window.fecharPedidoDetalhe = function(){
@@ -3231,8 +3299,8 @@ function renderPedidoDetItens(){
   if (!itens.length){ el.innerHTML = `<div class="empty-state">Nenhum produto nesse pedido ainda.</div>`; return; }
   el.innerHTML = itens.map((it, i) => {
     const travado = !!it.prod_lote_id;
-    return `<div class="ped-item-row">
-      <span class="ped-item-drag">⠿</span>
+    return `<div class="ped-item-row" ondragover="pedItemDragOver(event)" ondragleave="pedItemDragLeave(event)" ondrop="pedItemDrop(event,${i})">
+      <span class="ped-item-drag" draggable="true" ondragstart="pedItemDragStart(event,${i})" ondragend="pedItemDragEnd(event)">⠿</span>
       <input type="checkbox" ${it.selecionado!==false?'checked':''} onchange="pedidoDetItemCampo(${i},'selecionado',this.checked)" style="width:16px; height:16px; accent-color:var(--accent);">
       <span class="pir-nome" style="position:relative;">${travado
           ? `<div style="font-weight:600; font-size:13px;">${escapeHtml(it.nome)}</div><div style="font-size:11px; color:var(--text-faint);">${it.sku?escapeHtml(it.sku)+' · ':''}${escapeHtml(it.ncm)||''}</div>`
@@ -3260,6 +3328,37 @@ window.pedidoDetRemoverItem = function(i){
 window.pedidoDetAddManual = function(){
   PEDIDO_ATUAL.itens.push({ id:"it_"+Math.random().toString(36).slice(2), prod_lote_id:null, nome:"", sku:"", ncm:"", rmb:0, qtde:"", margem_media:null, selecionado:true });
   renderPedidoDetItens();
+};
+let PED_ITEM_DRAG_IDX = null;
+window.pedItemDragStart = function(ev, i){
+  PED_ITEM_DRAG_IDX = i;
+  ev.dataTransfer.effectAllowed = "move";
+  ev.dataTransfer.setData("text/plain", String(i));
+  const row = ev.currentTarget.closest(".ped-item-row");
+  if (row) row.classList.add("dragging");
+};
+window.pedItemDragEnd = function(){
+  document.querySelectorAll(".ped-item-row.dragging").forEach(r => r.classList.remove("dragging"));
+  document.querySelectorAll(".ped-item-row.drag-over").forEach(r => r.classList.remove("drag-over"));
+  PED_ITEM_DRAG_IDX = null;
+};
+window.pedItemDragOver = function(ev){
+  ev.preventDefault();
+  ev.currentTarget.classList.add("drag-over");
+};
+window.pedItemDragLeave = function(ev){
+  ev.currentTarget.classList.remove("drag-over");
+};
+window.pedItemDrop = function(ev, i){
+  ev.preventDefault();
+  ev.currentTarget.classList.remove("drag-over");
+  if (PED_ITEM_DRAG_IDX === null || PED_ITEM_DRAG_IDX === i || !PEDIDO_ATUAL) { PED_ITEM_DRAG_IDX = null; return; }
+  const itens = PEDIDO_ATUAL.itens;
+  const [moved] = itens.splice(PED_ITEM_DRAG_IDX, 1);
+  itens.splice(i, 0, moved);
+  PED_ITEM_DRAG_IDX = null;
+  renderPedidoDetItens();
+  salvarPedidoDetalhe();
 };
 // busca no Banco de Dados de Produtos direto na linha de item manual — sem selecionar nada, continua livre (sem SKU)
 window.pedidoDetBuscarProduto = function(i, valor){
@@ -3395,9 +3494,7 @@ window.pedidoDetExportarPDF = function(){
     <td style="padding:9px 12px; color:#9898aa; font-weight:600; font-size:12px;">${String(i+1).padStart(2,'0')}</td>
     <td style="padding:9px 12px; font-weight:700; font-size:13px;">${escapeHtml(it.nome)}</td>
     <td style="padding:9px 12px; color:#6b6b80; font-size:12px;">${escapeHtml(it.sku)||'—'}</td>
-    <td style="padding:9px 12px; text-align:right; font-weight:700;">¥ ${fmtN(it.rmb)}</td>
     <td style="padding:9px 12px; text-align:center; font-weight:700;">${it.qtde||0}</td>
-    <td style="padding:9px 12px; text-align:right; font-weight:800;">¥ ${fmtN((Number(it.rmb)||0)*(Number(it.qtde)||0))}</td>
   </tr>`).join("");
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>${escapeHtml(p.nome)}</title>
     <style>
@@ -3424,7 +3521,7 @@ window.pedidoDetExportarPDF = function(){
       ${p.marca?`<div class="meta-card"><div class="meta-label">${L.marca}</div><div class="meta-value" style="font-size:13px;">${escapeHtml(p.marca)}</div></div>`:''}
       ${p.responsavel?`<div class="meta-card"><div class="meta-label">${L.responsavel}</div><div class="meta-value" style="font-size:13px;">${escapeHtml(p.responsavel)}</div></div>`:''}
     </div>
-    <table><thead><tr><th>${L.col_num}</th><th>${L.col_produto}</th><th>${L.col_sku}</th><th>${L.col_unit}</th><th>${L.col_qtd}</th><th>${L.col_total}</th></tr></thead><tbody>${rowsHTML}</tbody></table>
+    <table><thead><tr><th>${L.col_num}</th><th>${L.col_produto}</th><th>${L.col_sku}</th><th>${L.col_qtd}</th></tr></thead><tbody>${rowsHTML}</tbody></table>
     <div class="totals-bar"><div><div style="font-size:9px; font-weight:700; opacity:.5; text-transform:uppercase;">${L.produtos}</div><div style="font-size:20px; font-weight:900;">${itensSel.length}</div></div>
       <div><div style="font-size:9px; font-weight:700; opacity:.5; text-transform:uppercase;">${L.totalRmb}</div><div style="font-size:20px; font-weight:900;">¥ ${fmtN(totalRmb)}</div></div></div>
     ${p.obs?`<div class="notes-box"><div class="meta-label">${L.observacoes}</div><div style="font-size:13px; margin-top:6px; line-height:1.6;">${escapeHtml(p.obs)}</div></div>`:''}
