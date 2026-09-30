@@ -245,7 +245,7 @@
   /* Status pick inline (badge que vira select) */
   .status-pick{ position:relative; display:inline-block; }
   .status-pick select{ position:absolute; inset:0; opacity:0; cursor:pointer; }
-  .status-pick .badge-status-pill{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; cursor:pointer; }
+  .status-pick .badge-status-pill{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; cursor:pointer; white-space:nowrap; }
   .status-pill.rascunho{ background:var(--surface-alt); color:var(--text-muted); border:1px solid var(--border); }
   .status-pill.enviado{ background:#eef2ff; color:#4338ca; border:1px solid #c7d2fe; }
   .status-pill.confirmado{ background:var(--success-soft); color:#166534; border:1px solid #bbf7d0; }
@@ -276,6 +276,14 @@
   .ped-tot-card .ptc-label{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; opacity:.6; }
   .ped-tot-card .ptc-value{ font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; margin-top:4px; }
   .ped-tot-card input{ width:100%; margin-top:4px; padding:8px 10px; border-radius:8px; border:1px solid var(--border-strong); font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:600; }
+  .ped-meta-row{ display:grid; grid-template-columns: repeat(5, 1fr); gap:12px; margin-bottom:16px; }
+  @media (max-width: 1100px){ .ped-meta-row{ grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 700px){ .ped-meta-row{ grid-template-columns: repeat(2, 1fr); } }
+  .ped-meta-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; box-shadow:var(--shadow); }
+  .ped-meta-card .pmc-label{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-faint); margin-bottom:7px; }
+  .ped-meta-card .pmc-control{ width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--border-strong); font-size:14px; font-weight:600; font-family:'Inter',sans-serif; background:var(--surface); color:var(--text); }
+  .ped-meta-card input.pmc-control{ font-family:'JetBrains Mono',monospace; }
+  .ped-meta-card .pmc-sub{ margin-top:8px; font-size:12px; font-weight:600; color:#0d9488; background:#f0fdfa; border:1px solid #99f6e4; border-radius:8px; padding:6px 9px; }
   .ped-item-row{ display:grid; grid-template-columns: 24px 24px 1fr 80px 90px 70px 100px 34px; gap:8px; align-items:center; padding:9px 10px; border-bottom:1px solid var(--border); }
   .ped-item-row.head{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--text-faint); border-bottom:2px solid var(--border-strong); }
   .ped-item-row input[type="text"]{ width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border-strong); font-size:12.5px; font-family:'JetBrains Mono',monospace; text-align:right; }
@@ -372,7 +380,7 @@
   .arq-card .arq-valor{ font-family:'JetBrains Mono',monospace; font-size:19px; font-weight:700; color:var(--accent-dark); }
 
   /* Kanban — Status dos Contêineres */
-  .kanban-board{ display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; align-items:flex-start; }
+  .kanban-board{ display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; align-items:flex-start; }
   @media (max-width: 1100px){ .kanban-board{ grid-template-columns: 1fr; } }
   .kanban-col{ background:var(--surface-alt); border:1px solid var(--border); border-radius:var(--radius); padding:12px; min-height:120px; transition:background .12s, border-color .12s; }
   .kanban-col.drag-over{ background:var(--accent-soft); border-color:var(--accent); }
@@ -686,7 +694,6 @@
     <div class="nav-item built" data-view="ph-nfe" onclick="irPara('ph-nfe', true, 'Apoio NF-e')"><span class="label">Apoio NFe</span><span class="soon-dot"></span></div>
     <div class="nav-item built" data-view="ph-fechcontainer" onclick="irPara('ph-fechcontainer', true, 'Fechamento Container')"><span class="label">Fechamento Container</span><span class="soon-dot"></span></div>
     <div class="nav-item built" data-view="ph-precificacaocontainer" onclick="irPara('ph-precificacaocontainer', true, 'Precificação Container')"><span class="label">Precificação Container</span><span class="soon-dot"></span></div>
-    <div class="nav-item" data-view="ph-fechcambio" onclick="irPara('ph-fechcambio', false, 'Fechamento de Câmbio')"><span class="label">Fechamento de Câmbio</span><span class="soon-dot"></span></div>
   </div>
 
   <div class="nav-group">
@@ -943,8 +950,8 @@
           <select id="pedFiltroStatus" onchange="renderPedidos()">
             <option value="">Todos os status</option>
             <option value="rascunho">⏳ Rascunho</option>
+            <option value="confirmado">❗ PEDIDO</option>
             <option value="enviado">📤 Enviado</option>
-            <option value="confirmado">✅ Confirmado</option>
             <option value="em_producao">🏭 Em Produção</option>
             <option value="finalizado">🏁 Finalizado</option>
           </select>
@@ -959,7 +966,7 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Pedido</th><th>Marca</th><th>Responsável</th><th>Valor do Pedido</th><th>Est. CBM</th><th>Resp. Pagamento</th><th>Fábrica</th><th>Status</th><th>Data Envio</th><th>Data Entrega</th><th></th></tr></thead>
+            <thead><tr><th>Pedido</th><th>Referência</th><th>Responsável</th><th style="white-space:nowrap;">Valor do Pedido</th><th>CBM</th><th>Resp. Pagamento</th><th>Fábrica</th><th>Status</th><th>Data Envio</th><th>Data Entrega</th><th></th></tr></thead>
             <tbody id="pedidoTbody"><tr><td colspan="11" class="empty-state">Carregando…</td></tr></tbody>
           </table>
         </div>
@@ -970,33 +977,14 @@
           <div>
             <span id="pd_det_titulo_wrap"><h2 id="pd_det_titulo" class="pd-det-titulo-editavel" onclick="pedidoDetEditarTitulo()" title="Clique pra editar">Pedido</h2></span>
             <div class="sub" id="pd_det_sub"></div>
-            <div style="display:flex; gap:14px; margin-top:6px; flex-wrap:wrap;">
-              <div style="display:flex; align-items:center; gap:6px;">
-                <label style="font-size:11.5px; color:var(--text-faint);">Resp. Pagamento:</label>
-                <select id="pd_det_resppag" onchange="pedidoDetSalvarMeta()" style="font-size:12.5px; padding:3px 6px;"></select>
-              </div>
-              <div style="display:flex; align-items:center; gap:6px;">
-                <label style="font-size:11.5px; color:var(--text-faint);">Fábrica:</label>
-                <select id="pd_det_fabrica" onchange="pedidoDetSalvarMeta(); pedidoDetAtualizarFabricaResumo();" style="font-size:12.5px; padding:3px 6px;"></select>
-                <span id="pd_det_fab_resumo" style="display:none; font-size:11.5px; color:var(--text-muted); background:var(--surface-alt); border:1px solid var(--border); border-radius:20px; padding:3px 10px;"></span>
-              </div>
-              <div style="display:flex; align-items:center; gap:6px;">
-                <label style="font-size:11.5px; color:var(--text-faint);">Data Envio:</label>
-                <input type="date" id="pd_det_data_envio" onchange="pedidoDetSalvarMeta()" style="font-size:12.5px; padding:3px 6px;">
-              </div>
-              <div style="display:flex; align-items:center; gap:6px;">
-                <label style="font-size:11.5px; color:var(--text-faint);">Data Entrega:</label>
-                <input type="date" id="pd_det_data_entrega" onchange="pedidoDetSalvarMeta()" style="font-size:12.5px; padding:3px 6px;">
-              </div>
-            </div>
           </div>
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <div class="status-pick">
               <span class="badge-status-pill status-pill rascunho" id="pd_det_status_pill">⏳ Rascunho</span>
               <select id="pd_det_status" onchange="pedidoDetStatusMudou()">
                 <option value="rascunho">⏳ Rascunho</option>
+                <option value="confirmado">❗ PEDIDO</option>
                 <option value="enviado">📤 Enviado</option>
-                <option value="confirmado">✅ Confirmado</option>
                 <option value="em_producao">🏭 Em Produção</option>
                 <option value="finalizado">🏁 Finalizado</option>
               </select>
@@ -1004,6 +992,30 @@
             <button class="btn btn-ghost btn-sm" id="pd_det_verlote" onclick="pedidoDetVerLote()">📋 Ver Lote</button>
             <button class="btn btn-ghost btn-sm" onclick="pedidoDetExportarPDF()">📄 PDF</button>
             <button class="btn btn-ghost btn-sm" onclick="fecharPedidoDetalhe()">← Voltar</button>
+          </div>
+        </div>
+
+        <div class="ped-meta-row">
+          <div class="ped-meta-card">
+            <div class="pmc-label">Referência</div>
+            <input type="text" id="pd_det_referencia" class="pmc-control" placeholder="Sua referência do pedido" onchange="pedidoDetSalvarMeta()">
+          </div>
+          <div class="ped-meta-card">
+            <div class="pmc-label">Resp. Pagamento</div>
+            <select id="pd_det_resppag" class="pmc-control" onchange="pedidoDetSalvarMeta()"></select>
+          </div>
+          <div class="ped-meta-card">
+            <div class="pmc-label">Fábrica</div>
+            <select id="pd_det_fabrica" class="pmc-control" onchange="pedidoDetSalvarMeta(); pedidoDetAtualizarFabricaResumo();"></select>
+            <div id="pd_det_fab_resumo" class="pmc-sub" style="display:none;"></div>
+          </div>
+          <div class="ped-meta-card">
+            <div class="pmc-label">Data Envio</div>
+            <input type="date" id="pd_det_data_envio" class="pmc-control" onchange="pedidoDetSalvarMeta()">
+          </div>
+          <div class="ped-meta-card">
+            <div class="pmc-label">Data Entrega</div>
+            <input type="date" id="pd_det_data_entrega" class="pmc-control" onchange="pedidoDetSalvarMeta()">
           </div>
         </div>
 
@@ -1191,11 +1203,16 @@
           </div>
           <div id="kbSkuTags"></div>
         </div>
+        <button class="btn btn-primary btn-sm" onclick="kbAbrirPuxarContainer()">+ Puxar Container</button>
         <div class="spacer"></div>
         <div id="kbAlertaEtdEta"></div>
       </div>
       <div id="kbFiltroInfo" class="kb-filtro-info" style="display:none;"></div>
       <div class="kanban-board" id="kanbanBoard">
+        <div class="kanban-col" data-status="fazer_booking" ondragover="kbDragOver(event)" ondragleave="kbDragLeave(event)" ondrop="kbDrop(event,'fazer_booking')">
+          <div class="kanban-col-head"><span class="kanban-col-title">📌 Fazer Booking</span><span class="kanban-col-count" id="kbCount_fazer_booking">0</span></div>
+          <div id="kbList_fazer_booking"></div>
+        </div>
         <div class="kanban-col" data-status="booking" ondragover="kbDragOver(event)" ondragleave="kbDragLeave(event)" ondrop="kbDrop(event,'booking')">
           <div class="kanban-col-head"><span class="kanban-col-title">📋 Booking Feito</span><span class="kanban-col-count" id="kbCount_booking">0</span></div>
           <div id="kbList_booking"></div>
@@ -2267,14 +2284,7 @@ function renderPrevisaoCustos(){
   let lista = PC_CONTAINERS.slice();
   if (filtro === "pagos") lista = lista.filter(c => c.cambio_fechado);
   else if (filtro === "nao_pagos") lista = lista.filter(c => !c.cambio_fechado);
-  lista.sort((a, b) => {
-    const da = a.chegou_em || a.eta_galpao_estimado || "";
-    const dbb = b.chegou_em || b.eta_galpao_estimado || "";
-    if (!da && !dbb) return 0;
-    if (!da) return 1;
-    if (!dbb) return -1;
-    return da.localeCompare(dbb); // mais antigos em cima
-  });
+  lista.sort((a, b) => compareDataComDesempate(a.eta, b.eta, a.nome, b.nome));
 
   const fmtEdit = v => (v === null || v === undefined || v === "") ? "" : fmtN(v, 2);
 
@@ -2286,7 +2296,7 @@ function renderPrevisaoCustos(){
       const impDesp = pcPrevisaoImpDespesas(c);
       const dataChegadaHtml = c.chegou_em
         ? fmtDate(String(c.chegou_em).slice(0, 10))
-        : (c.eta_galpao_estimado ? `<span style="color:var(--text-faint);">${fmtDate(c.eta_galpao_estimado)} (estim.)</span>` : "—");
+        : (c.eta ? `<span style="color:var(--text-faint);">${fmtDate(c.eta)} (estim.)</span>` : "—");
       const valorPill = c.invoice_confirmada
         ? `<span class="pc-valor-pill invoice">✅ Valor Invoice</span>`
         : `<span class="pc-valor-pill previa">⏳ Prévia</span>`;
@@ -3015,8 +3025,8 @@ window.confirmarGerarPedido = async function(){
 /* ============================================================ */
 let PEDIDOS = [];
 let PED_CBM_MAP = {};
-const PED_STATUS_LABEL = { rascunho:"⏳ Rascunho", enviado:"📤 Enviado", confirmado:"✅ Confirmado", em_producao:"🏭 Em Produção", finalizado:"🏁 Finalizado" };
-const PED_STATUS_LABEL_EN = { rascunho:"⏳ Draft", enviado:"📤 Sent", confirmado:"✅ Confirmed", em_producao:"🏭 In Production", finalizado:"🏁 Completed" };
+const PED_STATUS_LABEL = { rascunho:"⏳ Rascunho", confirmado:"❗ PEDIDO", enviado:"📤 Enviado", em_producao:"🏭 Em Produção", finalizado:"🏁 Finalizado" };
+const PED_STATUS_LABEL_EN = { rascunho:"⏳ Draft", confirmado:"❗ ORDER", enviado:"📤 Sent", em_producao:"🏭 In Production", finalizado:"🏁 Completed" };
 // responsáveis pra quem o PDF do pedido sai em inglês em vez de português
 const PED_PDF_RESPONSAVEIS_EN = ["molly", "yongxing"];
 
@@ -3061,7 +3071,7 @@ function estimativaCbmPedido(p){
   return { cbm, incompleto, temAlgum };
 }
 function renderPedStatCards(){
-  const grupos = { rascunho:{peds:[]}, enviado:{peds:[]}, confirmado:{peds:[]}, em_producao:{peds:[]}, finalizado:{peds:[]} };
+  const grupos = { rascunho:{peds:[]}, confirmado:{peds:[]}, enviado:{peds:[]}, em_producao:{peds:[]}, finalizado:{peds:[]} };
   PEDIDOS.forEach(p => { if (grupos[p.status]) grupos[p.status].peds.push(p); });
   const filtroAtual = document.getElementById("pedFiltroStatus").value;
   const el = document.getElementById("pedStatCards");
@@ -3093,13 +3103,13 @@ function renderPedidos(){
   if (!list.length){ tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Nenhum pedido encontrado.</td></tr>`; return; }
   tbody.innerHTML = list.map(p => {
     const { cbm, incompleto, temAlgum } = estimativaCbmPedido(p);
-    const cbmTexto = temAlgum ? `${fmtN(cbm, 2)} m³${incompleto ? " *" : ""}` : (incompleto ? "—*" : "—");
+    const cbmTexto = temAlgum ? `${fmtN(cbm, 2)}${incompleto ? " *" : ""}` : (incompleto ? "—*" : "—");
     return `
     <tr class="pedido-row" onclick="abrirPedidoDetalhe('${p.id}')">
       <td>${escapeHtml(p.nome)}</td>
-      <td>${escapeHtml(p.marca) || "—"}</td>
+      <td>${escapeHtml(p.referencia) || "—"}</td>
       <td>${escapeHtml(p.responsavel) || "—"}</td>
-      <td class="mono">¥ ${fmtN(totalRmbPedido(p))}</td>
+      <td class="mono" style="white-space:nowrap;">¥ ${fmtN(totalRmbPedido(p))}</td>
       <td class="mono" ${incompleto ? 'title="Um ou mais itens sem SKU vinculado ou sem medida de caixa cadastrada — CBM parcial"' : ''}>${cbmTexto}</td>
       <td>${escapeHtml(p.responsavel_pagamento) || "—"}</td>
       <td>${escapeHtml(p.fabrica) || "—"}</td>
@@ -3228,6 +3238,7 @@ window.abrirPedidoDetalhe = async function(id){
   document.getElementById("pd_det_status_pill").textContent = PED_STATUS_LABEL[p.status]||p.status;
   document.getElementById("pd_det_cotrmb").value = p.cot_rmb || 7;
   document.getElementById("pd_det_obs").value = p.obs || "";
+  document.getElementById("pd_det_referencia").value = p.referencia || "";
   document.getElementById("pd_det_resppag").value = p.responsavel_pagamento || "";
   document.getElementById("pd_det_fabrica").value = p.fabrica || "";
   document.getElementById("pd_det_data_envio").value = dataInputValue(p.data_envio);
@@ -3243,18 +3254,20 @@ window.abrirPedidoDetalhe = async function(id){
 };
 window.pedidoDetSalvarMeta = async function(){
   if (!PEDIDO_ATUAL) return;
+  const referencia = document.getElementById("pd_det_referencia").value.trim();
   const responsavel_pagamento = document.getElementById("pd_det_resppag").value;
   const fabrica = document.getElementById("pd_det_fabrica").value.trim();
   const data_envio = document.getElementById("pd_det_data_envio").value || null;
   const data_entrega = document.getElementById("pd_det_data_entrega").value || null;
+  PEDIDO_ATUAL.referencia = referencia;
   PEDIDO_ATUAL.responsavel_pagamento = responsavel_pagamento;
   PEDIDO_ATUAL.fabrica = fabrica;
   PEDIDO_ATUAL.data_envio = data_envio;
   PEDIDO_ATUAL.data_entrega = data_entrega;
-  const { error } = await db.from("imp_pedidos").update({ responsavel_pagamento, fabrica, data_envio, data_entrega }).eq("id", PEDIDO_ATUAL.id);
+  const { error } = await db.from("imp_pedidos").update({ referencia, responsavel_pagamento, fabrica, data_envio, data_entrega }).eq("id", PEDIDO_ATUAL.id);
   if (error){ toast("Erro ao salvar.", "error"); return; }
   const p = PEDIDOS.find(x => x.id === PEDIDO_ATUAL.id);
-  if (p){ p.responsavel_pagamento = responsavel_pagamento; p.fabrica = fabrica; p.data_envio = data_envio; p.data_entrega = data_entrega; }
+  if (p){ p.referencia = referencia; p.responsavel_pagamento = responsavel_pagamento; p.fabrica = fabrica; p.data_envio = data_envio; p.data_entrega = data_entrega; }
   toast("Atualizado.");
 };
 window.fecharPedidoDetalhe = function(){
@@ -4783,8 +4796,8 @@ window.plToggleBookingFeito = async function(fonte, id, marcado){
 
   const existente = PL_CONTAINERS[fonte].find(c => String(c.origem_staging_id) === String(s.id));
   if (marcado){
-    // ainda não existe um card desse contêiner no Kanban — cria um provisório (sem itens ainda)
     if (!existente){
+      // ainda não existe um card desse contêiner no Kanban — cria direto em Booking Feito
       const { data: novoContainer, error: eC } = await db.from("imp_containers").insert({
         fonte, nome: s.codigo, etd: s.etd_sugerido, eta: null, origem_staging_id: s.id, status_embarque: "booking"
       }).select("*, imp_container_itens(*)").single();
@@ -4793,10 +4806,17 @@ window.plToggleBookingFeito = async function(fonte, id, marcado){
       if (typeof renderKanban === "function") renderKanban();
       renderPackingList(fonte);
       toast(`${s.codigo} entrou no Kanban — Booking Feito.`);
+    } else if (existente.status_embarque === "fazer_booking") {
+      // já tinha sido puxado pro Kanban em "Fazer Booking" — agora que o booking foi feito, avança o card
+      const { error: eU } = await db.from("imp_containers").update({ status_embarque: "booking" }).eq("id", existente.id);
+      if (eU){ toast("Booking marcado, mas não deu pra mover o card no Kanban — tenta de novo.", "error"); return; }
+      existente.status_embarque = "booking";
+      if (typeof renderKanban === "function") renderKanban();
+      toast(`${s.codigo} movido pra Booking Feito.`);
     }
   } else {
     // desmarcou — se o card provisório ainda não tem itens nem saiu do lugar, remove do Kanban
-    if (existente && !(existente.imp_container_itens && existente.imp_container_itens.length) && existente.status_embarque === "booking" && !existente.chegou_em){
+    if (existente && !(existente.imp_container_itens && existente.imp_container_itens.length) && (existente.status_embarque === "booking" || existente.status_embarque === "fazer_booking") && !existente.chegou_em){
       const { error: eD } = await db.from("imp_containers").delete().eq("id", existente.id);
       if (!eD){
         PL_CONTAINERS[fonte] = PL_CONTAINERS[fonte].filter(c => c.id !== existente.id);
@@ -5076,6 +5096,11 @@ function renderCambioPopupBody(fonte, containerId){
         </div>
       </div>
       ${url ? `<div style="margin-top:10px; font-size:12px; color:#166534; font-weight:600;">✅ Comprovante enviado</div>` : `<div style="margin-top:10px; font-size:12px; color:#b45309; font-weight:600;">⚠ Você pode deixar o câmbio marcado como fechado mesmo sem enviar o comprovante agora — é só enviar depois aqui.</div>`}
+      <div class="field" style="margin-top:16px;">
+        <label>Valor real do câmbio (R$)</label>
+        <input type="text" inputmode="decimal" class="mono-field" style="max-width:200px;" placeholder="Opcional" value="${container.real_cambio !== null && container.real_cambio !== undefined && container.real_cambio !== "" ? fmtN(container.real_cambio, 2) : ""}" onchange="cambioSalvarRealCambio('${fonte}','${containerId}', this.value)">
+        <div style="margin-top:4px; font-size:11.5px; color:var(--text-faint);">Atualiza o campo "Real Câmbio" na Previsão de Custos.</div>
+      </div>
     </div>
     <div style="padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end;">
       <button class="btn btn-ghost" onclick="document.getElementById('cambioPopupOverlay').remove()">Fechar</button>
@@ -5098,6 +5123,16 @@ window.cambioUploadComprovante = async function(evt, fonte, containerId){
   renderCambioPopupBody(fonte, containerId);
   renderArquivo();
 };
+window.cambioSalvarRealCambio = async function(fonte, containerId, valorStr){
+  const valor = valorStr === "" || valorStr === null || valorStr === undefined ? null : round2(parseNum(valorStr) || 0);
+  const { error } = await db.from("imp_containers").update({ real_cambio: valor }).eq("id", containerId);
+  if (error){ toast("Erro ao salvar valor real do câmbio.", "error"); return; }
+  const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
+  if (container) container.real_cambio = valor;
+  const pcCache = (typeof PC_CONTAINERS !== "undefined" && PC_CONTAINERS) ? PC_CONTAINERS.find(x => String(x.id) === String(containerId)) : null;
+  if (pcCache) pcCache.real_cambio = valor;
+  toast("Valor real do câmbio salvo.");
+};
 window.cambioRemoverComprovante = async function(fonte, containerId){
   const { error } = await db.from("imp_containers").update({ doc_comprovante_cambio_url: null }).eq("id", containerId);
   if (error){ toast("Erro ao remover.", "error"); return; }
@@ -5109,8 +5144,8 @@ window.cambioRemoverComprovante = async function(fonte, containerId){
 };
 
 /* ======================= STATUS DOS CONTÊINERES (KANBAN) ======================= */
-const KB_STATUSES = ["booking", "em_rota", "desembaraco"];
-const KB_LABELS = { booking: "Booking Feito", em_rota: "Em Rota", desembaraco: "Desembaraço" };
+const KB_STATUSES = ["fazer_booking", "booking", "em_rota", "desembaraco"];
+const KB_LABELS = { fazer_booking: "Fazer Booking", booking: "Booking Feito", em_rota: "Em Rota", desembaraco: "Desembaraço" };
 let KB_DRAGGING = null; // { fonte, id }
 
 async function loadStatusContainers(){
@@ -5247,6 +5282,48 @@ window.kbAbrirAlertaEtdEta = function(){
     </div>
     <div style="padding:6px 20px; overflow:auto; flex:1;">${rows}</div>
   `, 620);
+};
+window.kbAbrirPuxarContainer = function(){
+  const jaNoKanban = new Set([...PL_CONTAINERS.logbox, ...PL_CONTAINERS.mti].filter(c => c.origem_staging_id).map(c => String(c.origem_staging_id)));
+  const itens = [
+    ...PL_STAGING.logbox.map(s => ({ ...s, fonte: "logbox" })),
+    ...PL_STAGING.mti.map(s => ({ ...s, fonte: "mti" }))
+  ].filter(s => !jaNoKanban.has(String(s.id)))
+   .sort((a,b) => compareDataComDesempate(a.etd_sugerido, b.etd_sugerido, a.codigo, b.codigo));
+
+  const rows = itens.map(s => `
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--border);">
+      <div style="min-width:0;">
+        <div style="font-weight:700; font-size:13.5px; display:flex; align-items:center; gap:7px;">
+          ${escapeHtml(s.codigo)}
+          <span class="tag-emp ${s.fonte === "mti" ? "mti" : "logbox"}" style="font-size:9.5px;">${s.fonte.toUpperCase()}</span>
+        </div>
+        <div style="font-size:11.5px; color:var(--text-faint);">${s.etd_sugerido ? "ETD sugerido: " + new Date(s.etd_sugerido + "T00:00:00").toLocaleDateString("pt-BR") : "sem data na planilha"} · ${s.n_itens} ${s.n_itens === 1 ? "item" : "itens"}</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="kbPuxarContainer('${s.fonte}','${s.id}')">Puxar</button>
+    </div>`).join("") || `<div class="empty-state">Nenhum contêiner disponível em Planejamento pra puxar — todos já estão no Kanban.</div>`;
+
+  abrirOverlayDinamico("kbPuxarOverlay", `
+    <div style="padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+      <div style="font-size:15px; font-weight:800;">📌 Puxar contêiner pra Fazer Booking</div>
+      <button onclick="document.getElementById('kbPuxarOverlay').remove()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
+    </div>
+    <div style="padding:6px 20px; overflow:auto; flex:1;">${rows}</div>
+  `, 620);
+};
+window.kbPuxarContainer = async function(fonte, stagingId){
+  const s = PL_STAGING[fonte].find(x => String(x.id) === String(stagingId));
+  if (!s) return;
+  const jaExiste = PL_CONTAINERS[fonte].find(c => String(c.origem_staging_id) === String(s.id));
+  if (jaExiste){ toast(`${s.codigo} já está no Kanban.`, "error"); document.getElementById("kbPuxarOverlay")?.remove(); return; }
+  const { data: novoContainer, error } = await db.from("imp_containers").insert({
+    fonte, nome: s.codigo, etd: s.etd_sugerido, eta: null, origem_staging_id: s.id, status_embarque: "fazer_booking"
+  }).select("*, imp_container_itens(*)").single();
+  if (error || !novoContainer){ toast(`Erro ao puxar ${s.codigo}.`, "error"); return; }
+  PL_CONTAINERS[fonte].push(novoContainer);
+  renderKanban();
+  toast(`${s.codigo} entrou em Fazer Booking.`);
+  document.getElementById("kbPuxarOverlay")?.remove();
 };
 window.kbMover = async function(fonte, containerId, novoIdx){
   if (novoIdx < 0 || novoIdx >= KB_STATUSES.length) return;
@@ -7213,8 +7290,9 @@ function fechRender(){
       <div class="fin-kpi" style="--fin-color:#7c3aed;"><div class="fin-kpi-label">CMV Contábil</div><div class="fin-kpi-value">${fmtN(c.totalCmvContabil,0)}</div><div class="fin-kpi-sub">R$ · total do contêiner</div></div>
     </div>
 
-    <div style="display:flex; justify-content:flex-end; margin-top:14px;">
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
       <button class="btn btn-ghost btn-sm" onclick="fechRepuxarApoio()">🔄 Repuxar do Apoio NF-e</button>
+      <button class="btn btn-primary btn-sm" onclick="fechAtualizarRealImpDespesas()">💰 Real IMP+Despesas</button>
     </div>
 
     <div class="fech-tabela3">
@@ -7223,6 +7301,40 @@ function fechRender(){
       ${colCmv}
     </div>`;
 }
+window.fechAtualizarRealImpDespesas = function(){
+  if (!FECH_CONTAINER_ID || !FECH_DATA){ toast("Selecione um contêiner primeiro.", "error"); return; }
+  const c = fechComputar(FECH_DATA);
+  const soma = round2((c.totalImpostos||0) + (c.totalDespesas||0));
+  const containerCache = (typeof FIN_CONTAINERS !== "undefined" && FIN_CONTAINERS)
+    ? FIN_CONTAINERS.find(x => String(x.id) === String(FECH_CONTAINER_ID)) : null;
+  const valorAtual = containerCache ? containerCache.real_imp_despesas : null;
+  const temValorAtual = valorAtual !== null && valorAtual !== undefined && valorAtual !== "";
+  const nomeContainer = (containerCache && containerCache.nome) || "este contêiner";
+  const aplicar = async () => {
+    const { error } = await db.from("imp_containers").update({ real_imp_despesas: soma }).eq("id", FECH_CONTAINER_ID);
+    if (error){ toast("Erro ao atualizar Real IMP+Despesas.", "error"); return; }
+    if (containerCache) containerCache.real_imp_despesas = soma;
+    const pcCache = (typeof PC_CONTAINERS !== "undefined" && PC_CONTAINERS)
+      ? PC_CONTAINERS.find(x => String(x.id) === String(FECH_CONTAINER_ID)) : null;
+    if (pcCache) pcCache.real_imp_despesas = soma;
+    toast("Real IMP+Despesas atualizado na Previsão de Custos.");
+  };
+  if (temValorAtual){
+    pedirConfirmacao(
+      "Atualizar Real IMP+Despesas",
+      `${nomeContainer} já tem R$ ${fmtN(valorAtual,2)} lançado na Previsão de Custos. Substituir pelo novo total de R$ ${fmtN(soma,2)} (Impostos + Despesas deste Fechamento)?`,
+      "O valor anterior será sobrescrito.",
+      aplicar
+    );
+  } else {
+    pedirConfirmacao(
+      "Atualizar Real IMP+Despesas",
+      `Lançar R$ ${fmtN(soma,2)} (Impostos + Despesas) como o valor "Real IMP+Despesas" deste contêiner na Previsão de Custos?`,
+      "",
+      aplicar
+    );
+  }
+};
 window.fechEditarCampo = function(campo, valorStr){
   // todo campo do Fechamento Container é dinheiro — arredonda de verdade
   FECH_DATA[campo] = round2(parseNum(valorStr) || 0);
