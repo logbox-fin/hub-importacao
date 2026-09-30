@@ -495,6 +495,7 @@
   .pc-editavel:hover{ border-bottom-color:var(--accent); }
   span.pc-calc-chip.pc-editavel{ border-bottom:none; }
   span.pc-calc-chip.pc-editavel:hover{ background:var(--accent); color:#fff; }
+  span.pc-calc-chip.pc-travado{ background:var(--surface-alt); color:var(--text-muted); cursor:default; }
 
   /* ============ FINANCEIRO: Apoio NF-e / Fechamento / Precificação Container ============ */
   .fin-topbar{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 18px; box-shadow:var(--shadow); margin-bottom:16px; }
@@ -1203,14 +1204,19 @@
           </div>
           <div id="kbSkuTags"></div>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="kbAbrirPuxarContainer()">+ Puxar Container</button>
         <div class="spacer"></div>
         <div id="kbAlertaEtdEta"></div>
       </div>
       <div id="kbFiltroInfo" class="kb-filtro-info" style="display:none;"></div>
       <div class="kanban-board" id="kanbanBoard">
         <div class="kanban-col" data-status="fazer_booking" ondragover="kbDragOver(event)" ondragleave="kbDragLeave(event)" ondrop="kbDrop(event,'fazer_booking')">
-          <div class="kanban-col-head"><span class="kanban-col-title">📌 Fazer Booking</span><span class="kanban-col-count" id="kbCount_fazer_booking">0</span></div>
+          <div class="kanban-col-head">
+            <span style="display:flex; align-items:center; gap:8px;">
+              <span class="kanban-col-title">📌 Fazer Booking</span>
+              <button class="btn btn-primary btn-sm" onclick="kbAbrirPuxarContainer()" style="padding:3px 10px; font-size:11.5px;">+ Puxar</button>
+            </span>
+            <span class="kanban-col-count" id="kbCount_fazer_booking">0</span>
+          </div>
           <div id="kbList_fazer_booking"></div>
         </div>
         <div class="kanban-col" data-status="booking" ondragover="kbDragOver(event)" ondragleave="kbDragLeave(event)" ondrop="kbDrop(event,'booking')">
@@ -2240,6 +2246,9 @@ window.confirmarExcluirFabrica = function(id, nome){
 /* ======================= PREVISÃO DOS CUSTOS (LOGBOX) ========== */
 /* ============================================================ */
 let PC_CONTAINERS = [];
+// container_id -> {vmld,frete,capatazia} de imp_fechamento_container — qualquer contêiner com
+// Fechamento lançado trava a Previsão Câmbio no Custo Produto dele (pedido de Wissam, 30/09)
+let PC_FECHAMENTOS = {};
 
 async function loadPrevisaoCustos(){
   const tbody = document.getElementById("pcTbody");
@@ -2247,7 +2256,18 @@ async function loadPrevisaoCustos(){
   const { data, error } = await db.from("imp_containers").select("*").eq("fonte", "logbox");
   if (error){ toast("Erro ao carregar previsão de custos.", "error"); return; }
   PC_CONTAINERS = data || [];
+  const { data: fechData, error: eFech } = await db.from("imp_fechamento_container").select("container_id,vmld,frete,capatazia");
+  if (eFech){ toast("Erro ao carregar Fechamentos lançados — Previsão Câmbio pode não travar certo.", "error"); PC_FECHAMENTOS = {}; }
+  else {
+    PC_FECHAMENTOS = {};
+    (fechData || []).forEach(f => { PC_FECHAMENTOS[String(f.container_id)] = f; });
+  }
   renderPrevisaoCustos();
+}
+function pcCustoProdutoLancado(c){
+  const f = PC_FECHAMENTOS[String(c.id)];
+  if (!f) return null;
+  return round2((Number(f.vmld)||0) - (Number(f.frete)||0) - (Number(f.capatazia)||0));
 }
 function pcStatusLabel(c){
   if (c.chegou_em) return "Chegou";
@@ -2266,6 +2286,8 @@ function pcStatusValor(c){
   return c.invoice_confirmada ? "Valor Invoice" : "Prévia";
 }
 function pcPrevisaoCambio(c){
+  const lancado = pcCustoProdutoLancado(c);
+  if (lancado !== null) return lancado;
   if (c.prev_cambio_manual !== null && c.prev_cambio_manual !== undefined && c.prev_cambio_manual !== "") return Number(c.prev_cambio_manual);
   if (c.valor_container === null || c.valor_container === undefined || c.estimativa_dolar === null || c.estimativa_dolar === undefined) return null;
   return Number(c.valor_container) * Number(c.estimativa_dolar);
@@ -2293,6 +2315,7 @@ function renderPrevisaoCustos(){
   } else {
     tbody.innerHTML = lista.map(c => {
       const cambio = pcPrevisaoCambio(c);
+      const cambioLancado = pcCustoProdutoLancado(c);
       const impDesp = pcPrevisaoImpDespesas(c);
       const dataChegadaHtml = c.chegou_em
         ? fmtDate(String(c.chegou_em).slice(0, 10))
@@ -2316,9 +2339,11 @@ function renderPrevisaoCustos(){
           ? `<span class="pc-calc-chip pc-editavel" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_imp_despesas_manual',${impDesp})">${fmtN(impDesp, 2)}</span>`
           : `<span class="pc-editavel" style="color:var(--text-faint);" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_imp_despesas_manual',null)">—</span>`}</td>
         <td class="num"><input type="text" inputmode="decimal" class="mono-field pc-input real-field${temReal1 ? " filled" : ""}" style="width:100px;" placeholder="NÃO PAGO" value="${fmtEdit(c.real_imp_despesas)}" onchange="pcSalvarCampo('${c.id}','real_imp_despesas', this.value)"></td>
-        <td class="num" id="pcCell_prev_cambio_manual_${c.id}">${cambio !== null
-          ? `<span class="pc-calc-chip pc-editavel" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_cambio_manual',${cambio})">${fmtN(cambio, 2)}</span>`
-          : `<span class="pc-editavel" style="color:var(--text-faint);" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_cambio_manual',null)">—</span>`}</td>
+        <td class="num" id="pcCell_prev_cambio_manual_${c.id}">${cambioLancado !== null
+          ? `<span class="pc-calc-chip pc-travado" title="Travado — vem do Fechamento Container lançado (Custo Produto = VMLD − Frete − Capatazia)">🔒 ${fmtN(cambioLancado, 2)}</span>`
+          : (cambio !== null
+            ? `<span class="pc-calc-chip pc-editavel" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_cambio_manual',${cambio})">${fmtN(cambio, 2)}</span>`
+            : `<span class="pc-editavel" style="color:var(--text-faint);" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_cambio_manual',null)">—</span>`)}</td>
         <td class="num"><input type="text" inputmode="decimal" class="mono-field pc-input real-field${temReal2 ? " filled" : ""}" style="width:100px;" placeholder="NÃO PAGO" value="${fmtEdit(c.real_cambio)}" onchange="pcSalvarCampo('${c.id}','real_cambio', this.value)"></td>
       </tr>`;
     }).join("");
@@ -7292,7 +7317,7 @@ function fechRender(){
 
     <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
       <button class="btn btn-ghost btn-sm" onclick="fechRepuxarApoio()">🔄 Repuxar do Apoio NF-e</button>
-      <button class="btn btn-primary btn-sm" onclick="fechAtualizarRealImpDespesas()">💰 Real IMP+Despesas</button>
+      <button class="btn btn-primary btn-sm" onclick="fechAtualizarRealImpDespesas()">💰 Lançar Fechamento</button>
     </div>
 
     <div class="fech-tabela3">
@@ -7304,7 +7329,7 @@ function fechRender(){
 window.fechAtualizarRealImpDespesas = function(){
   if (!FECH_CONTAINER_ID || !FECH_DATA){ toast("Selecione um contêiner primeiro.", "error"); return; }
   const c = fechComputar(FECH_DATA);
-  const soma = round2((c.totalImpostos||0) + (c.totalDespesas||0));
+  const soma = round2((c.totalImpostos||0) + (c.totalDespesas||0) + (FECH_DATA.frete||0) + (FECH_DATA.capatazia||0));
   const containerCache = (typeof FIN_CONTAINERS !== "undefined" && FIN_CONTAINERS)
     ? FIN_CONTAINERS.find(x => String(x.id) === String(FECH_CONTAINER_ID)) : null;
   const valorAtual = containerCache ? containerCache.real_imp_despesas : null;
@@ -7322,14 +7347,14 @@ window.fechAtualizarRealImpDespesas = function(){
   if (temValorAtual){
     pedirConfirmacao(
       "Atualizar Real IMP+Despesas",
-      `${nomeContainer} já tem R$ ${fmtN(valorAtual,2)} lançado na Previsão de Custos. Substituir pelo novo total de R$ ${fmtN(soma,2)} (Impostos + Despesas deste Fechamento)?`,
+      `${nomeContainer} já tem R$ ${fmtN(valorAtual,2)} lançado na Previsão de Custos. Substituir pelo novo total de R$ ${fmtN(soma,2)} (Impostos + Despesas + Frete + Capatazia deste Fechamento)?`,
       "O valor anterior será sobrescrito.",
       aplicar
     );
   } else {
     pedirConfirmacao(
       "Atualizar Real IMP+Despesas",
-      `Lançar R$ ${fmtN(soma,2)} (Impostos + Despesas) como o valor "Real IMP+Despesas" deste contêiner na Previsão de Custos?`,
+      `Lançar R$ ${fmtN(soma,2)} (Impostos + Despesas + Frete + Capatazia) como o valor "Real IMP+Despesas" deste contêiner na Previsão de Custos?`,
       "",
       aplicar
     );
