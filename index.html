@@ -622,10 +622,10 @@
   .fin-total-row.grand{ background:var(--accent-dark); color:#fff; }
   .fin-total-row.grand .val{ color:#fff; font-size:19px; }
   .fin-total-list{ border-top:1px solid var(--border); }
-  .fin-total-row input.fin-total-input{ border:none; background:transparent; text-align:right; font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:700; color:var(--accent-dark); width:170px; padding:4px 6px; border-radius:6px; }
-  .fin-total-row input.fin-total-input:focus{ outline:2px solid var(--accent-soft); background:var(--surface); }
-  .fin-total-row.grand input.fin-total-input{ color:#fff; font-size:17px; }
-  .fin-total-row.grand input.fin-total-input:focus{ outline-color:rgba(255,255,255,.5); background:rgba(255,255,255,.08); }
+  .fin-total-row input.fin-total-input{ border:1px solid var(--border-strong); background:var(--surface); text-align:right; font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:700; color:var(--accent-dark); width:170px; padding:4px 6px; border-radius:6px; }
+  .fin-total-row input.fin-total-input:focus{ outline:2px solid var(--accent-soft); border-color:var(--accent); }
+  .fin-total-row.grand input.fin-total-input{ color:#fff; font-size:17px; background:rgba(255,255,255,.12); border-color:rgba(255,255,255,.4); }
+  .fin-total-row.grand input.fin-total-input:focus{ outline-color:rgba(255,255,255,.5); background:rgba(255,255,255,.2); }
 
   /* Fechamento Container — tabela de 3 colunas (espelha a planilha do Wissam) */
   .fech-tabela3{ display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; margin-top:16px; }
@@ -645,7 +645,7 @@
   .fech-row input.fech-input:hover{ border-color:var(--border-strong); }
   .fech-row input.fech-input:focus{ outline:none; border-color:var(--accent); background:var(--surface); }
 
-  .fin-sku-list{ display:flex; flex-direction:column; gap:10px; padding:14px 18px; max-height:640px; overflow-y:auto; }
+  .fin-sku-list{ display:flex; flex-direction:column; gap:10px; padding:14px 18px; }
   .fin-sku-card{ border:1px solid var(--border); border-radius:10px; background:var(--surface); transition:border-color .15s; }
   .fin-sku-card.pend{ border-color:#f0b4b4; background:var(--danger-soft); }
   .fin-sku-card.open{ border-color:var(--accent); }
@@ -659,17 +659,17 @@
   .fin-sku-card-nums .val{ font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:var(--text); }
   .fin-sku-card-chevron{ font-size:11px; color:var(--text-faint); width:16px; text-align:center; }
   .fin-sku-card-body{ padding:4px 16px 16px; border-top:1px solid var(--border); }
-  .fin-card-section{ padding:12px 0; border-bottom:1px dashed var(--border); }
+  .fin-card-section{ --cor-secao: var(--accent-dark); padding:14px 0 14px 14px; margin-left:-14px; border-bottom:1px dashed var(--border); border-left:4px solid var(--cor-secao); }
   .fin-card-section:last-child{ border-bottom:none; padding-bottom:2px; }
-  .fin-card-section-title{ font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--accent-dark); margin-bottom:9px; }
-  .fin-card-section-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px 14px; }
-  .fin-card-field{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+  .fin-card-section-title{ font-size:13.5px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--cor-secao); margin-bottom:11px; }
+  .fin-card-section-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap:12px 16px; }
+  .fin-card-field{ display:flex; flex-direction:column; gap:5px; min-width:0; }
   .fin-card-field.wide{ grid-column: 1 / -1; }
-  .fin-card-field label{ font-size:10.5px; font-weight:600; color:var(--text-muted); }
-  .fin-card-field input, .fin-card-field select{ padding:7px 9px; border-radius:7px; border:1px solid var(--border-strong); font-family:'JetBrains Mono',monospace; font-size:12.5px; background:var(--surface); color:var(--text); width:100%; }
+  .fin-card-field label{ font-size:12px; font-weight:700; color:var(--text); }
+  .fin-card-field input, .fin-card-field select{ padding:8px 10px; border-radius:7px; border:1px solid var(--border-strong); font-family:'JetBrains Mono',monospace; font-size:13.5px; background:var(--surface); color:var(--text); width:100%; }
   .fin-card-field input:focus{ outline:2px solid var(--accent-soft); border-color:var(--accent); }
-  .fin-card-field .chip-ro{ padding:7px 9px; }
-  .fin-card-field .ref-ro{ font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:700; color:var(--text-faint); }
+  .fin-card-field .chip-ro{ padding:8px 10px; }
+  .fin-card-field .ref-ro{ font-family:'JetBrains Mono',monospace; font-size:13.5px; font-weight:700; color:var(--text-faint); }
 
   .fin-cmv-box{ display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:14px; }
   .fin-cmv-card{ border:1px solid var(--border); border-radius:10px; padding:14px 16px; background:var(--surface); }
@@ -1742,9 +1742,35 @@ function fmtR(n){ return n===null||n===undefined||isNaN(n) ? "R$ —" : "R$ " + 
 // Fechamento Container e Precificação Container. Preço Unit. (8 casas), quantidade e alíquotas/%
 // ficam de fora de propósito (por pedido do Wissam, pra não perder precisão nesses três).
 function round2(n){ const v = Number(n); return Number.isFinite(v) ? Math.round((v + Number.EPSILON) * 100) / 100 : 0; }
+// Rateia um total entre vários itens (valores "crus", ainda não arredondados) e garante que a SOMA
+// dos valores arredondados bate exatamente com o total, no centavo — arredondar cada item sozinho
+// pode deixar sobrar ou faltar 1-2 centavos no total. A diferença de arredondamento (sempre pequena)
+// vai pro item de maior valor, que é o menos sensível a ela (correção, Fase 3 #2).
+function ratearComCentavoExato(valoresCrus, total){
+  const totalArred = round2(total);
+  const arredondados = valoresCrus.map(v => round2(v));
+  if (!arredondados.length) return arredondados;
+  const somaArred = round2(arredondados.reduce((s,v) => s+v, 0));
+  const diff = round2(totalArred - somaArred);
+  if (diff !== 0){
+    let idxMaior = 0;
+    for (let i = 1; i < valoresCrus.length; i++) if (valoresCrus[i] > valoresCrus[idxMaior]) idxMaior = i;
+    arredondados[idxMaior] = round2(arredondados[idxMaior] + diff);
+  }
+  return arredondados;
+}
 function escapeHtml(str){
   if (str === null || str === undefined) return "";
-  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+// Usado quando um valor (já passado por escapeHtml) vai dentro de um argumento '...' de uma função
+// JS chamada por onclick="..." (atributo com aspas duplas). &apos; NÃO resolve isso: o navegador
+// decodifica entidades HTML antes de interpretar o atributo como código JS, então &apos; vira uma
+// aspa simples de novo e quebra a string do JS. \' sobrevive à decodificação (barra e aspa simples
+// não são metacaracteres de HTML) e continua sendo uma aspa simples "escapada" quando o JS roda.
+function escJsStr(str){
+  if (str === null || str === undefined) return "";
+  return String(str).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 // ============ ORDENAÇÃO ESPECIAL DE PRODUTOS ============
 // Algumas famílias de produtos precisam sempre aparecer juntas, numa ordem fixa,
@@ -2227,7 +2253,7 @@ function renderFabricas(){
         <div class="fab-card-icon">🏭</div>
         <div class="fab-card-actions">
           <button class="btn-icon" title="Editar" onclick="abrirEditarFabrica('${f.id}')">✎</button>
-          <button class="btn-icon" title="Excluir" onclick="confirmarExcluirFabrica('${f.id}','${escapeHtml(f.nome).replace(/'/g,"&apos;")}')">🗑</button>
+          <button class="btn-icon" title="Excluir" onclick="confirmarExcluirFabrica('${f.id}','${escJsStr(escapeHtml(f.nome))}')">🗑</button>
         </div>
       </div>
       <div class="fab-card-nome">${escapeHtml(f.nome)}</div>
@@ -2679,6 +2705,13 @@ window.loteCenarioMudou = async function(){
   const cenario = document.getElementById("le_cenario").value;
   const cotRmb = parseNum(document.getElementById("le_cot_rmb").value) || loteAtual.cot_rmb;
   const cotUsd = parseNum(document.getElementById("le_cot_usd").value) || loteAtual.cot_usd;
+  // Correção (item 5 da revisão): salva cenário/câmbio do CABEÇALHO do lote JUNTO com o recálculo dos
+  // produtos, em vez de só quando o usuário clicar "Salvar Lote" separadamente — antes, se o usuário
+  // saísse da tela sem clicar nesse botão, os produtos já ficavam salvos com o CMV do cenário/câmbio
+  // novo, mas o cabeçalho do lote continuava mostrando o cenário/câmbio antigo (os dois contavam
+  // histórias diferentes). "Salvar Lote" continua existindo normalmente pra nome/marca/responsável.
+  loteAtual.cenario = cenario; loteAtual.cot_rmb = cotRmb; loteAtual.cot_usd = cotUsd;
+  await db.from("imp_lotes").update({ cenario, cot_rmb: cotRmb, cot_usd: cotUsd }).eq("id", loteAtual.id);
   for (const p of loteAtual.produtos){
     const c = calcCMV(p.rmb, p.categ, cenario, cotRmb, cotUsd, p.ii_p, p.ipi_p, p.cofins_p, p.icms_p);
     Object.assign(p, c);
@@ -3100,7 +3133,10 @@ window.abrirGerarPedido = function(){
   document.getElementById("err_gp_nome").textContent = "";
   const lista = document.getElementById("gpProdutosList");
   lista.innerHTML = loteAtual.produtos.map((p,i) => {
-    const margens = MKT_KEYS.map(mk => p.mkt[mk]?.margem_p || 0).filter(m => m > 0);
+    // conta todo canal que tem preço preenchido, mesmo com margem negativa ou zero — só fica de fora
+    // o canal que nem foi configurado ainda (preço 0). Antes só entrava na média quem tinha margem
+    // positiva, e isso escondia prejuízo de canal configurado (correção, Fase 3 #1)
+    const margens = MKT_KEYS.filter(mk => (p.mkt[mk]?.preco||0) > 0).map(mk => p.mkt[mk]?.margem_p || 0);
     const margemMedia = margens.length ? margens.reduce((a,b)=>a+b,0)/margens.length : null;
     const cls = margemMedia === null ? "zero" : (margemMedia > 0 ? "pos" : "neg");
     return `
@@ -3127,7 +3163,7 @@ window.confirmarGerarPedido = async function(){
     const checked = document.getElementById(`gp_check_${i}`).checked;
     if (!checked) return null;
     const rmb = parseNum(document.getElementById(`gp_rmb_${i}`).value) || p.rmb;
-    const margens = MKT_KEYS.map(mk => p.mkt[mk]?.margem_p || 0).filter(m => m > 0);
+    const margens = MKT_KEYS.filter(mk => (p.mkt[mk]?.preco||0) > 0).map(mk => p.mkt[mk]?.margem_p || 0);
     const margemMedia = margens.length ? margens.reduce((a,b)=>a+b,0)/margens.length : null;
     return { prod_lote_id: p.id, nome: p.nome, sku: p.sku||"", ncm: p.ncm||"", rmb, qtde:"", margem_media: margemMedia };
   }).filter(Boolean);
@@ -3575,7 +3611,7 @@ window.pedidoDetAbrirAddLote = async function(){
 window.pedidoDetAddDoLoteItem = function(prodLoteId){
   db.from("imp_lote_produtos").select("*").eq("id", prodLoteId).single().then(({data:p}) => {
     if (!p) return;
-    const margens = MKT_KEYS.map(mk => p.mkt?.[mk]?.margem_p || 0).filter(m => m > 0);
+    const margens = MKT_KEYS.filter(mk => (p.mkt?.[mk]?.preco||0) > 0).map(mk => p.mkt?.[mk]?.margem_p || 0);
     const margemMedia = margens.length ? margens.reduce((a,b)=>a+b,0)/margens.length : null;
     PEDIDO_ATUAL.itens.push({ id:"it_"+Math.random().toString(36).slice(2), prod_lote_id:p.id, nome:p.nome, sku:p.sku||"", ncm:p.ncm||"", rmb:p.rmb, qtde:"", margem_media:margemMedia, selecionado:true });
     renderPedidoDetItens();
@@ -3587,16 +3623,24 @@ window.pedidoDetAddDoLoteItem = function(prodLoteId){
 let salvarPedidoDetTimer = null;
 window.salvarPedidoDetalhe = function(){
   clearTimeout(salvarPedidoDetTimer);
+  if (!PEDIDO_ATUAL) return;
+  // Correção (item 4 da revisão): tira a "foto" do pedido (id + dados) AGORA, no momento da edição —
+  // não dentro do setTimeout. Antes, se o usuário trocasse de pedido em menos de 300ms, o timer ia
+  // buscar PEDIDO_ATUAL de novo só quando disparasse — e àquela altura já podia ser outro pedido,
+  // fazendo a edição original se perder silenciosamente (sem erro nenhum na tela).
+  const pedidoId = PEDIDO_ATUAL.id;
+  const payload = {
+    itens: PEDIDO_ATUAL.itens,
+    obs: document.getElementById("pd_det_obs").value.trim(),
+    cot_rmb: parseNum(document.getElementById("pd_det_cotrmb").value) || PEDIDO_ATUAL.cot_rmb,
+  };
   salvarPedidoDetTimer = setTimeout(async () => {
-    if (!PEDIDO_ATUAL) return;
-    const payload = {
-      itens: PEDIDO_ATUAL.itens,
-      obs: document.getElementById("pd_det_obs").value.trim(),
-      cot_rmb: parseNum(document.getElementById("pd_det_cotrmb").value) || PEDIDO_ATUAL.cot_rmb,
-    };
-    const { error } = await db.from("imp_pedidos").update(payload).eq("id", PEDIDO_ATUAL.id);
+    const { error } = await db.from("imp_pedidos").update(payload).eq("id", pedidoId);
     if (error){ toast("Erro ao salvar pedido.", "error"); return; }
-    Object.assign(PEDIDO_ATUAL, payload);
+    // só atualiza o estado em memória se o pedido aberto agora ainda for o mesmo que salvamos
+    if (PEDIDO_ATUAL && PEDIDO_ATUAL.id === pedidoId) Object.assign(PEDIDO_ATUAL, payload);
+    const pLista = PEDIDOS.find(x => x.id === pedidoId);
+    if (pLista) Object.assign(pLista, payload);
   }, 300);
 };
 window.pedidoDetStatusMudou = async function(){
@@ -3801,8 +3845,14 @@ function efEntradasContainerDoMes(sku, mesKey){
   const contribs = [];
   [...(PL_CONTAINERS.logbox||[]), ...(PL_CONTAINERS.mti||[])].forEach(c => {
     if (c.chegou_em) return;      // já chegou — o saldo real dele já está no estoque_atual, não conta de novo
-    if (!c.eta) return;           // sem ETA não dá pra saber o mês
-    if (String(c.eta).slice(0,7) !== mesKey) return;
+    // Correção (item 7 da revisão): usa a estimativa de chegada no GALPÃO (que já soma o tempo de
+    // desembaraço + transporte porto→galpão em cima do ETA do porto), não o ETA do porto puro — senão
+    // a entrada aparece no mês errado (o produto só fica disponível pra vender de verdade bem depois do
+    // navio atracar). eta_galpao_estimado já é calculado automaticamente (calcEtaGalpaoEstimado) sempre
+    // que o ETA do porto é definido; cai pro ETA do porto só se por algum motivo esse campo não existir.
+    const dataEntrada = c.eta_galpao_estimado || c.eta;
+    if (!dataEntrada) return;     // sem nenhuma data não dá pra saber o mês
+    if (String(dataEntrada).slice(0,7) !== mesKey) return;
     (c.imp_container_itens||[]).forEach(it => {
       if (it.sku === sku && Number(it.qtd_total) > 0) contribs.push({ nome: `Contêiner ${c.nome}`, qtd: Number(it.qtd_total) });
     });
@@ -3890,7 +3940,10 @@ function renderEstoqueFuturo(){
       const ruptureClass = !row.locked && row.final < 0 ? "rupture" : "";
       const lockedClass = row.locked ? "locked" : "";
       const divisorClass = idx > 0 ? "ef-mes-divisor" : "";
-      const entradaAttr = row.entrada > 0 ? `onclick='efMostrarBreakdown(${JSON.stringify(row.contribsEntrada).replace(/'/g,"&apos;")}, "${escapeHtml(prod.nome||g.sku)}", "${row.mes.label}")'` : "";
+      // atributo onclick aqui usa aspas simples (por causa do JSON.stringify embutido), então o que
+      // protege é &apos; (preserva a aspa simples como entidade até a leitura do atributo); os dois
+      // outros valores interpolados também precisam da mesma proteção, não só o JSON
+      const entradaAttr = row.entrada > 0 ? `onclick='efMostrarBreakdown(${JSON.stringify(row.contribsEntrada).replace(/'/g,"&apos;")}, "${escapeHtml(prod.nome||g.sku).replace(/'/g,"&apos;")}", "${String(row.mes.label).replace(/'/g,"&apos;")}")'` : "";
       cols += `<td class="ef-entrada ${divisorClass}" ${entradaAttr} title="${row.entrada>0?'Clique pra ver de onde veio':''}">${row.entrada>0?fmtN(row.entrada,0):'—'}</td>`;
       cols += `<td class="ef-venda"><input type="text" inputmode="numeric" value="${row.venda||''}" ${row.locked ? 'disabled title="Mês fechado — não editável"' : ''} onchange="efSalvarMedia('${g.sku}','${row.mes.key}',this.value)"></td>`;
       cols += `<td class="ef-final ${ruptureClass} ${lockedClass}">${row.locked ? "🔒 " : ""}${fmtN(row.final,0)}</td>`;
@@ -3973,7 +4026,7 @@ window.efBuscarStokbox = function(){
   db.from("produtos").select("sku,nome").or(`sku.ilike.%${q}%,nome.ilike.%${q}%`).limit(20).then(({data}) => {
     const matches = data || [];
     dropdown.innerHTML = matches.length ? matches.map(p => `
-      <div onclick="efVincularComStokbox('${escapeHtml(p.sku).replace(/'/g,"&apos;")}')" style="padding:9px 12px; cursor:pointer; border-bottom:1px solid var(--border); font-size:13px;" onmouseover="this.style.background='var(--surface-alt)'" onmouseout="this.style.background=''">
+      <div onclick="efVincularComStokbox('${escJsStr(escapeHtml(p.sku))}')" style="padding:9px 12px; cursor:pointer; border-bottom:1px solid var(--border); font-size:13px;" onmouseover="this.style.background='var(--surface-alt)'" onmouseout="this.style.background=''">
         <span class="mono" style="font-weight:600;">${escapeHtml(p.sku)}</span> — ${escapeHtml(p.nome||"")}
       </div>`).join("") : `<div style="padding:10px 12px; font-size:12.5px; color:var(--text-faint);">Nenhum produto encontrado no STOKBOX.</div>`;
   });
@@ -4366,15 +4419,22 @@ function validarForm(){
   });
   return ok;
 }
+// Correção (item 9 da revisão): antes, se a checagem desse erro (rede caiu etc.), a função retornava
+// "false" (como se não existisse duplicata) e deixava salvar mesmo assim — "falha aberta". Agora retorna
+// null nesse caso, e quem chama trata null como "não consegui confirmar, bloqueia por segurança" em vez
+// de deixar passar. O próprio banco também tem uma trava de SKU único (nunca deixa duplicar de verdade),
+// mas essa checagem na tela é o que dá o aviso claro ANTES de tentar salvar.
 async function skuJaExiste(sku, ignorarId){
   const { data, error } = await db.from(TABLE_PRODUTOS).select("id").eq("sku", sku);
-  if (error) return false;
+  if (error) return null;
   return data.some(row => row.id !== ignorarId);
 }
 document.getElementById("btnSalvar").addEventListener("click", async () => {
   if (!validarForm()) return;
   const sku = document.getElementById("f_sku").value.trim();
+  const skuAntigo = editingId ? (produtos.find(p => p.id === editingId)?.sku || null) : null;
   const jaExiste = await skuJaExiste(sku, editingId);
+  if (jaExiste === null){ setFieldError("sku", "Não consegui confirmar se esse SKU já existe (falha de conexão) — tenta de novo."); return; }
   if (jaExiste){ setFieldError("sku", "Já existe um produto ativo ou inativo com esse SKU."); return; }
   const empresaArr = [
     ...(document.getElementById("f_empresa_logbox").checked ? ["LOGBOX"] : []),
@@ -4403,11 +4463,50 @@ document.getElementById("btnSalvar").addEventListener("click", async () => {
   let error;
   if (editingId){ ({ error } = await db.from(TABLE_PRODUTOS).update(payload).eq("id", editingId)); }
   else { ({ error } = await db.from(TABLE_PRODUTOS).insert(payload)); }
-  if (error){ toast("Erro ao salvar produto.", "error"); return; }
+  if (error){
+    // código 23505 = violação de unicidade no Postgres — se chegou até aqui (a checagem da tela já
+    // deveria ter barrado antes), é porque o banco pegou um caso que a tela não pegou; mensagem clara
+    // em vez de genérica (item 9 da revisão).
+    toast(error.code === "23505" ? "Esse SKU já existe — escolha outro." : "Erro ao salvar produto.", "error");
+    return;
+  }
   toast(editingId ? "Produto atualizado." : "Produto cadastrado.");
+  // Correção (item 8 da revisão): SKU continua editável, mas se mudou, propaga a troca pra todos os
+  // lugares que referenciam o SKU antigo como texto solto, pra nada ficar desvinculado.
+  if (editingId && skuAntigo && skuAntigo !== sku) await skuPropagarRenomeacao(skuAntigo, sku);
   fecharModal();
   await loadProdutos();
 });
+// Propaga a renomeação de um SKU pra todos os lugares do Hub que guardam o SKU como texto solto
+// (sem relação de chave estrangeira de verdade com Produtos) — ver item 8 da revisão.
+async function skuPropagarRenomeacao(skuAntigo, skuNovo){
+  const erros = [];
+  const tentar = async (label, fn) => { const { error } = await fn(); if (error) erros.push(`${label} (${error.message})`); };
+
+  await tentar("itens de Packing List", () => db.from("imp_container_itens").update({ sku: skuNovo }).eq("sku", skuAntigo));
+  await tentar("vínculo com STOKBOX", () => db.from("imp_estoque_link").update({ sku_hub: skuNovo }).eq("sku_hub", skuAntigo));
+  await tentar("médias mensais do Estoque Futuro", () => db.from("imp_ef_medias").update({ sku: skuNovo }).eq("sku", skuAntigo));
+  await tentar("média fixa do Estoque Futuro", () => db.from("imp_ef_media_fixa").update({ sku: skuNovo }).eq("sku", skuAntigo));
+  await tentar("lotes de entrada do Estoque Futuro", () => db.from("imp_ef_lote_itens").update({ sku: skuNovo }).eq("sku", skuAntigo));
+  await tentar("produtos de lote (Precificações)", () => db.from("imp_lote_produtos").update({ sku: skuNovo }).eq("sku", skuAntigo));
+  await tentar("itens do Apoio NF-e", () => db.from("imp_nfe_apoio_itens").update({ sku: skuNovo }).eq("sku", skuAntigo));
+  await tentar("aprendizado de vínculo (aliases)", () => db.from("imp_sku_aliases").update({ sku: skuNovo }).eq("sku", skuAntigo));
+
+  // imp_pedidos.itens é uma lista (JSON) dentro de cada pedido, não uma tabela própria — precisa achar
+  // os pedidos que têm algum item com esse SKU e reescrever o array inteiro de cada um.
+  try {
+    const { data: pedidosComSku, error: eSel } = await db.from("imp_pedidos").select("id,itens").contains("itens", [{ sku: skuAntigo }]);
+    if (eSel) throw eSel;
+    for (const p of (pedidosComSku || [])){
+      const itensNovos = (p.itens || []).map(it => it.sku === skuAntigo ? { ...it, sku: skuNovo } : it);
+      const { error: eUpd } = await db.from("imp_pedidos").update({ itens: itensNovos }).eq("id", p.id);
+      if (eUpd) erros.push(`pedido ${p.id} (${eUpd.message})`);
+    }
+  } catch(e){ erros.push(`itens de pedidos (${e.message})`); }
+
+  if (erros.length) toast(`SKU trocado, mas alguns vínculos com "${skuAntigo}" podem não ter sido atualizados: ${erros.join("; ")}`, "error");
+  else toast(`SKU "${skuAntigo}" renomeado pra "${skuNovo}" em todos os lugares vinculados.`, "success");
+}
 window.confirmarDesativar = function(id, sku){
   pedirConfirmacao("Desativar produto", `Desativar o produto ${sku}?`, "O produto sai da lista padrão, mas o histórico é mantido. Você pode reativar depois.", async () => {
     const { error } = await db.from(TABLE_PRODUTOS).update({ ativo: false }).eq("id", id);
@@ -4742,6 +4841,30 @@ function etaInfo(etaStr){
 function fmtDate(dateStr){
   return dateStr ? new Date(dateStr + "T00:00:00").toLocaleDateString("pt-BR") : "—";
 }
+// Correção (item 10 da revisão): "hoje" no fuso LOCAL do navegador, sem passar por UTC — new
+// Date().toISOString() converte pra UTC, então depois das 21h em São Paulo (UTC-3) ela já considera
+// "hoje" como o dia seguinte. getFullYear/getMonth/getDate são sempre no fuso local, então não têm
+// esse problema.
+function hojeLocalStr(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+// Fase 2 #2: o bucket "container-docs" agora é privado (sem URL pública permanente) — os campos
+// doc_*_url guardam só o CAMINHO do arquivo no bucket, e essa função gera um link assinado (com
+// expiração curta) toda vez que o Wissam clica em "Ver PDF". Também aceita, de forma transparente,
+// uma URL pública antiga já salva (de antes dessa correção) — extrai o caminho de dentro dela, então
+// documentos enviados antes de hoje continuam abrindo normalmente sem precisar corrigir nada no banco.
+window.abrirDocumentoPrivado = async function(valor){
+  if (!valor) return;
+  let path = String(valor);
+  const marcador = "/container-docs/";
+  const idx = path.indexOf(marcador);
+  if (idx !== -1) path = decodeURIComponent(path.slice(idx + marcador.length));
+  toast("Abrindo documento…");
+  const { data, error } = await db.storage.from("container-docs").createSignedUrl(path, 300);
+  if (error || !data?.signedUrl){ toast("Erro ao abrir documento — tenta de novo.", "error"); return; }
+  window.open(data.signedUrl, "_blank");
+};
 // remove acentos/espaços/caracteres especiais do nome do arquivo antes de usar como chave no Supabase Storage
 function sanitizeFileName(name){
   const str = String(name || "arquivo.pdf");
@@ -5187,16 +5310,19 @@ window.arqSalvarDataChegada = async function(evt, fonte, containerId){
 /* ---------- Câmbio fechado / Containers Pagos ---------- */
 window.toggleCambioFechado = async function(fonte, containerId, marcado){
   const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
-  const { error } = await db.from("imp_containers").update({ cambio_fechado: marcado }).eq("id", containerId);
-  if (error){ toast("Erro ao atualizar câmbio.", "error"); return; }
-  if (container) container.cambio_fechado = marcado;
-  renderArquivo();
   if (marcado){
-    toast("Câmbio marcado como fechado — contêiner movido para Containers Pagos.");
+    // Correção (item 6 da revisão): NÃO grava cambio_fechado=true aqui ainda — só abre o popup pedindo
+    // Valor Real + Data. Antes, gravava na hora e o popup era só um complemento opcional; se o usuário
+    // fechasse no X sem preencher nada, o contêiner já ficava marcado como "pago" sem valor/data nenhum.
+    // Agora só grava de verdade em cambioConfirmarFechamento, quando os dois campos estiverem ok.
     abrirCambioComprovantePopup(fonte, containerId);
-  } else {
-    toast("Câmbio desmarcado — contêiner voltou pra lista principal.");
+    return;
   }
+  const { error } = await db.from("imp_containers").update({ cambio_fechado: false }).eq("id", containerId);
+  if (error){ toast("Erro ao atualizar câmbio.", "error"); renderArquivo(); return; }
+  if (container) container.cambio_fechado = false;
+  renderArquivo();
+  toast("Câmbio desmarcado — contêiner voltou pra lista principal.");
 };
 window.detalheDesmarcarCambio = async function(fonte, containerId){
   await toggleCambioFechado(fonte, containerId, false);
@@ -5204,6 +5330,24 @@ window.detalheDesmarcarCambio = async function(fonte, containerId){
 };
 window.abrirCambioComprovantePopup = function(fonte, containerId){
   renderCambioPopupBody(fonte, containerId);
+};
+// Fecha o popup sem confirmar nada — como cambio_fechado nunca foi gravado (ver toggleCambioFechado),
+// só precisa re-renderizar pra garantir que o checkbox volte a aparecer desmarcado.
+window.cambioFecharPopupSemConfirmar = function(){
+  document.getElementById("cambioPopupOverlay")?.remove();
+  renderArquivo();
+};
+window.cambioConfirmarFechamento = async function(fonte, containerId){
+  const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
+  const temValor = container && container.real_cambio !== null && container.real_cambio !== undefined && container.real_cambio !== "";
+  const temData = container && !!container.data_fechamento_cambio;
+  if (!temValor || !temData){ toast("Preencha o valor real e a data de fechamento antes de confirmar.", "error"); return; }
+  const { error } = await db.from("imp_containers").update({ cambio_fechado: true }).eq("id", containerId);
+  if (error){ toast("Erro ao marcar câmbio como fechado.", "error"); return; }
+  if (container) container.cambio_fechado = true;
+  document.getElementById("cambioPopupOverlay")?.remove();
+  renderArquivo();
+  toast("Câmbio marcado como fechado — contêiner movido para Containers Pagos.");
 };
 function renderCambioPopupBody(fonte, containerId){
   const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
@@ -5215,13 +5359,13 @@ function renderCambioPopupBody(fonte, containerId){
   abrirOverlayDinamico("cambioPopupOverlay", `
     <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
       <h2 class="modal-title" style="margin:0;">💰 Comprovante de câmbio — ${escapeHtml(container.nome)}</h2>
-      <button onclick="document.getElementById('cambioPopupOverlay').remove()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
+      <button onclick="cambioFecharPopupSemConfirmar()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
     </div>
     <div style="padding:20px 24px;">
       <div class="field">
         <label>Comprovante do câmbio (PDF)</label>
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-          ${url ? `<a href="${url}" target="_blank" class="btn btn-ghost btn-sm">📄 Ver PDF</a><button class="btn-icon" title="Remover" onclick="cambioRemoverComprovante('${fonte}','${containerId}')">🗑</button>` : `<span style="color:var(--text-faint); font-size:12px;">Nenhum enviado</span>`}
+          ${url ? `<button class="btn btn-ghost btn-sm" onclick="abrirDocumentoPrivado('${escJsStr(url)}')">📄 Ver PDF</button><button class="btn-icon" title="Remover" onclick="cambioRemoverComprovante('${fonte}','${containerId}')">🗑</button>` : `<span style="color:var(--text-faint); font-size:12px;">Nenhum enviado</span>`}
           <label class="btn btn-ghost btn-sm" style="cursor:pointer; margin:0;">📎 ${url ? "Substituir" : "Enviar"} PDF<input type="file" accept="application/pdf" style="display:none;" onchange="cambioUploadComprovante(event,'${fonte}','${containerId}')"></label>
         </div>
       </div>
@@ -5236,10 +5380,12 @@ function renderCambioPopupBody(fonte, containerId){
         <input type="date" class="mono-field" style="max-width:200px;" value="${temData ? String(container.data_fechamento_cambio).slice(0,10) : ""}" onchange="cambioSalvarDataFechamento('${fonte}','${containerId}', this.value)">
         <div style="margin-top:4px; font-size:11.5px; color:var(--text-faint);">Trava a coluna "Data Câmbio" na Previsão de Custos com essa data.</div>
       </div>
-      ${!podeFechar ? `<div style="margin-top:14px; font-size:12px; color:#b45309; font-weight:600;">⚠ Preencha o valor real e a data de fechamento pra poder fechar este popup.</div>` : ""}
+      ${!podeFechar && !container.cambio_fechado ? `<div style="margin-top:14px; font-size:12px; color:#b45309; font-weight:600;">⚠ Preencha o valor real e a data de fechamento pra poder confirmar o câmbio fechado.</div>` : ""}
     </div>
     <div style="padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end;">
-      <button class="btn btn-ghost" ${podeFechar ? "" : "disabled style=\"opacity:.45; cursor:not-allowed;\""} onclick="document.getElementById('cambioPopupOverlay').remove()">Fechar</button>
+      ${container.cambio_fechado
+        ? `<button class="btn btn-ghost" onclick="cambioFecharPopupSemConfirmar()">Fechar</button>`
+        : `<button class="btn btn-primary" ${podeFechar ? "" : "disabled style=\"opacity:.45; cursor:not-allowed;\""} onclick="cambioConfirmarFechamento('${fonte}','${containerId}')">✅ Confirmar câmbio fechado</button>`}
     </div>
   `, 480);
 }
@@ -5261,11 +5407,10 @@ window.cambioUploadComprovante = async function(evt, fonte, containerId){
   const path = `${fonte}/${containerId}/comprovante-cambio-${Date.now()}-${sanitizeFileName(file.name)}`;
   const { error: upErr } = await db.storage.from("container-docs").upload(path, file, { upsert: true, contentType: "application/pdf" });
   if (upErr){ toast("Erro ao enviar comprovante: " + upErr.message, "error"); return; }
-  const { data: pub } = db.storage.from("container-docs").getPublicUrl(path);
-  const { error } = await db.from("imp_containers").update({ doc_comprovante_cambio_url: pub.publicUrl }).eq("id", containerId);
+  const { error } = await db.from("imp_containers").update({ doc_comprovante_cambio_url: path }).eq("id", containerId);
   if (error){ toast("Erro ao salvar comprovante.", "error"); return; }
   const container = PL_CONTAINERS[fonte].find(c => String(c.id) === String(containerId));
-  if (container) container.doc_comprovante_cambio_url = pub.publicUrl;
+  if (container) container.doc_comprovante_cambio_url = path;
   toast("Comprovante enviado.");
   renderCambioPopupBody(fonte, containerId);
   renderArquivo();
@@ -5572,8 +5717,7 @@ window.blSalvarConferencia = async function(){
     const path = `${st.fonte}/${st.containerId}/doc_bl_url-${Date.now()}-${sanitizeFileName(st.file.name)}`;
     const { error: upErr } = await db.storage.from("container-docs").upload(path, st.file, { upsert: true, contentType: "application/pdf" });
     if (upErr){ toast("Erro ao enviar o PDF do B/L: " + upErr.message, "error"); return; }
-    const { data: pub } = db.storage.from("container-docs").getPublicUrl(path);
-    docBlUrl = pub.publicUrl;
+    docBlUrl = path;
   }
   const payload = {
     doc_bl_url: docBlUrl,
@@ -5895,11 +6039,16 @@ window.plImportarSelecionados = async function(fonte){
     if (!s) continue;
     // se marcou "Booking Feito" antes, já existe um card provisório pra esse contêiner — completa ele em vez de duplicar
     const existente = PL_CONTAINERS[fonte].find(c => String(c.origem_staging_id) === String(s.id));
+    // IDs dos itens antigos (se for reimportação), guardados ANTES de mexer no banco — correção (item 2
+    // da revisão): antes a gente apagava os itens antigos e só depois inseria os novos, então um erro no
+    // insert (rede caiu, etc.) deixava o contêiner com zero itens. Agora inserimos os novos primeiro e só
+    // apagamos os antigos (por esses IDs específicos, nunca "todos do contêiner") depois de confirmar que
+    // o insert deu certo — se o insert falhar, a lista antiga continua intacta.
+    const idsAntigos = existente ? ((existente.imp_container_itens || []).map(it => it.id)) : [];
     let containerId;
     if (existente){
       const { error: eU } = await db.from("imp_containers").update({ nome: s.codigo, etd: s.etd_sugerido }).eq("id", existente.id);
       if (eU){ toast(`Erro ao atualizar ${s.codigo}.`, "error"); continue; }
-      await db.from("imp_container_itens").delete().eq("container_id", existente.id);
       containerId = existente.id;
     } else {
       const { data: novoContainer, error: eC } = await db.from("imp_containers").insert({
@@ -5927,11 +6076,15 @@ window.plImportarSelecionados = async function(fonte){
     if (payloads.length){
       const { error: eI } = await db.from("imp_container_itens").insert(payloads);
       if (eI){
-        toast(`Erro ao salvar itens de ${s.codigo}: ${eI.message}`, "error");
+        toast(`Erro ao salvar itens de ${s.codigo}: ${eI.message} — a lista anterior desse contêiner não foi mexida.`, "error");
         if (!existente) await db.from("imp_containers").delete().eq("id", containerId);
         continue;
       }
       itensCount += payloads.length;
+    }
+    if (idsAntigos.length){
+      const { error: eDelAntigos } = await db.from("imp_container_itens").delete().in("id", idsAntigos);
+      if (eDelAntigos) toast(`${s.codigo} foi reimportado, mas sobraram itens antigos duplicados — reimporte de novo pra limpar.`, "error");
     }
     await db.from("imp_containers_staging").update({ status: "importado" }).eq("id", s.id);
     okCount++;
@@ -6042,11 +6195,13 @@ function containerDetalheTotaisHtml(itens){
   const totalRmb = itens.reduce((s, it) => s + (Number(it.valor_rmb) || 0), 0);
   const totalCbm = itens.reduce((s, it) => s + (Number(it.cbm_total) || 0), 0);
   const totalPesoBruto = itens.reduce((s, it) => s + (Number(it.peso_bruto_total) || 0), 0);
+  const totalCaixas = itens.reduce((s, it) => s + (Number(it.ctns) || 0), 0);
   return `<div style="padding:0 24px; flex-shrink:0;">
     <div style="display:flex; gap:20px; margin:0 0 14px; font-size:12.5px; color:var(--text-muted);">
       <span><b class="mono">¥ ${fmtN(totalRmb, 2)}</b> total</span>
       <span><b class="mono">${fmtN(totalCbm, 2)}</b> CBM</span>
       <span><b class="mono">${fmtN(totalPesoBruto, 1)}</b> kg brutos</span>
+      <span><b class="mono">${fmtN(totalCaixas, 0)}</b> caixas</span>
       <span><b class="mono">${itens.length}</b> ${itens.length === 1 ? "item" : "itens"}</span>
     </div>
   </div>`;
@@ -6057,7 +6212,7 @@ function containerDetalheFooterHtml(container, fonte, containerId){
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
         <button class="btn btn-ghost btn-sm" onclick="plConfirmarExcluirContainer()">🗑 Excluir Contêiner</button>
         ${container.chegou_em
-          ? `<button class="btn btn-ghost btn-sm" onclick="plDesfazerChegada('${fonte}','${containerId}')">↩ Desfazer chegada (chegou em ${new Date(container.chegou_em).toLocaleDateString("pt-BR")})</button>`
+          ? `<button class="btn btn-ghost btn-sm" onclick="plDesfazerChegada('${fonte}','${containerId}')">↩ Desfazer chegada (chegou em ${fmtDate(String(container.chegou_em).slice(0,10))})</button>`
           : `<button class="btn btn-ghost btn-sm" onclick="abrirDocumentosPopup('${fonte}','${containerId}', true)">✅ Marcar como chegou</button>`}
         ${(fonte !== "mti" && container.cambio_fechado) ? `<button class="btn btn-ghost btn-sm" onclick="detalheDesmarcarCambio('${fonte}','${containerId}')">↩ Desmarcar câmbio fechado</button>` : ""}
       </div>
@@ -6081,8 +6236,8 @@ function renderContainerDetalhe(){
     <div class="pl-item-row">
       <div>${escapeHtml((it.sku && prodNomePorSku[it.sku]) || String(it.modelo_original || "").split("\n")[0])}</div>
       <div>${it.sku
-        ? `<div class="pir-sku-pend"><span class="pir-sku-ok">${escapeHtml(it.sku)}</span><button class="btn-icon" style="width:24px; height:24px;" title="Trocar SKU vinculado" onclick="plAbrirResolverSku('${fonte}','${it.id}','${escapeHtml(String(it.modelo_original || "").split("\n")[0]).replace(/'/g, "&apos;")}')">🔗</button></div>`
-        : `<div class="pir-sku-pend"><span style="color:#d97706; font-weight:700;">⚠ sem SKU</span><button class="btn-icon" style="width:24px; height:24px;" title="Vincular SKU" onclick="plAbrirResolverSku('${fonte}','${it.id}','${escapeHtml(String(it.modelo_original || "").split("\n")[0]).replace(/'/g, "&apos;")}')">🔗</button></div>`}
+        ? `<div class="pir-sku-pend"><span class="pir-sku-ok">${escapeHtml(it.sku)}</span><button class="btn-icon" style="width:24px; height:24px;" title="Trocar SKU vinculado" onclick="plAbrirResolverSku('${fonte}','${it.id}','${escJsStr(escapeHtml(String(it.modelo_original || "").split("\n")[0]))}')">🔗</button></div>`
+        : `<div class="pir-sku-pend"><span style="color:#d97706; font-weight:700;">⚠ sem SKU</span><button class="btn-icon" style="width:24px; height:24px;" title="Vincular SKU" onclick="plAbrirResolverSku('${fonte}','${it.id}','${escJsStr(escapeHtml(String(it.modelo_original || "").split("\n")[0]))}')">🔗</button></div>`}
       </div>
       <div class="mono">${fmtN(it.qty_ctn, 0)}</div>
       <div class="mono">${fmtN(it.ctns, 0)}</div>
@@ -6198,7 +6353,7 @@ function renderDocumentosPopupBody(fonte, containerId){
     return `<div class="field" style="margin-bottom:14px;">
       <label>${label}</label>
       <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-        ${url ? `<a href="${url}" target="_blank" class="btn btn-ghost btn-sm">📄 Ver PDF</a><button class="btn-icon" title="Remover" onclick="docsRemoverArquivo('${fonte}','${containerId}','${campo}')">🗑</button>` : `<span style="color:var(--text-faint); font-size:12px;">Nenhum enviado</span>`}
+        ${url ? `<button class="btn btn-ghost btn-sm" onclick="abrirDocumentoPrivado('${escJsStr(url)}')">📄 Ver PDF</button><button class="btn-icon" title="Remover" onclick="docsRemoverArquivo('${fonte}','${containerId}','${campo}')">🗑</button>` : `<span style="color:var(--text-faint); font-size:12px;">Nenhum enviado</span>`}
         <label class="btn btn-ghost btn-sm" style="cursor:pointer; margin:0;">📎 ${url ? "Substituir" : "Enviar"} PDF<input type="file" accept="application/pdf" style="display:none;" onchange="docsUploadArquivo(event,'${fonte}','${containerId}','${campo}')"></label>
       </div>
     </div>`;
@@ -6219,7 +6374,7 @@ function renderDocumentosPopupBody(fonte, containerId){
           <input type="checkbox" ${p.paga ? "checked" : ""} onchange="docsTogglePagaParcela(event,'${fonte}','${containerId}',${i})"> Paga
         </label>
         ${p.url
-          ? `<a href="${p.url}" target="_blank" class="btn btn-ghost btn-sm">📄 ${escapeHtml(p.nome || ("Comprovante " + (i+1)))}</a><button class="btn-icon" title="Remover comprovante" onclick="docsRemoverComprovanteParcela('${fonte}','${containerId}',${i})">🗑</button>`
+          ? `<button class="btn btn-ghost btn-sm" onclick="abrirDocumentoPrivado('${escJsStr(p.url)}')">📄 ${escapeHtml(p.nome || ("Comprovante " + (i+1)))}</button><button class="btn-icon" title="Remover comprovante" onclick="docsRemoverComprovanteParcela('${fonte}','${containerId}',${i})">🗑</button>`
           : `<label class="btn btn-ghost btn-sm" style="cursor:pointer; margin:0;">📎 Comprovante (opcional)<input type="file" accept="application/pdf" style="display:none;" onchange="docsUploadComprovanteParcela(event,'${fonte}','${containerId}',${i})"></label>`}
         <button class="btn-icon" title="Remover parcela" style="margin-left:auto;" onclick="docsRemoverParcela('${fonte}','${containerId}',${i})">🗑</button>
       </div>`).join("") || `<span style="color:var(--text-faint); font-size:12px;">Nenhuma parcela cadastrada ainda.</span>`;
@@ -6237,7 +6392,7 @@ function renderDocumentosPopupBody(fonte, containerId){
       <label>B/L</label>
       <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
         ${container.doc_bl_url
-          ? `<a href="${container.doc_bl_url}" target="_blank" class="btn btn-ghost btn-sm">📄 Ver PDF</a><button class="btn btn-ghost btn-sm" onclick="blAbrirVisualizacao('${fonte}','${containerId}')">📋 Ver dados do B/L</button><button class="btn-icon" title="Remover" onclick="docsRemoverArquivoBl('${fonte}','${containerId}')">🗑</button>`
+          ? `<button class="btn btn-ghost btn-sm" onclick="abrirDocumentoPrivado('${escJsStr(container.doc_bl_url)}')">📄 Ver PDF</button><button class="btn btn-ghost btn-sm" onclick="blAbrirVisualizacao('${fonte}','${containerId}')">📋 Ver dados do B/L</button><button class="btn-icon" title="Remover" onclick="docsRemoverArquivoBl('${fonte}','${containerId}')">🗑</button>`
           : `<span style="color:var(--text-faint); font-size:12px;">Nenhum enviado</span>`}
         <label class="btn btn-ghost btn-sm" style="cursor:pointer; margin:0;">📎 ${container.doc_bl_url ? "Substituir" : "Enviar"} PDF<input type="file" accept="application/pdf" style="display:none;" onchange="blUploadIniciar(event,'${fonte}','${containerId}')"></label>
       </div>
@@ -6247,7 +6402,7 @@ function renderDocumentosPopupBody(fonte, containerId){
   }
   const falt = docsFaltando(container);
   const msgTudoOk = fonte === "mti" ? "✅ Pagamento concluído" : "✅ Todos os documentos enviados";
-  const hojeStr = new Date().toISOString().slice(0, 10);
+  const hojeStr = hojeLocalStr();
   abrirOverlayDinamico("docsPopupOverlay", `
     <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
       <h2 class="modal-title" style="margin:0;">📄 Documentos — ${escapeHtml(container.nome)}</h2>
@@ -6271,11 +6426,10 @@ window.docsUploadArquivo = async function(evt, fonte, containerId, campo){
   const path = `${fonte}/${containerId}/${campo}-${Date.now()}-${sanitizeFileName(file.name)}`;
   const { error: upErr } = await db.storage.from("container-docs").upload(path, file, { upsert: true, contentType: "application/pdf" });
   if (upErr){ toast("Erro ao enviar arquivo: " + upErr.message, "error"); return; }
-  const { data: pub } = db.storage.from("container-docs").getPublicUrl(path);
-  const { error } = await db.from("imp_containers").update({ [campo]: pub.publicUrl }).eq("id", containerId);
+  const { error } = await db.from("imp_containers").update({ [campo]: path }).eq("id", containerId);
   if (error){ toast("Erro ao salvar documento.", "error"); return; }
   const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
-  if (container) container[campo] = pub.publicUrl;
+  if (container) container[campo] = path;
   toast("Documento enviado.");
   renderDocumentosPopupBody(fonte, containerId);
   await refrescarTelasContainer(fonte);
@@ -6350,11 +6504,10 @@ window.docsUploadComprovanteParcela = async function(evt, fonte, containerId, id
   const path = `${fonte}/${containerId}/parcela${idx}-${Date.now()}-${sanitizeFileName(file.name)}`;
   const { error: upErr } = await db.storage.from("container-docs").upload(path, file, { upsert: true, contentType: "application/pdf" });
   if (upErr){ toast("Erro ao enviar comprovante: " + upErr.message, "error"); return; }
-  const { data: pub } = db.storage.from("container-docs").getPublicUrl(path);
   const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
   const parcelas = (container?.doc_boletos || []).slice();
   if (!parcelas[idx]) return;
-  parcelas[idx] = { ...parcelas[idx], nome: file.name, url: pub.publicUrl };
+  parcelas[idx] = { ...parcelas[idx], nome: file.name, url: path };
   const ok = await docsSalvarParcelas(fonte, containerId, parcelas);
   if (ok) toast("Comprovante anexado.");
 };
@@ -6366,7 +6519,7 @@ window.docsRemoverComprovanteParcela = async function(fonte, containerId, idx){
   await docsSalvarParcelas(fonte, containerId, parcelas);
 };
 window.docsFinalizarChegada = async function(fonte, containerId){
-  const dataRecebimento = document.getElementById("docs_data_recebimento")?.value || new Date().toISOString().slice(0, 10);
+  const dataRecebimento = document.getElementById("docs_data_recebimento")?.value || hojeLocalStr();
   const { error } = await db.from("imp_containers").update({ chegou_em: dataRecebimento }).eq("id", containerId);
   if (error){ toast("Erro ao marcar chegada.", "error"); return; }
   toast("Contêiner marcado como chegado — foi pro Arquivo dos Contêineres.");
@@ -6414,7 +6567,17 @@ window.plConfirmarExcluirContainer = function(){
   const { fonte, containerId } = state;
   const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
   pedirConfirmacao("Excluir contêiner", `Excluir "${container?.nome || ""}" e todos os seus itens?`, "Essa ação não pode ser desfeita.", async () => {
-    await db.from("imp_container_itens").delete().eq("container_id", containerId);
+    // o banco já apaga em cascata (FK ON DELETE CASCADE) os itens, o Apoio NF-e e o Fechamento
+    // Container ao excluir o contêiner — só os PDFs no Storage não somem sozinhos, então limpamos a
+    // pasta do contêiner antes de excluir o registro. Se a limpeza do Storage falhar por algum
+    // motivo, segue excluindo o contêiner mesmo assim (não vale travar por causa de um PDF órfão)
+    // (correção, Fase 2 #5)
+    try {
+      const prefixo = `${fonte}/${containerId}`;
+      const { data: arquivos } = await db.storage.from("container-docs").list(prefixo, { limit: 1000 });
+      const caminhos = (arquivos || []).filter(a => a.name).map(a => `${prefixo}/${a.name}`);
+      if (caminhos.length) await db.storage.from("container-docs").remove(caminhos);
+    } catch (e){ /* best-effort — não bloqueia a exclusão do contêiner */ }
     const { error } = await db.from("imp_containers").delete().eq("id", containerId);
     if (error){ toast("Erro ao excluir.", "error"); return; }
     toast("Contêiner excluído.");
@@ -6490,7 +6653,7 @@ window.plAbrirPendencias = function(fonte){
         <div style="font-weight:600; font-size:13.5px;">${escapeHtml(String(item.modelo_original || "").split("\n")[0])}</div>
         <div style="font-size:11.5px; color:var(--text-faint);">Contêiner: ${escapeHtml(containerNome)}</div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('plPendenciasOverlay').remove(); plAbrirResolverSku('${fonte}','${item.id}','${escapeHtml(String(item.modelo_original || "").split("\n")[0]).replace(/'/g, "&apos;")}')">🔗 Vincular</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('plPendenciasOverlay').remove(); plAbrirResolverSku('${fonte}','${item.id}','${escJsStr(escapeHtml(String(item.modelo_original || "").split("\n")[0]))}')">🔗 Vincular</button>
     </div>`).join("") || `<div class="empty-state">Nenhuma pendência 🎉</div>`;
   abrirOverlayDinamico("plPendenciasOverlay", `
     <div style="padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
@@ -6523,7 +6686,7 @@ window.plResolverSkuBuscar = function(fonte, itemId){
   const matches = PL_PRODUTOS[fonte].filter(p => (p.sku || "").toLowerCase().includes(q) || (p.nome_produto || "").toLowerCase().includes(q)).slice(0, 25);
   if (!matches.length){ lista.innerHTML = `<div class="empty-state">Nenhum produto encontrado.</div>`; return; }
   lista.innerHTML = matches.map(p => `
-    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 4px; border-bottom:1px solid var(--border); cursor:pointer;" onclick="plVincularSku('${fonte}','${itemId}','${escapeHtml(p.sku).replace(/'/g, "&apos;")}')">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 4px; border-bottom:1px solid var(--border); cursor:pointer;" onclick="plVincularSku('${fonte}','${itemId}','${escJsStr(escapeHtml(p.sku))}')">
       <span><span class="mono" style="font-weight:700;">${escapeHtml(p.sku)}</span> — ${escapeHtml(p.nome_produto || "")}</span>
       <span style="color:var(--accent); font-size:12px; font-weight:700;">vincular →</span>
     </div>`).join("");
@@ -6701,7 +6864,7 @@ function renderDashboard(d){
         const moeda = c.fonte === "mti" ? "R$" : "US$";
         const valorTxt = (c.valor_container !== null && c.valor_container !== undefined) ? `${moeda} ${fmtN(c.valor_container, 2)}` : `<span style="color:#d97706;">valor pendente</span>`;
         return `<div class="dash-chegado-row" onclick="abrirContainerDetalhe('${c.fonte}','${c.id}')">
-          <div><b>${escapeHtml(c.nome)}</b> <span class="tag-emp ${c.fonte === "mti" ? "mti" : "logbox"}" style="margin-left:6px;">${c.fonte.toUpperCase()}</span><div class="dash-status-proximo">Chegou em ${new Date(c.chegou_em).toLocaleDateString("pt-BR")}</div></div>
+          <div><b>${escapeHtml(c.nome)}</b> <span class="tag-emp ${c.fonte === "mti" ? "mti" : "logbox"}" style="margin-left:6px;">${c.fonte.toUpperCase()}</span><div class="dash-status-proximo">Chegou em ${fmtDate(String(c.chegou_em).slice(0,10))}</div></div>
           <span class="mono">${valorTxt}</span>
         </div>`;
       }).join("") : `<div class="empty-state">Nenhum contêiner chegou ainda.</div>`}
@@ -7269,6 +7432,7 @@ let NFE_SKU_OVERRIDES_ROW = {}; // vínculo manual de UMA linha crua específica
 let NFE_LINHAS_DESVINCULADAS = new Set(); // índices crus (NFE_RAW) que o usuário desfez a mesclagem automática manualmente — ficam pendentes até escolha manual, mesmo que nfeMatchContainerItem ache um SKU
 let NFE_ESPELHO_NOTA = null;   // totais lidos direto da aba "ESPELHO DA NOTA" do despachante (fac-símile da DANFE)
 let NFE_FRETE_CAPATAZIA_REAIS = null; // {frete, capatazia} em R$, lidos 2 linhas acima do cabeçalho da aba rateio (a coluna do item é em US$)
+let NFE_FRETE_CAPATAZIA_PENDENTE = false; // true quando a planilha não trouxe o total em Reais — aí não dá pra usar o rateio em dólar (correção, item 1 da revisão)
 let NFE_EXPANDIDOS = new Set(); // índices dos cards de SKU abertos (Apoio NF-e)
 let NFE_TROCANDO_SKU = new Set(); // índices (NFE_MERGED) com o campo SKU aberto pra trocar um vínculo já feito
 
@@ -7307,6 +7471,7 @@ window.nfeSelecionarContainer = async function(containerId){
 
   const { data: apoioData, error } = await db.from("imp_nfe_apoio").select("*, imp_nfe_apoio_itens(*)").eq("container_id", containerId).maybeSingle();
   if (error){ toast("Erro ao carregar Apoio NF-e.", "error"); }
+  NFE_FRETE_CAPATAZIA_PENDENTE = false; // contêiner carregado do banco não está "pendente de leitura" — só uma planilha recém-lida pode ficar pendente
 
   if (apoioData){
     NFE_APOIO = apoioData;
@@ -7555,6 +7720,7 @@ window.nfeArquivoSelecionado = async function(evt){
     nfeRecalcular();
     const pendentes = NFE_MERGED.filter(i => i._pendente).length;
     toast(pendentes ? `Planilha lida! ${pendentes} SKU(s) pendente(s) de vínculo.` : "Planilha lida e todos os SKUs foram reconhecidos!", pendentes ? "error" : "success");
+    if (NFE_FRETE_CAPATAZIA_PENDENTE) nfeAbrirAvisoFreteCapatazia();
   } catch(e){
     toast("Erro ao ler a planilha: " + e.message, "error");
   }
@@ -7573,11 +7739,15 @@ function nfeRecalcular(){
     // NFE_LINHAS_DESVINCULADAS: linha que o usuário desfez uma mesclagem automática errada — força
     // pendente (não usa alias nem match automático) até ele escolher de novo manualmente.
     r.sku = NFE_SKU_OVERRIDES_ROW[idx] || (NFE_LINHAS_DESVINCULADAS.has(idx) ? null : (NFE_ALIASES[chave] || nfeMatchContainerItem(chave))) || null;
-    // split do COFINS: o despachante manda o valor real (podendo ser 9,65% ou 10,25%); aqui separamos
-    // sempre o "padrão" (9,65% da base) do excedente ("Cofins (+)"), pra bater com a planilha do Wissam.
+    // split do COFINS: o despachante manda o valor real (podendo ser 9,65% ou 10,25%). "Valor Cofins"
+    // (r.valor_cofins) é esse valor real, igual sai da planilha — sem split nenhum. A parte "padrão"
+    // (9,65% da base) e o excedente ("Cofins (+)") continuam calculados aqui, mas só pra uso nos
+    // lugares que já mostram a divisão (Fechamento Container, Previsão de Custos) — correção pedida
+    // pelo Wissam depois de ver o "Valor Cofins" do Apoio NFe mostrando só a parte padrão.
     const base = r.aliq_cofins > 0 ? r.valor_cofins_desp / r.aliq_cofins : 0;
-    r.valor_cofins = base * 0.0965;
-    r.valor_cofins_mais = Math.max(0, r.valor_cofins_desp - r.valor_cofins);
+    r.valor_cofins_padrao = base * 0.0965;
+    r.valor_cofins_mais = Math.max(0, r.valor_cofins_desp - r.valor_cofins_padrao);
+    r.valor_cofins = r.valor_cofins_desp;
   });
 
   const grupos = new Map();
@@ -7609,7 +7779,7 @@ function nfeRecalcular(){
       marinha_mercante: round2(soma("marinha_mercante")),
       aliq_ipi: first.aliq_ipi, valor_ipi: round2(soma("valor_ipi")),
       aliq_pis: first.aliq_pis, valor_pis: round2(soma("valor_pis")),
-      aliq_cofins: first.aliq_cofins, valor_cofins: round2(soma("valor_cofins")), valor_cofins_mais: round2(soma("valor_cofins_mais")),
+      aliq_cofins: first.aliq_cofins, valor_cofins: round2(soma("valor_cofins")), valor_cofins_padrao: round2(soma("valor_cofins_padrao")), valor_cofins_mais: round2(soma("valor_cofins_mais")),
       base_icms: round2(soma("base_icms")), aliq_icms: first.aliq_icms, valor_icms: round2(soma("valor_icms")),
       _frete: round2(soma("frete")), _capatazia: round2(soma("capatazia")),
       _rawCount: rows.length, _pendente: !first.sku,
@@ -7627,11 +7797,17 @@ function nfeRecalcular(){
   // (nfeEditarHeaderCampo) sem serem sobrescritos por edições em outros campos.
   // As colunas FRETE/102 por item vêm em DÓLAR (rateado por item); o total certo em REAIS foi lido
   // à parte em NFE_FRETE_CAPATAZIA_REAIS (nfeParsear, 2 linhas acima do cabeçalho da aba rateio,
-  // confirmado por Wissam) — usamos esse valor quando existir; senão caímos pro somatório em dólar.
+  // confirmado por Wissam). Correção (revisão, item 1): NUNCA usar o somatório em dólar como total
+  // em Reais (moedas diferentes!) — se a planilha não trouxer a linha em Reais, mantém o valor que
+  // já estava (ou 0, se nunca foi preenchido) e sinaliza NFE_FRETE_CAPATAZIA_PENDENTE pra avisar o
+  // usuário e pedir preenchimento manual (nfeEditarHeaderCampo já cobre a edição livre depois).
   const freteReais = NFE_FRETE_CAPATAZIA_REAIS && NFE_FRETE_CAPATAZIA_REAIS.frete;
   const capataziaReais = NFE_FRETE_CAPATAZIA_REAIS && NFE_FRETE_CAPATAZIA_REAIS.capatazia;
-  NFE_APOIO.frete_total = round2((freteReais !== null && freteReais !== undefined) ? freteReais : merged.reduce((s,it) => s + (it._frete || 0), 0));
-  NFE_APOIO.capatazia_total = round2((capataziaReais !== null && capataziaReais !== undefined) ? capataziaReais : merged.reduce((s,it) => s + (it._capatazia || 0), 0));
+  const freteAchado = freteReais !== null && freteReais !== undefined;
+  const capataziaAchado = capataziaReais !== null && capataziaReais !== undefined;
+  NFE_APOIO.frete_total = round2(freteAchado ? freteReais : (Number(NFE_APOIO.frete_total) || 0));
+  NFE_APOIO.capatazia_total = round2(capataziaAchado ? capataziaReais : (Number(NFE_APOIO.capatazia_total) || 0));
+  NFE_FRETE_CAPATAZIA_PENDENTE = !freteAchado || !capataziaAchado;
 
   // Totais "do cabeçalho da nota" — vêm direto da aba ESPELHO DA NOTA do despachante (fac-símile
   // da DANFE) quando encontrados lá; senão caem pro somatório das linhas do rateio, como reserva.
@@ -7650,7 +7826,9 @@ function nfeRecalcular(){
   NFE_APOIO.valor_ii = round2(somaMerged("valor_ii"));
   NFE_APOIO.marinha_mercante = round2(pegar("marinha_mercante", "marinha_mercante"));
   NFE_APOIO.despesas_acessorias = round2((E.despesas_acessorias !== null && E.despesas_acessorias !== undefined) ? E.despesas_acessorias : 0);
-  const totalNotaFallback = NFE_APOIO.total_produtos + NFE_APOIO.valor_ipi + somaMerged("valor_pis") + somaMerged("valor_cofins") + somaMerged("valor_cofins_mais");
+  // valor_cofins agora já é o valor real/total (sem split) — não soma mais valor_cofins_mais aqui,
+  // senão contava o excedente em dobro
+  const totalNotaFallback = NFE_APOIO.total_produtos + NFE_APOIO.valor_ipi + somaMerged("valor_pis") + somaMerged("valor_cofins");
   NFE_APOIO.total_nota = round2((E.total_nota !== null && E.total_nota !== undefined) ? E.total_nota : totalNotaFallback);
 
   nfeRecalcularTotais();
@@ -7664,6 +7842,7 @@ function nfeRecalcularTotais(){
   A.tx_siscomex = round2(soma("tx_siscomex"));
   A.valor_pis = round2(soma("valor_pis"));
   A.valor_cofins = round2(soma("valor_cofins"));
+  A.valor_cofins_padrao = round2(soma("valor_cofins_padrao"));
   A.valor_cofins_mais = round2(soma("valor_cofins_mais"));
   A.bc_ibscbs = round2(soma("bc_ibscbs"));
   A.valor_cbs = round2(soma("valor_cbs"));
@@ -7727,7 +7906,7 @@ window.nfeEscolherSku = async function(idx, sku){
         vmld: round2(somaCampo("vmld")), valor_ii: round2(somaCampo("valor_ii")),
         tx_siscomex: round2(somaCampo("tx_siscomex")), marinha_mercante: round2(somaCampo("marinha_mercante")),
         valor_ipi: round2(somaCampo("valor_ipi")), valor_pis: round2(somaCampo("valor_pis")),
-        valor_cofins: round2(somaCampo("valor_cofins")), valor_cofins_mais: round2(somaCampo("valor_cofins_mais")),
+        valor_cofins: round2(somaCampo("valor_cofins")), valor_cofins_padrao: round2(somaCampo("valor_cofins_padrao")), valor_cofins_mais: round2(somaCampo("valor_cofins_mais")),
         base_icms: round2(somaCampo("base_icms")), valor_icms: round2(somaCampo("valor_icms")),
         bc_ibscbs: round2(somaCampo("bc_ibscbs")), valor_cbs: round2(somaCampo("valor_cbs")), valor_ibs_uf: round2(somaCampo("valor_ibs_uf")),
         _rawCount: (alvo._rawCount||1) + (item._rawCount||1), _pendente: false
@@ -7782,9 +7961,39 @@ window.nfeEditarItemTexto = function(idx, campo, valor){
 window.nfeEditarHeaderCampo = function(campo, valorStr){
   // todos os campos editáveis do painel de totais são valores em dinheiro — arredonda de verdade
   NFE_APOIO[campo] = round2(parseNum(valorStr) || 0);
+  if (campo === "frete_total" || campo === "capatazia_total") nfeAtualizarAvisoFreteCapatazia();
   nfeRecalcularTotais();
   nfeRenderTabela();
   nfeSalvarDebounced();
+};
+// Some o aviso de "Frete/Capatazia não encontrados" assim que os dois campos tiverem algum valor
+// preenchido manualmente (não precisa ser diferente de zero — só não ficar intocado).
+function nfeAtualizarAvisoFreteCapatazia(){
+  if (NFE_APOIO.frete_total || NFE_APOIO.capatazia_total) NFE_FRETE_CAPATAZIA_PENDENTE = false;
+  document.getElementById("nfeAvisoFreteCapatazia")?.remove();
+}
+window.nfeAbrirAvisoFreteCapatazia = function(){
+  const fmtEdit = v => (v === null || v === undefined || v === "" || Number(v) === 0) ? "" : fmtN(v, 2);
+  abrirOverlayDinamico("nfeAvisoFreteCapatazeOverlay", `
+    <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <h2 class="modal-title" style="margin:0;">⚠ Frete/Capatazia não encontrados na planilha</h2>
+      <button onclick="document.getElementById('nfeAvisoFreteCapatazeOverlay').remove()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
+    </div>
+    <div style="padding:20px 24px;">
+      <div style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Não encontrei o total de Frete e/ou Capatazia em Reais nessa planilha (a coluna por item vem em dólar, que não serve como total em Reais). Preencha manualmente abaixo — o Hub recalcula tudo a partir daí, e dá pra editar de novo quando quiser, no painel de totais.</div>
+      <div class="field">
+        <label>Frete total (R$)</label>
+        <input type="text" inputmode="decimal" class="mono-field" style="max-width:200px;" placeholder="Obrigatório" value="${fmtEdit(NFE_APOIO.frete_total)}" onchange="nfeEditarHeaderCampo('frete_total', this.value)">
+      </div>
+      <div class="field" style="margin-top:14px;">
+        <label>Capatazia total (R$)</label>
+        <input type="text" inputmode="decimal" class="mono-field" style="max-width:200px;" placeholder="Obrigatório" value="${fmtEdit(NFE_APOIO.capatazia_total)}" onchange="nfeEditarHeaderCampo('capatazia_total', this.value)">
+      </div>
+    </div>
+    <div style="padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end;">
+      <button class="btn btn-primary" onclick="document.getElementById('nfeAvisoFreteCapatazeOverlay').remove()">OK, entendi</button>
+    </div>
+  `, 480);
 };
 window.nfeToggleCard = function(idx){
   if (NFE_EXPANDIDOS.has(idx)) NFE_EXPANDIDOS.delete(idx); else NFE_EXPANDIDOS.add(idx);
@@ -7837,7 +8046,7 @@ window.nfeFiltrarSku = function(idx, q){
   const el = document.getElementById(`finSkuAcLista_${idx}`);
   if (!el) return;
   el.innerHTML = filtrados.length
-    ? filtrados.slice(0, 50).map(o => `<div class="item" onmousedown="nfeEscolherSku(${idx}, '${escapeHtml(o.sku).replace(/'/g, "&apos;")}')"><b>${escapeHtml(o.sku)}</b> — ${escapeHtml(o.nome)}</div>`).join("")
+    ? filtrados.slice(0, 50).map(o => `<div class="item" onmousedown="nfeEscolherSku(${idx}, '${escJsStr(escapeHtml(o.sku))}')"><b>${escapeHtml(o.sku)}</b> — ${escapeHtml(o.nome)}</div>`).join("")
     : `<div class="item vazio">Nenhum SKU encontrado</div>`;
   el.classList.add("open");
 };
@@ -7917,8 +8126,8 @@ function nfeCardCampoTxt(idx, label, campo, valor, wide){
 function nfeCardCampoRO(label, innerHtml){
   return `<div class="fin-card-field"><label>${label}</label><div class="chip-ro">${innerHtml}</div></div>`;
 }
-function nfeCardSecao(titulo, camposHtml){
-  return `<div class="fin-card-section"><div class="fin-card-section-title">${titulo}</div><div class="fin-card-section-grid">${camposHtml}</div></div>`;
+function nfeCardSecao(titulo, camposHtml, cor){
+  return `<div class="fin-card-section" style="${cor ? `--cor-secao:${cor};` : ""}"><div class="fin-card-section-title">${titulo}</div><div class="fin-card-section-grid">${camposHtml}</div></div>`;
 }
 function nfeSkuCardHtml(it, idx){
   const aberto = NFE_EXPANDIDOS.has(idx);
@@ -7952,39 +8161,39 @@ function nfeSkuCardHtml(it, idx){
         nfeCardCampoNum(idx, "Quantidade", "qtde", 0),
         nfeCardCampoNum(idx, "Preço Unit.", "preco_unit", 8),
         nfeCardCampoNum(idx, "Valor Total" + (nfeValorTotalDivergente(it) ? nfeAvisoBadge("Preço Unit. × Quantidade não bate exatamente com o Valor Total (diferença > R$ 0,01). O Valor Total continua sendo o valor de origem — isso é só um aviso pra conferência.") : ""), "valor_total", 2)
-      ].join(""))}
+      ].join(""), "#64748b")}
       ${nfeCardSecao("2 · Imposto de Importação", [
         nfeCardCampoNum(idx, "VMLD", "vmld", 2),
         nfeCardCampoNumAliq(idx, "Alíquota II", "aliq_ii", 2),
         nfeCardCampoNum(idx, "Valor II", "valor_ii", 2)
-      ].join(""))}
+      ].join(""), "#2563eb")}
       ${nfeCardSecao("3 · IBS e CBS", [
         nfeCardCampoRO("BC IBS/CBS", `<span class="ref-ro">R$ ${fmtN(it.bc_ibscbs,2)}</span>`),
         nfeCardCampoRO("Alíq. CBS", `<span class="ref-ro">0,9%</span>`),
         nfeCardCampoRO("Valor CBS", `<span class="ref-ro">R$ ${fmtN(it.valor_cbs,2)}</span>`),
         nfeCardCampoRO("Alíq. IBS UF", `<span class="ref-ro">0,1%</span>`),
         nfeCardCampoRO("Valor IBS UF", `<span class="ref-ro">R$ ${fmtN(it.valor_ibs_uf,2)}</span>`)
-      ].join(""))}
+      ].join(""), "#7c3aed")}
       ${nfeCardSecao("4 · Cofins", [
         nfeCardCampoRO("VMLD", `<span class="ref-ro">R$ ${fmtN(it.vmld,2)}</span>`),
         nfeCardCampoNumAliq(idx, "Alíquota Cofins", "aliq_cofins", 2),
         nfeCardCampoNum(idx, "Valor Cofins", "valor_cofins", 2)
-      ].join(""))}
+      ].join(""), "#ea580c")}
       ${nfeCardSecao("5 · PIS", [
         nfeCardCampoRO("VMLD", `<span class="ref-ro">R$ ${fmtN(it.vmld,2)}</span>`),
         nfeCardCampoNumAliq(idx, "Alíquota PIS", "aliq_pis", 2),
         nfeCardCampoNum(idx, "Valor PIS", "valor_pis", 2)
-      ].join(""))}
+      ].join(""), "#0d9488")}
       ${nfeCardSecao("6 · IPI", [
         nfeCardCampoRO("VMLD", `<span class="ref-ro">R$ ${fmtN(it.vmld,2)}</span>`),
-        nfeCardCampoNumAliq(idx, "Alíquota IPI", "aliq_ipi", 1),
+        nfeCardCampoNumAliq(idx, "Alíquota IPI", "aliq_ipi", 2),
         nfeCardCampoNum(idx, "Valor IPI", "valor_ipi", 2)
-      ].join(""))}
+      ].join(""), "#db2777")}
       ${nfeCardSecao("7 · ICMS", [
-        nfeCardCampoNumAliq(idx, "Alíq. ICMS", "aliq_icms", 1),
+        nfeCardCampoNumAliq(idx, "Alíq. ICMS", "aliq_icms", 2),
         nfeCardCampoNum(idx, "Valor ICMS", "valor_icms", 2),
         nfeCardCampoNum(idx, "Base ICMS", "base_icms", 2)
-      ].join(""))}
+      ].join(""), "#16a34a")}
     </div>`;
 
   return `
@@ -8020,7 +8229,9 @@ function nfeEspelhoPanelHtml(A){
       <div class="fin-section-head"><div class="fin-section-title">🧾 ESPELHO — Totais do Container</div></div>
       <div class="fin-section-body">
         <div class="fin-field-block">
-          <div class="fin-field-block-title">Frete & Capatazia <span class="fin-tag manual">ajustável — vem somado da planilha do despachante</span></div>
+          <div class="fin-field-block-title">Frete & Capatazia ${NFE_FRETE_CAPATAZIA_PENDENTE
+            ? `<span class="fin-tag" style="background:#fee2e2; color:#b91c1c;" title="Não encontrado na planilha — confirme os valores abaixo">⚠ confirme os valores</span>`
+            : `<span class="fin-tag manual">ajustável — vem somado da planilha do despachante</span>`}</div>
           <div class="fin-grid-fields">
             <div class="fin-mini-field"><label>Frete Total</label><input type="text" inputmode="decimal" value="${fmtN(A.frete_total||0,2)}" onchange="nfeEditarHeaderCampo('frete_total', this.value)"></div>
             <div class="fin-mini-field"><label>Capatazia Total</label><input type="text" inputmode="decimal" value="${fmtN(A.capatazia_total||0,2)}" onchange="nfeEditarHeaderCampo('capatazia_total', this.value)"></div>
@@ -8074,15 +8285,23 @@ function nfeRenderTabela(){
 }
 
 let _NFE_SALVAR_TIMER = null;
-function nfeSalvarDebounced(){ clearTimeout(_NFE_SALVAR_TIMER); _NFE_SALVAR_TIMER = setTimeout(nfeSalvarAgora, 600); }
-async function nfeSalvarAgora(){
+// Correção (item 4 da revisão): "tira uma foto" do contêiner + dados AGORA (no momento da edição), não
+// só quando o timer disparar — antes, se o usuário trocasse de contêiner em menos de 600ms, o salvamento
+// pendente ia usar NFE_CONTAINER_ID/NFE_APOIO/NFE_MERGED do contêiner NOVO (ou de nenhum, se tivesse
+// saído da tela), perdendo a edição do contêiner original sem avisar nada.
+function nfeSalvarDebounced(){
+  clearTimeout(_NFE_SALVAR_TIMER);
   if (!NFE_CONTAINER_ID || !NFE_MERGED.length) return;
-  const A = NFE_APOIO;
+  const snapshot = { containerId: NFE_CONTAINER_ID, apoio: { ...NFE_APOIO }, merged: NFE_MERGED.map(it => ({ ...it })) };
+  _NFE_SALVAR_TIMER = setTimeout(() => nfeSalvarComSnapshot(snapshot), 600);
+}
+async function nfeSalvarComSnapshot(snapshot){
+  const { containerId, apoio: A, merged } = snapshot;
   const payloadHeader = {
-    container_id: NFE_CONTAINER_ID, arquivo_nome: A.arquivo_nome || null,
+    container_id: containerId, arquivo_nome: A.arquivo_nome || null,
     vmld_total: A.vmld_total||0, frete_total: A.frete_total||0, capatazia_total: A.capatazia_total||0,
     valor_ii: A.valor_ii||0, tx_siscomex: A.tx_siscomex||0, valor_ipi: A.valor_ipi||0,
-    valor_pis: A.valor_pis||0, valor_cofins: A.valor_cofins||0, valor_cofins_mais: A.valor_cofins_mais||0,
+    valor_pis: A.valor_pis||0, valor_cofins: A.valor_cofins||0, valor_cofins_padrao: A.valor_cofins_padrao||0, valor_cofins_mais: A.valor_cofins_mais||0,
     base_icms: A.base_icms||0, valor_icms: A.valor_icms||0, marinha_mercante: A.marinha_mercante||0,
     despesas_acessorias: A.despesas_acessorias||0,
     n_itens: A.n_itens||0, total_produtos: A.total_produtos||0, total_nota: A.total_nota||0,
@@ -8091,26 +8310,35 @@ async function nfeSalvarAgora(){
   };
   const { data: apoioSalvo, error: e1 } = await db.from("imp_nfe_apoio").upsert(payloadHeader, { onConflict: "container_id" }).select().single();
   if (e1){ toast("Erro ao salvar Apoio NF-e: " + e1.message, "error"); return; }
-  NFE_APOIO.id = apoioSalvo.id;
-  // checa erro no delete ANTES de inserir por cima — se o delete falhar (rede caiu etc.), melhor parar
-  // e avisar do que tentar inserir em cima de um apagamento que pode não ter funcionado (correção 29/09,
-  // achado #11 da revisão: antes esse erro era ignorado silenciosamente)
-  const { error: eDel } = await db.from("imp_nfe_apoio_itens").delete().eq("apoio_id", NFE_APOIO.id);
-  if (eDel){ toast("Erro ao salvar itens do Apoio NF-e (não consegui limpar os itens antigos): " + eDel.message + " — tenta de novo.", "error"); return; }
-  const itensPayload = NFE_MERGED.map((it,i) => ({
-    apoio_id: NFE_APOIO.id, sku: it.sku, descricao_despachante: it.descricao_despachante, ncm: it.ncm,
+  const apoioId = apoioSalvo.id;
+  // só atualiza o estado em memória se o contêiner aberto agora ainda for o mesmo que estamos salvando
+  if (NFE_CONTAINER_ID === containerId) NFE_APOIO.id = apoioId;
+  // Correção (item 3 da revisão): insere os itens novos ANTES de apagar os antigos (em vez do contrário)
+  // — se o insert falhar no meio do caminho, a lista antiga continua intacta em vez de ficar zerada.
+  // Os IDs antigos são buscados direto do banco (não da NFE_MERGED em memória) pra sempre apagar o que
+  // realmente estava salvo antes desta chamada.
+  const { data: itensAntigos } = await db.from("imp_nfe_apoio_itens").select("id").eq("apoio_id", apoioId);
+  const idsAntigos = (itensAntigos || []).map(r => r.id);
+  const itensPayload = merged.map((it,i) => ({
+    apoio_id: apoioId, sku: it.sku, descricao_despachante: it.descricao_despachante, ncm: it.ncm,
     qtde: it.qtde||0, preco_unit: it.preco_unit||0, valor_total: it.valor_total||0, vmld: it.vmld||0,
     aliq_ii: it.aliq_ii||0, valor_ii: it.valor_ii||0, tx_siscomex: it.tx_siscomex||0, marinha_mercante: it.marinha_mercante||0,
     aliq_ipi: it.aliq_ipi||0, valor_ipi: it.valor_ipi||0, aliq_pis: it.aliq_pis||0, valor_pis: it.valor_pis||0,
-    aliq_cofins: it.aliq_cofins||0, valor_cofins: it.valor_cofins||0, valor_cofins_mais: it.valor_cofins_mais||0,
+    aliq_cofins: it.aliq_cofins||0, valor_cofins: it.valor_cofins||0, valor_cofins_padrao: it.valor_cofins_padrao||0, valor_cofins_mais: it.valor_cofins_mais||0,
     base_icms: it.base_icms||0, aliq_icms: it.aliq_icms||0, valor_icms: it.valor_icms||0,
     bc_ibscbs: it.bc_ibscbs||0, valor_cbs: it.valor_cbs||0, valor_ibs_uf: it.valor_ibs_uf||0, ordem: i,
     chave_sku: it._chave || null, aliq_confirmadas: it.aliq_confirmadas || {}
   }));
   const { error: e2 } = await db.from("imp_nfe_apoio_itens").insert(itensPayload);
-  if (e2){ toast("Erro ao salvar itens do Apoio NF-e: " + e2.message, "error"); return; }
-  const chip = document.getElementById("nfeStatusChip");
-  if (chip) chip.innerHTML = `<span class="fin-status-chip ok">✅ ${A.arquivo_nome ? escapeHtml(A.arquivo_nome) : "Salvo"}</span>`;
+  if (e2){ toast("Erro ao salvar itens do Apoio NF-e: " + e2.message + " — os itens anteriores não foram mexidos.", "error"); return; }
+  if (idsAntigos.length){
+    const { error: eDel } = await db.from("imp_nfe_apoio_itens").delete().in("id", idsAntigos);
+    if (eDel) toast("Itens novos salvos, mas sobraram itens antigos duplicados — recarregue a tela pra conferir.", "error");
+  }
+  if (NFE_CONTAINER_ID === containerId){
+    const chip = document.getElementById("nfeStatusChip");
+    if (chip) chip.innerHTML = `<span class="fin-status-chip ok">✅ ${A.arquivo_nome ? escapeHtml(A.arquivo_nome) : "Salvo"}</span>`;
+  }
 }
 
 /* ---------------------------------------------------------------- */
@@ -8132,7 +8360,9 @@ function fechDefaults(containerId, apoio){
     container_id: containerId,
     icms: (apoio && apoio.valor_icms) || 0, ii: (apoio && apoio.valor_ii) || 0, ipi: (apoio && apoio.valor_ipi) || 0,
     tx_siscomex: (apoio && apoio.tx_siscomex) || 0, pis: (apoio && apoio.valor_pis) || 0,
-    cofins: (apoio && apoio.valor_cofins) || 0, cofins_mais: (apoio && apoio.valor_cofins_mais) || 0,
+    // Fechamento Container soma "COFINS" + "COFINS (+)" como duas linhas separadas (ver fechComputar),
+    // então aqui precisa ser a parte PADRÃO (9,65%), não o valor real — senão o excedente conta em dobro
+    cofins: (apoio && apoio.valor_cofins_padrao) || 0, cofins_mais: (apoio && apoio.valor_cofins_mais) || 0,
     vmld: (apoio && apoio.vmld_total) || 0, frete: (apoio && apoio.frete_total) || 0, capatazia: (apoio && apoio.capatazia_total) || 0,
     afrmm: (apoio && apoio.marinha_mercante) || 0,
     despesas_embarque: 0, taxa_exportador: 1560, taxas_agente_carga: 0, taxas_nacionais: 0,
@@ -8175,7 +8405,7 @@ window.fechRepuxarApoio = function(){
   if (!FECH_APOIO){ toast("Esse contêiner ainda não tem Apoio NF-e preenchido.", "error"); return; }
   Object.assign(FECH_DATA, {
     icms: FECH_APOIO.valor_icms||0, ii: FECH_APOIO.valor_ii||0, ipi: FECH_APOIO.valor_ipi||0,
-    tx_siscomex: FECH_APOIO.tx_siscomex||0, pis: FECH_APOIO.valor_pis||0, cofins: FECH_APOIO.valor_cofins||0,
+    tx_siscomex: FECH_APOIO.tx_siscomex||0, pis: FECH_APOIO.valor_pis||0, cofins: FECH_APOIO.valor_cofins_padrao||0,
     cofins_mais: FECH_APOIO.valor_cofins_mais||0, vmld: FECH_APOIO.vmld_total||0, frete: FECH_APOIO.frete_total||0,
     capatazia: FECH_APOIO.capatazia_total||0, afrmm: FECH_APOIO.marinha_mercante||0
   });
@@ -8341,16 +8571,25 @@ window.fechEditarCampo = function(campo, valorStr){
   fechSalvarDebounced();
 };
 let _FECH_SALVAR_TIMER = null;
-function fechSalvarDebounced(){ clearTimeout(_FECH_SALVAR_TIMER); _FECH_SALVAR_TIMER = setTimeout(fechSalvarAgora, 600); }
-async function fechSalvarAgora(){
+// Correção (item 4 da revisão): tira a "foto" do contêiner + dados no momento da edição (não quando o
+// timer disparar) — evita perder a edição se o usuário trocar de contêiner rápido demais.
+function fechSalvarDebounced(){
+  clearTimeout(_FECH_SALVAR_TIMER);
   if (!FECH_CONTAINER_ID || !FECH_DATA) return;
-  const payload = { ...FECH_DATA, container_id: FECH_CONTAINER_ID, atualizado_em: new Date().toISOString() };
+  const snapshot = { containerId: FECH_CONTAINER_ID, dados: { ...FECH_DATA }, temApoio: !!FECH_APOIO };
+  _FECH_SALVAR_TIMER = setTimeout(() => fechSalvarComSnapshot(snapshot), 600);
+}
+async function fechSalvarComSnapshot(snapshot){
+  const { containerId, dados, temApoio } = snapshot;
+  const payload = { ...dados, container_id: containerId, atualizado_em: new Date().toISOString() };
   delete payload.id; delete payload.criado_em;
   const { data, error } = await db.from("imp_fechamento_container").upsert(payload, { onConflict: "container_id" }).select().single();
   if (error){ toast("Erro ao salvar Fechamento Container: " + error.message, "error"); return; }
-  FECH_DATA.id = data.id;
-  const chip = document.getElementById("fechStatusChip");
-  if (chip) chip.innerHTML = FECH_APOIO ? `<span class="fin-status-chip ok">✅ Salvo · Apoio NF-e vinculado</span>` : `<span class="fin-status-chip pend">✅ Salvo · Apoio NF-e pendente</span>`;
+  if (FECH_CONTAINER_ID === containerId){
+    FECH_DATA.id = data.id;
+    const chip = document.getElementById("fechStatusChip");
+    if (chip) chip.innerHTML = temApoio ? `<span class="fin-status-chip ok">✅ Salvo · Apoio NF-e vinculado</span>` : `<span class="fin-status-chip pend">✅ Salvo · Apoio NF-e pendente</span>`;
+  }
 }
 
 /* ---------------------------------------------------------------- */
@@ -8421,19 +8660,29 @@ function precComputar(){
   // Armazenagem — Armazenagem passou a ratear sozinha, pura (correção 29/09, planilha real do Wissam).
   const atualComexTotal = c.atualComex + (Number(PREC_FECH.despesa_extra)||0);
   const armazenagemTotal = Number(PREC_FECH.armazenagem)||0;
-  return itens.map(it => {
-    const share = vmldTotal ? (Number(it.vmld)||0) / vmldTotal : 0;
-    // rateio proporcional por VMLD — os valores em dinheiro arredondam de verdade (round2); Custo/Unid.
-    // (custoBase/custoContabil) ficam de fora de propósito, igual ao Preço Unit. do Apoio NF-e, pra não
-    // perder precisão no valor unitário.
-    const localCharge = round2(c.localCharge*share), agente = round2(c.agente*share), sda = round2(c.sda*share),
-          atualComex = round2(atualComexTotal*share), transporteBrasil = round2(transporteTotal*share), armazenagem = round2(armazenagemTotal*share);
+  const shares = itens.map(it => vmldTotal ? (Number(it.vmld)||0) / vmldTotal : 0);
+  // rateio proporcional por VMLD — cada categoria é dividida entre os itens e a diferença de
+  // arredondamento (alguns centavos) é ajustada pra soma bater EXATO com o total, não só "quase"
+  // (correção, Fase 3 #2). Custo/Unid. (custoBase/custoContabil) ficam de fora de propósito, igual ao
+  // Preço Unit. do Apoio NF-e, pra não perder precisão no valor unitário.
+  const localChargeArr = ratearComCentavoExato(shares.map(s => c.localCharge*s), c.localCharge);
+  const agenteArr = ratearComCentavoExato(shares.map(s => c.agente*s), c.agente);
+  const sdaArr = ratearComCentavoExato(shares.map(s => c.sda*s), c.sda);
+  const atualComexArr = ratearComCentavoExato(shares.map(s => atualComexTotal*s), atualComexTotal);
+  const transporteBrasilArr = ratearComCentavoExato(shares.map(s => transporteTotal*s), transporteTotal);
+  const armazenagemArr = ratearComCentavoExato(shares.map(s => armazenagemTotal*s), armazenagemTotal);
+  return itens.map((it, i) => {
+    const share = shares[i];
+    const localCharge = localChargeArr[i], agente = agenteArr[i], sda = sdaArr[i],
+          atualComex = atualComexArr[i], transporteBrasil = transporteBrasilArr[i], armazenagem = armazenagemArr[i];
     // "Composição de CMV" — só o que forma custo de verdade (I.I./Tx Siscomex/AFRMM/Cofins(+)), cada
     // um com coluna própria na tela. IPI/PIS/ICMS/Cofins-padrão viram bloco "Tributáveis", só
     // referência — NÃO entram no Valor Total (correção 29/09, planilha real do Wissam: o antigo
     // "Impostos Diretos" único inflava o custo somando os 4 tributáveis também)
     const diretos = round2((Number(it.valor_ii)||0)+(Number(it.tx_siscomex)||0)+(Number(it.marinha_mercante)||0)+(Number(it.valor_cofins_mais)||0));
-    const tributaveis = round2((Number(it.valor_ipi)||0)+(Number(it.valor_pis)||0)+(Number(it.valor_icms)||0)+(Number(it.valor_cofins)||0));
+    // usa valor_cofins_padrao (não o valor_cofins real) — aqui a Composição de CMV já mostra Cofins(+)
+    // como coluna própria, somar o valor_cofins real de novo contaria o excedente em dobro
+    const tributaveis = round2((Number(it.valor_ipi)||0)+(Number(it.valor_pis)||0)+(Number(it.valor_icms)||0)+(Number(it.valor_cofins_padrao)||0));
     const valorTotal = round2((Number(it.vmld)||0) + localCharge + agente + sda + atualComex + transporteBrasil + armazenagem + diretos);
     const custoBase = it.qtde ? valorTotal/it.qtde : 0;
     const valorTotalContabil = round2((Number(it.vmld)||0) + (Number(it.valor_ii)||0) + (Number(it.tx_siscomex)||0) + (Number(it.marinha_mercante)||0) + (Number(it.valor_cofins_mais)||0));
@@ -8454,7 +8703,9 @@ function precRender(){
   // "escondia" o antigo bug de AFRMM em dobro (dava ✅ mesmo estando errada).
   const totalRateadoItens = itens.reduce((s,it) => s + it.localCharge + it.agente + it.sda + it.atualComex + it.transporteBrasil + it.armazenagem, 0);
   const totalDespesasRateaveis = round2(c.totalDespesas - (Number(PREC_FECH.afrmm)||0));
-  const bateGeral = Math.abs(totalRateadoItens - totalDespesasRateaveis) < 0.5;
+  // agora que o rateio fecha exato no centavo (Fase 3 #2), a tolerância pode ser bem mais apertada —
+  // só sobra ruído de ponto flutuante, nunca mais que 1-2 centavos de verdade
+  const bateGeral = Math.abs(totalRateadoItens - totalDespesasRateaveis) < 0.02;
   const bateContabil = Math.abs(totalContabil - c.totalCmvContabil) < 0.5;
 
   const resumida = PREC_MODO_VISAO === "resumida";
@@ -8499,7 +8750,7 @@ function precRender(){
       <td class="mono">${fmtN(it.valor_cofins_mais,2)}</td>
       <td class="mono" style="font-weight:800;">${fmtN(it.valorTotalContabil,2)}</td>
       <td class="mono" style="font-weight:800; color:var(--accent-dark);">${fmtN(it.custoContabil,2)}</td>
-      <td class="left" style="color:var(--text-faint); font-size:11px;">IPI ${fmtN(it.valor_ipi,2)} · PIS ${fmtN(it.valor_pis,2)} · COFINS ${fmtN(it.valor_cofins,2)} · ICMS ${fmtN(it.valor_icms,2)}</td>
+      <td class="left" style="color:var(--text-faint); font-size:11px;">IPI ${fmtN(it.valor_ipi,2)} · PIS ${fmtN(it.valor_pis,2)} · COFINS ${fmtN(it.valor_cofins_padrao,2)} · ICMS ${fmtN(it.valor_icms,2)}</td>
     </tr>`).join("");
 
   const theadPrec = resumida
