@@ -5326,15 +5326,32 @@ async function blExtrairTextoPdf(file){
       }
       atual.itens.push(it);
     });
+    // Dentro de uma "linha" (mesma altura Y), um espaçamento GRANDE entre fragmentos normalmente não é
+    // espaço de palavra — é coluna lado a lado (ex.: "Porto de Origem" e "Porto de Destino" ficam na
+    // mesma altura, bem afastados). Separamos em sub-linhas nesse caso, senão os campos de colunas
+    // diferentes viram uma string só e o parser não consegue mais isolar cada campo.
     const textoPagina = linhas.map(l => {
       l.itens.sort((a, b) => a.x - b.x);
-      let s = "", fim = null;
+      const subLinhas = [];
+      let atualStr = "", fim = null;
       l.itens.forEach(it => {
-        if (fim !== null && (it.x - fim) > it.h * 0.35) s += " ";
-        s += it.str;
+        if (fim === null){
+          atualStr = it.str;
+        } else {
+          const gap = it.x - fim;
+          if (gap > Math.max(it.h * 2.5, 25)){
+            subLinhas.push(atualStr);
+            atualStr = it.str;
+          } else if (gap > it.h * 0.35){
+            atualStr += " " + it.str;
+          } else {
+            atualStr += it.str;
+          }
+        }
         fim = it.x + it.w;
       });
-      return s;
+      if (atualStr) subLinhas.push(atualStr);
+      return subLinhas.join("\n");
     }).join("\n");
     textoPaginas.push(textoPagina);
   }
@@ -5394,9 +5411,17 @@ function blParseTexto(texto){
     if (partes[2]) resultado.navio = partes[2].toUpperCase();
   }
 
-  // Data do Embarque: linha seguinte a "SHIPPED ON BOARD"
+  // Data do Embarque: procura uma data nas linhas logo após "SHIPPED ON BOARD" — não necessariamente a
+  // linha imediatamente seguinte, porque o rótulo e a data podem estar em colunas lado a lado que viram
+  // linhas separadas em posições diferentes (ex.: rótulo "FREIGHT COLLECT"/"SHIPPED ON BOARD" numa
+  // mesma "linha visual" e "CY-CY"/data na próxima, cada coluna virando uma linha própria)
   const idxSOB = linhas.findIndex(l => /SHIPPED\s+ON\s+BOARD/i.test(l));
-  if (idxSOB >= 0 && linhas[idxSOB + 1]) resultado.data_embarque = blParseDataEmbarque(linhas[idxSOB + 1]);
+  if (idxSOB >= 0){
+    for (let k = idxSOB + 1; k < Math.min(idxSOB + 5, linhas.length); k++){
+      const tentativa = blParseDataEmbarque(linhas[k]);
+      if (tentativa){ resultado.data_embarque = tentativa; break; }
+    }
+  }
 
   return resultado;
 }
