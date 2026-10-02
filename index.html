@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js"></script>
 <style>
   :root{
     --bg: #f4f6f9;
@@ -4805,6 +4806,7 @@ function docsFaltando(container){
     return f;
   }
   const f = [];
+  if (!container.doc_bl_url) f.push("B/L");
   if (!container.doc_comercial_invoice_url) f.push("Comercial Invoice");
   if (!container.doc_duimp_url) f.push("DUIMP");
   if (!container.doc_chave_acesso_url) f.push("Chave de Acesso");
@@ -5289,6 +5291,314 @@ window.cambioRemoverComprovante = async function(fonte, containerId){
   renderArquivo();
 };
 
+/* ---------- B/L (LOGBOX) — upload do PDF, extração automática e popup de conferência ---------- */
+// Biblioteca PDF.js carregada via <script> no <head> (mesmo padrão do SheetJS/XLSX). A extração do
+// texto é só uma primeira tentativa — o popup de conferência sempre deixa tudo editável antes de
+// salvar, então o parser pode errar que o Wissam corrige na hora.
+let BL_PDFJS_WORKER_CONFIGURADO = false;
+async function blCarregarPdfJs(){
+  if (typeof pdfjsLib === "undefined") throw new Error("Biblioteca de leitura de PDF não carregou.");
+  if (!BL_PDFJS_WORKER_CONFIGURADO){
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js";
+    BL_PDFJS_WORKER_CONFIGURADO = true;
+  }
+}
+// Reconstrói o texto do PDF em linhas (PDF.js só devolve fragmentos soltos com coordenadas, sem
+// quebra de linha) agrupando por proximidade vertical (Y) e ordenando por X dentro de cada linha.
+async function blExtrairTextoPdf(file){
+  await blCarregarPdfJs();
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  const textoPaginas = [];
+  for (let p = 1; p <= pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const itens = content.items
+      .filter(it => it.str && it.str.trim())
+      .map(it => ({ str: it.str, x: it.transform[4], y: it.transform[5], w: it.width || 0, h: it.height || 6 }));
+    itens.sort((a, b) => (b.y - a.y) || (a.x - b.x));
+    const linhas = [];
+    let atual = null;
+    itens.forEach(it => {
+      if (!atual || Math.abs(atual.y - it.y) > Math.max(it.h * 0.5, 3)){
+        atual = { y: it.y, itens: [] };
+        linhas.push(atual);
+      }
+      atual.itens.push(it);
+    });
+    const textoPagina = linhas.map(l => {
+      l.itens.sort((a, b) => a.x - b.x);
+      let s = "", fim = null;
+      l.itens.forEach(it => {
+        if (fim !== null && (it.x - fim) > it.h * 0.35) s += " ";
+        s += it.str;
+        fim = it.x + it.w;
+      });
+      return s;
+    }).join("\n");
+    textoPaginas.push(textoPagina);
+  }
+  return textoPaginas.join("\n");
+}
+// Converte datas tipo "SEP.22.2026" / "SEP 22, 2026" pro formato ISO (yyyy-mm-dd)
+function blParseDataEmbarque(str){
+  if (!str) return "";
+  const meses = { JAN:1, FEV:2, FEB:2, MAR:3, ABR:4, APR:4, MAI:5, MAY:5, JUN:6, JUL:7, AGO:8, AUG:8, SET:9, SEP:9, OUT:10, OCT:10, NOV:11, DEZ:12, DEC:12 };
+  const m = String(str).toUpperCase().match(/([A-Z]{3})[.\s]*(\d{1,2})[.,\s]+(\d{4})/);
+  if (!m) return "";
+  const mes = meses[m[1]];
+  if (!mes) return "";
+  return `${m[3]}-${String(mes).padStart(2, "0")}-${String(m[2]).padStart(2, "0")}`;
+}
+// Extração dos 7 campos a partir do texto bruto do PDF (heurística baseada no layout típico de B/L,
+// já que os rótulos dos campos nem sempre vêm como texto selecionável — muitas vezes fazem parte do
+// template/imagem de fundo). Best-effort: tudo fica editável na conferência depois.
+function blParseTexto(texto){
+  const linhasRaw = String(texto || "").split(/\r?\n/).map(l => l.trim());
+  const linhas = linhasRaw.filter(l => l.length > 0);
+  const resultado = { agente_nome: "", bl_numero: "", container_numero: "", navio: "", viagem: "", data_embarque: "", porto_origem: "", porto_destino: "" };
+
+  // Número do B/L: normalmente é a primeira informação "solta" do documento (sem rótulo extraível)
+  if (linhas[0] && /^[A-Z0-9]{6,20}$/i.test(linhas[0])) resultado.bl_numero = linhas[0].toUpperCase();
+
+  // Viagem: linha curta com um único "/" misturando letras e números (ex.: "EVER FIT/1711-027W")
+  let idxViagem = -1;
+  for (let i = 0; i < linhas.length; i++){
+    const l = linhas[i];
+    if (l.length <= 35 && /^[A-Z0-9][A-Z0-9 .'-]*\/[A-Z0-9-]+$/i.test(l) && !/CONTAINER|SEAL/i.test(l) && /[A-Z]{2,}/i.test(l.split("/")[0])){
+      idxViagem = i;
+      resultado.viagem = l;
+      break;
+    }
+  }
+  if (idxViagem > 0){
+    // sobe pulando linhas de endereço/CNPJ/telefone até achar o nome da empresa do bloco do agente
+    let j = idxViagem - 1;
+    while (j >= 0 && /CNPJ|TEL:|TEL\(|^RUA |^AV\.|^AVENIDA|CEP|ANDAR/i.test(linhas[j])) j--;
+    if (j >= 0) resultado.agente_nome = linhas[j];
+    if (linhas[idxViagem + 1]) resultado.porto_origem = linhas[idxViagem + 1];
+    if (linhas[idxViagem + 2]) resultado.porto_destino = linhas[idxViagem + 2];
+  }
+
+  // Contêiner + Navio/Lacre: vem numa linha só, tipo "EITU9011566/40'HQ/EMCHXU6885/1191CARTONS/..."
+  // — às vezes com espaços soltos entre os caracteres (efeito do espaçamento do PDF original), por
+  // isso removemos todos os espaços antes de separar por "/"
+  const idxCS = linhasRaw.findIndex(l => /CONTAINER\s*\/?\s*SEAL\s*NO/i.test(l));
+  if (idxCS >= 0){
+    let dadosLinha = linhasRaw[idxCS].replace(/.*CONTAINER\s*\/?\s*SEAL\s*NO\.?:?/i, "").trim();
+    let k = idxCS + 1;
+    while (!dadosLinha && k < linhasRaw.length){ dadosLinha = (linhasRaw[k] || "").trim(); k++; }
+    const semEspacos = dadosLinha.replace(/\s+/g, "");
+    const partes = semEspacos.split("/");
+    if (partes[0]) resultado.container_numero = partes[0].toUpperCase();
+    if (partes[2]) resultado.navio = partes[2].toUpperCase();
+  }
+
+  // Data do Embarque: linha seguinte a "SHIPPED ON BOARD"
+  const idxSOB = linhas.findIndex(l => /SHIPPED\s+ON\s+BOARD/i.test(l));
+  if (idxSOB >= 0 && linhas[idxSOB + 1]) resultado.data_embarque = blParseDataEmbarque(linhas[idxSOB + 1]);
+
+  return resultado;
+}
+
+// Aprendizado do vínculo "nome extraído do PDF" → "agente cadastrado" (mesmo padrão do
+// imp_sku_aliases): carregado uma vez e cacheado; salvo de novo sempre que o nome mudar.
+let BL_AGENTE_ALIASES_CACHE = null;
+async function blCarregarAliasesAgente(force){
+  if (BL_AGENTE_ALIASES_CACHE && !force) return;
+  const { data } = await db.from("imp_agente_aliases").select("raw_nome,agente_nome");
+  BL_AGENTE_ALIASES_CACHE = {};
+  (data || []).forEach(a => { BL_AGENTE_ALIASES_CACHE[String(a.raw_nome || "").trim().toLowerCase()] = a.agente_nome; });
+}
+function blResolverAgenteInicial(rawNome){
+  if (!rawNome) return "";
+  const agentes = CONFIG?.agentes_carga || [];
+  const exato = agentes.find(a => a.toLowerCase() === rawNome.trim().toLowerCase());
+  if (exato) return exato;
+  const viaAlias = BL_AGENTE_ALIASES_CACHE ? BL_AGENTE_ALIASES_CACHE[rawNome.trim().toLowerCase()] : null;
+  if (viaAlias && agentes.includes(viaAlias)) return viaAlias;
+  return "";
+}
+
+let BL_CONFERENCIA = null;
+window.blUploadIniciar = async function(evt, fonte, containerId){
+  const file = evt.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById(`blUploadStatus_${containerId}`);
+  if (statusEl) statusEl.textContent = "Lendo o PDF…";
+  let campos = { agente_nome: "", bl_numero: "", container_numero: "", navio: "", viagem: "", data_embarque: "", porto_origem: "", porto_destino: "" };
+  let agenteRawNome = "";
+  try {
+    const texto = await blExtrairTextoPdf(file);
+    campos = blParseTexto(texto);
+    agenteRawNome = campos.agente_nome;
+  } catch (e){
+    toast("Não consegui ler esse PDF automaticamente — confira e preencha os campos manualmente.", "error");
+  }
+  await blCarregarAliasesAgente();
+  campos.agente_nome = blResolverAgenteInicial(agenteRawNome);
+  campos.data_china = "";
+  if (statusEl) statusEl.textContent = "";
+  BL_CONFERENCIA = { fonte, containerId, file, modo: "conferencia", agenteRawNome, campos, _novoAgente: false };
+  blRenderConferencia();
+};
+function blRenderConferencia(){
+  const st = BL_CONFERENCIA;
+  if (!st) return;
+  const container = PL_CONTAINERS[st.fonte]?.find(c => c.id === st.containerId);
+  const nomeContainer = container ? container.nome : "";
+  const c = st.campos;
+  const agentes = (CONFIG?.agentes_carga || []).slice();
+  if (c.agente_nome && !agentes.includes(c.agente_nome)) agentes.push(c.agente_nome);
+  const agenteOptionsHtml = `<option value="">—</option>` +
+    agentes.map(a => `<option value="${escapeHtml(a)}" ${c.agente_nome === a ? "selected" : ""}>${escapeHtml(a)}</option>`).join("") +
+    `<option value="__novo__">+ Cadastrar novo agente...</option>`;
+  const semMatch = st.agenteRawNome && !c.agente_nome;
+  const podeSalvar = !!c.data_china;
+  const titulo = st.modo === "edicao" ? "📋 Dados do B/L" : "📋 Conferência do B/L";
+  abrirOverlayDinamico("blConferenciaOverlay", `
+    <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <h2 class="modal-title" style="margin:0;">${titulo} — ${escapeHtml(nomeContainer)}</h2>
+      <button onclick="blFecharConferencia()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
+    </div>
+    <div style="padding:20px 24px; max-height:65vh; overflow:auto;">
+      ${st.modo === "conferencia" ? `<div style="margin-bottom:14px; font-size:12px; color:var(--text-muted); background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:9px 12px;">Conferimos os dados extraídos do PDF automaticamente — revise e corrija o que precisar antes de salvar.</div>` : ""}
+      <div class="field" style="margin-bottom:14px;">
+        <label>Agente de Carga</label>
+        <select id="blc_agente" onchange="blAgenteSelectChange(this)">${agenteOptionsHtml}</select>
+        ${semMatch ? `<div style="margin-top:4px; font-size:11.5px; color:#b45309;">Extraído do PDF: "${escapeHtml(st.agenteRawNome)}" — não encontramos esse agente cadastrado. Selecione o agente correto ou cadastre um novo; o vínculo fica salvo pros próximos B/Ls.</div>` : ""}
+      </div>
+      ${st._novoAgente ? `
+      <div class="field" style="margin-bottom:14px; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:12px;">
+        <label>Nome do novo agente</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="blNovoAgenteInput" style="flex:1;" placeholder="Ex: Fulano Frete Internacional">
+          <button class="btn btn-ghost btn-sm" onclick="blAgenteNovoCancelar()">Cancelar</button>
+          <button class="btn btn-primary btn-sm" onclick="blAgenteNovoAdicionar()">Adicionar</button>
+        </div>
+      </div>` : ""}
+      <div class="field-grid cols-3" style="margin-bottom:14px;">
+        <div class="field"><label>Número do B/L</label><input type="text" value="${escapeHtml(c.bl_numero || "")}" onchange="blCampoChange('bl_numero', this.value)"></div>
+        <div class="field"><label>Número do Contêiner</label><input type="text" value="${escapeHtml(c.container_numero || "")}" onchange="blCampoChange('container_numero', this.value)"></div>
+        <div class="field"><label>Número do Navio</label><input type="text" value="${escapeHtml(c.navio || "")}" onchange="blCampoChange('navio', this.value)"></div>
+      </div>
+      <div class="field" style="margin-bottom:14px;"><label>Viagem</label><input type="text" value="${escapeHtml(c.viagem || "")}" onchange="blCampoChange('viagem', this.value)"></div>
+      <div class="field-grid" style="margin-bottom:14px;">
+        <div class="field"><label>Porto de Origem</label><input type="text" value="${escapeHtml(c.porto_origem || "")}" onchange="blCampoChange('porto_origem', this.value)"></div>
+        <div class="field"><label>Porto de Destino</label><input type="text" value="${escapeHtml(c.porto_destino || "")}" onchange="blCampoChange('porto_destino', this.value)"></div>
+      </div>
+      <div class="field-grid" style="margin-bottom:0;">
+        <div class="field"><label>Data do Embarque</label><input type="date" value="${c.data_embarque || ""}" onchange="blCampoChange('data_embarque', this.value)"></div>
+        <div class="field"><label>Data China <span style="color:#dc2626;">*</span></label><input type="date" value="${c.data_china || ""}" onchange="blCampoChange('data_china', this.value)"></div>
+      </div>
+      <div style="margin-top:4px; font-size:11.5px; color:var(--text-faint);">Data China = data em que o contêiner foi carregado no galpão, na China.</div>
+      ${!podeSalvar ? `<div style="margin-top:14px; font-size:12px; color:#b45309; font-weight:600;">⚠ Preencha a Data China pra poder salvar.</div>` : ""}
+    </div>
+    <div style="padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn btn-ghost" onclick="blFecharConferencia()">Cancelar</button>
+      <button class="btn btn-primary" id="blc_btn_salvar" ${podeSalvar ? "" : "disabled style=\"opacity:.45; cursor:not-allowed;\""} onclick="blSalvarConferencia()">${st.modo === "edicao" ? "💾 Salvar alterações" : "✅ Confirmar e Salvar"}</button>
+    </div>
+  `, 620);
+}
+window.blCampoChange = function(campo, valor){
+  if (!BL_CONFERENCIA) return;
+  BL_CONFERENCIA.campos[campo] = valor;
+  blRenderConferencia();
+};
+window.blAgenteSelectChange = function(sel){
+  if (!BL_CONFERENCIA) return;
+  if (sel.value === "__novo__"){ BL_CONFERENCIA._novoAgente = true; blRenderConferencia(); return; }
+  BL_CONFERENCIA.campos.agente_nome = sel.value;
+  BL_CONFERENCIA._novoAgente = false;
+  blRenderConferencia();
+};
+window.blAgenteNovoCancelar = function(){
+  if (!BL_CONFERENCIA) return;
+  BL_CONFERENCIA._novoAgente = false;
+  blRenderConferencia();
+};
+window.blAgenteNovoAdicionar = async function(){
+  if (!BL_CONFERENCIA) return;
+  const val = (document.getElementById("blNovoAgenteInput")?.value || "").trim();
+  if (!val) return;
+  if (!CONFIG.agentes_carga) CONFIG.agentes_carga = [];
+  if (!CONFIG.agentes_carga.some(a => a.toLowerCase() === val.toLowerCase())) CONFIG.agentes_carga.push(val);
+  const { error } = await db.from("imp_config").update({ agentes_carga: CONFIG.agentes_carga }).eq("id", CONFIG.id);
+  if (error){ toast("Erro ao salvar agente.", "error"); return; }
+  if (document.getElementById("cfg_agentes_list")) renderTagList("cfg_agentes_list", CONFIG.agentes_carga, "agentes_carga");
+  BL_CONFERENCIA.campos.agente_nome = val;
+  BL_CONFERENCIA._novoAgente = false;
+  toast("Agente cadastrado.");
+  blRenderConferencia();
+};
+window.blFecharConferencia = function(){
+  document.getElementById("blConferenciaOverlay")?.remove();
+  BL_CONFERENCIA = null;
+};
+window.blSalvarConferencia = async function(){
+  const st = BL_CONFERENCIA;
+  if (!st) return;
+  const c = st.campos;
+  if (!c.data_china){ toast("Preencha a Data China pra poder salvar.", "error"); return; }
+  toast("Salvando B/L…");
+  const containerAtual = PL_CONTAINERS[st.fonte]?.find(x => x.id === st.containerId);
+  let docBlUrl = containerAtual ? containerAtual.doc_bl_url : null;
+  if (st.file){
+    const path = `${st.fonte}/${st.containerId}/doc_bl_url-${Date.now()}-${sanitizeFileName(st.file.name)}`;
+    const { error: upErr } = await db.storage.from("container-docs").upload(path, st.file, { upsert: true, contentType: "application/pdf" });
+    if (upErr){ toast("Erro ao enviar o PDF do B/L: " + upErr.message, "error"); return; }
+    const { data: pub } = db.storage.from("container-docs").getPublicUrl(path);
+    docBlUrl = pub.publicUrl;
+  }
+  const payload = {
+    doc_bl_url: docBlUrl,
+    bl_numero: c.bl_numero || null,
+    bl_container_numero: c.container_numero || null,
+    bl_navio: c.navio || null,
+    bl_viagem: c.viagem || null,
+    bl_data_embarque: c.data_embarque || null,
+    bl_porto_origem: c.porto_origem || null,
+    bl_porto_destino: c.porto_destino || null,
+    bl_data_china: c.data_china || null,
+  };
+  if (c.agente_nome) payload.agente_carga = c.agente_nome;
+  const { error } = await db.from("imp_containers").update(payload).eq("id", st.containerId);
+  if (error){ toast("Erro ao salvar B/L: " + error.message, "error"); return; }
+  if (containerAtual) Object.assign(containerAtual, payload);
+  // só aprende o vínculo quando o nome extraído do PDF não bate exatamente com o agente escolhido —
+  // se já bateu de primeira não precisa salvar alias nenhum
+  if (st.agenteRawNome && c.agente_nome && st.agenteRawNome.trim().toLowerCase() !== c.agente_nome.trim().toLowerCase()){
+    await db.from("imp_agente_aliases").upsert({ raw_nome: st.agenteRawNome, agente_nome: c.agente_nome }, { onConflict: "raw_nome" });
+    if (!BL_AGENTE_ALIASES_CACHE) BL_AGENTE_ALIASES_CACHE = {};
+    BL_AGENTE_ALIASES_CACHE[st.agenteRawNome.trim().toLowerCase()] = c.agente_nome;
+  }
+  toast("B/L salvo.");
+  blFecharConferencia();
+  renderDocumentosPopupBody(st.fonte, st.containerId);
+  await refrescarTelasContainer(st.fonte);
+  refrescarDetalheSeAberto();
+};
+window.blAbrirVisualizacao = async function(fonte, containerId){
+  const container = PL_CONTAINERS[fonte]?.find(c => c.id === containerId);
+  if (!container){ toast("Contêiner não encontrado.", "error"); return; }
+  await blCarregarAliasesAgente();
+  BL_CONFERENCIA = {
+    fonte, containerId, file: null, modo: "edicao", agenteRawNome: "", _novoAgente: false,
+    campos: {
+      agente_nome: container.agente_carga || "",
+      bl_numero: container.bl_numero || "",
+      container_numero: container.bl_container_numero || "",
+      navio: container.bl_navio || "",
+      viagem: container.bl_viagem || "",
+      data_embarque: container.bl_data_embarque ? String(container.bl_data_embarque).slice(0, 10) : "",
+      porto_origem: container.bl_porto_origem || "",
+      porto_destino: container.bl_porto_destino || "",
+      data_china: container.bl_data_china ? String(container.bl_data_china).slice(0, 10) : ""
+    }
+  };
+  blRenderConferencia();
+};
+
 /* ======================= STATUS DOS CONTÊINERES (KANBAN) ======================= */
 const KB_STATUSES = ["fazer_booking", "booking", "em_rota", "desembaraco"];
 const KB_LABELS = { fazer_booking: "Fazer Booking", booking: "Booking Feito", em_rota: "Em Rota", desembaraco: "Desembaraço" };
@@ -5686,6 +5996,12 @@ function containerDetalheHeaderHtml(container, fonte){
           <div class="field"><label>Valor do Frete (US$)</label><input type="text" inputmode="decimal" id="pld_frete_usd" class="mono-field" value="${container.valor_frete_usd ?? ""}" placeholder="0,00"></div>
           <div class="field"><label>Agente de Carga</label><select id="pld_agente" onchange="pldAgenteChange(this)">${agenteOptionsHtml}</select></div>
         </div>
+        ${fonte === "logbox" && container.doc_bl_url ? `
+        <div class="field-grid cols-3" style="margin-top:10px;">
+          <div class="field"><label>Número do B/L</label><input type="text" readonly value="${escapeHtml(container.bl_numero || "—")}"></div>
+          <div class="field"><label>Número do Contêiner</label><input type="text" readonly value="${escapeHtml(container.bl_container_numero || "—")}"></div>
+          <div class="field"><label>Número do Navio</label><input type="text" readonly value="${escapeHtml(container.bl_navio || "—")}"></div>
+        </div>` : ""}
       </div>
       <button onclick="fecharDetalheOverlay()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px; margin-left:14px; flex-shrink:0;">×</button>
     </div>
@@ -5889,7 +6205,20 @@ function renderDocumentosPopupBody(fonte, containerId){
         <button class="btn btn-ghost btn-sm" onclick="docsAdicionarParcela('${fonte}','${containerId}')">➕ Adicionar parcela</button>
       </div>`;
   } else {
-    camposHtml = campoHtml("doc_comercial_invoice_url", "Comercial Invoice") + campoHtml("doc_duimp_url", "DUIMP") + campoHtml("doc_chave_acesso_url", "Chave de Acesso");
+    // B/L fica em primeiro nessa aba (pedido de Wissam) — upload dispara extração automática dos
+    // dados do PDF (agente, nº B/L, contêiner, navio, viagem, datas, portos) com popup de conferência
+    // antes de salvar qualquer coisa; "Ver dados do B/L" deixa corrigir depois sem reenviar o PDF.
+    const blHtml = `<div class="field" style="margin-bottom:14px;">
+      <label>B/L</label>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        ${container.doc_bl_url
+          ? `<a href="${container.doc_bl_url}" target="_blank" class="btn btn-ghost btn-sm">📄 Ver PDF</a><button class="btn btn-ghost btn-sm" onclick="blAbrirVisualizacao('${fonte}','${containerId}')">📋 Ver dados do B/L</button><button class="btn-icon" title="Remover" onclick="docsRemoverArquivoBl('${fonte}','${containerId}')">🗑</button>`
+          : `<span style="color:var(--text-faint); font-size:12px;">Nenhum enviado</span>`}
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer; margin:0;">📎 ${container.doc_bl_url ? "Substituir" : "Enviar"} PDF<input type="file" accept="application/pdf" style="display:none;" onchange="blUploadIniciar(event,'${fonte}','${containerId}')"></label>
+      </div>
+      <div id="blUploadStatus_${containerId}" style="margin-top:4px; font-size:11.5px; color:var(--text-faint);"></div>
+    </div>`;
+    camposHtml = blHtml + campoHtml("doc_comercial_invoice_url", "Comercial Invoice") + campoHtml("doc_duimp_url", "DUIMP") + campoHtml("doc_chave_acesso_url", "Chave de Acesso");
   }
   const falt = docsFaltando(container);
   const msgTudoOk = fonte === "mti" ? "✅ Pagamento concluído" : "✅ Todos os documentos enviados";
@@ -5933,6 +6262,19 @@ window.docsRemoverArquivo = async function(fonte, containerId, campo){
   const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
   if (container) container[campo] = null;
   toast("Documento removido.");
+  renderDocumentosPopupBody(fonte, containerId);
+  await refrescarTelasContainer(fonte);
+  refrescarDetalheSeAberto();
+};
+window.docsRemoverArquivoBl = async function(fonte, containerId){
+  // remove o PDF e TODOS os dados extraídos/derivados dele — evita ficar com "Número do B/L" etc.
+  // visíveis no cabeçalho sem o PDF correspondente
+  const campos = { doc_bl_url: null, bl_numero: null, bl_container_numero: null, bl_navio: null, bl_viagem: null, bl_data_embarque: null, bl_porto_origem: null, bl_porto_destino: null, bl_data_china: null };
+  const { error } = await db.from("imp_containers").update(campos).eq("id", containerId);
+  if (error){ toast("Erro ao remover B/L.", "error"); return; }
+  const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
+  if (container) Object.assign(container, campos);
+  toast("B/L removido.");
   renderDocumentosPopupBody(fonte, containerId);
   await refrescarTelasContainer(fonte);
   refrescarDetalheSeAberto();
