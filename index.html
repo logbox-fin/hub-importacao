@@ -77,6 +77,7 @@
     font-size: 13.5px; font-weight:500; color: var(--sidebar-text);
     cursor:pointer; border-left: 3px solid transparent;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    flex-shrink:0;
   }
   .nav-item:hover{ background: rgba(255,255,255,.05); color:#fff; }
   .nav-item.active{ background: rgba(37,99,235,.18); border-left-color: var(--sidebar-active); color:#fff; font-weight:600; }
@@ -98,6 +99,7 @@
   #content{ flex:1; overflow-y:auto; padding: 24px 28px 60px; }
   .view{ display:none; max-width: 1400px; margin:0 auto; }
   .view.active{ display:block; }
+  #view-ph-prevcustos.view{ max-width:none; }
 
   /* ===== PLACEHOLDER ===== */
   .placeholder-box{
@@ -465,6 +467,31 @@
   .an-cell-click:hover{ text-decoration:underline; }
   .pg-kpi-real{ color:#166534; font-weight:800; }
   .pg-kpi-previsto{ color:#b45309; font-weight:800; }
+  /* Painel Financeiro Geral — redesenho 13ª rodada (tabela transposta: categorias em linha, meses em
+     coluna) */
+  .pg-kpi-card:nth-child(1){ border-left:4px solid var(--accent); }
+  .pg-kpi-card:nth-child(2){ border-left:4px solid #d97706; }
+  .pg-kpi-card:nth-child(3){ border-left:4px solid #7c3aed; }
+  .pg-periodo-bar{ display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .pg-periodo-btn{ padding:5px 15px; border-radius:999px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text-muted); font-size:12px; font-weight:700; cursor:pointer; }
+  .pg-periodo-btn:hover{ background:var(--surface-alt); }
+  .pg-periodo-btn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  table.pg-table{ border-collapse:separate; border-spacing:0; }
+  table.pg-table th, table.pg-table td{ white-space:nowrap; }
+  table.pg-table th:not(.pg-cat-cell), table.pg-table td:not(.pg-cat-cell){ min-width:72px; }
+  table.pg-table th.pg-cat-cell, table.pg-table td.pg-cat-cell{ min-width:210px; max-width:240px; white-space:normal; }
+  table.pg-table thead th{ position:sticky; top:0; background:var(--surface); z-index:2; }
+  table.pg-table td.pg-cat-cell, table.pg-table th.pg-cat-cell{ position:sticky; left:0; background:var(--surface); z-index:1; text-align:left; }
+  table.pg-table thead th.pg-cat-cell{ z-index:3; }
+  table.pg-table tbody tr:nth-child(odd) td{ background:var(--surface-alt); }
+  table.pg-table tbody tr.an-total-row td{ background:#f1f5f9; }
+  table.pg-table th.pg-mes-atual, table.pg-table td.pg-mes-atual{ background:#dbeafe; }
+  table.pg-table tbody tr.an-total-row td.pg-mes-atual{ background:#bfdbfe; }
+  table.pg-table th.pg-total-col, table.pg-table td.pg-total-col{ border-left:2px solid var(--border-strong); }
+  .pg-cat-label{ display:flex; align-items:center; gap:7px; font-weight:700; font-family:'Inter',sans-serif; }
+  .an-chip{ display:inline-block; padding:3px 10px; border-radius:6px; font-weight:800; font-size:12px; }
+  .an-chip.an-chip-real{ background:#dcfce7; color:#166534; }
+  .an-chip.an-chip-previsto{ background:#fef3c7; color:#92400e; }
 
   /* ============ FÁBRICAS — cards ilustrados ============ */
   .fab-toolbar-count{ font-size:11.5px; color:var(--text-faint); font-weight:600; margin-left:2px; }
@@ -2397,7 +2424,9 @@ function renderPrevisaoCustos(){
         <td class="num" id="pcCell_prev_imp_despesas_manual_${c.id}">${impDesp !== null
           ? `<span class="pc-calc-chip pc-editavel" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_imp_despesas_manual',${impDesp})">${fmtN(impDesp, 2)}</span>`
           : `<span class="pc-editavel" style="color:var(--text-faint);" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_imp_despesas_manual',null)">—</span>`}</td>
-        <td class="num"><input type="text" inputmode="decimal" class="mono-field pc-input real-field${temReal1 ? " filled" : ""}" style="width:100px;" placeholder="NÃO PAGO" value="${fmtEdit(c.real_imp_despesas)}" onchange="pcSalvarCampo('${c.id}','real_imp_despesas', this.value)"></td>
+        <td class="num" id="pcCell_real_imp_despesas_${c.id}">${temReal1
+          ? `<span class="pc-calc-chip pc-travado" title="Travado — Real IMP+Despesas já lançado">${fmtN(c.real_imp_despesas, 2)}</span>`
+          : `<input type="text" inputmode="decimal" class="mono-field pc-input real-field" style="width:100px;" placeholder="NÃO PAGO" value="" onchange="pcSalvarCampo('${c.id}','real_imp_despesas', this.value)">`}</td>
         <td class="num" id="pcCell_prev_cambio_manual_${c.id}">${travadoInfo !== null
           ? `<span class="pc-calc-chip pc-travado" title="${escapeHtml(travadoInfo.motivo)}">${travadoInfo.valor !== null ? fmtN(travadoInfo.valor, 2) : "—"}</span>`
           : (cambio !== null
@@ -5755,7 +5784,9 @@ function renderKanbanContainerDetalhe(){
       semSku.push({ sku: "", modelo: modeloLabel, qtd_total: Number(it.qtd_total) || 0, valor_rmb: Number(it.valor_rmb) || 0 });
     }
   });
-  const consolidados = [...Object.values(porSku), ...semSku];
+  // consolidado do Kanban ordena por SKU (ordem natural), diferente do Packing List/Arquivo que mantém
+  // a ordem original da planilha (`ordem`) — pedido de Wissam, 13ª rodada
+  const consolidados = [...Object.values(porSku).sort((a, b) => compareNatural(a.sku, b.sku)), ...semSku];
   const rows = consolidados.map(r => `
     <div class="pl-item-row" style="grid-template-columns: 2fr 1fr 110px 130px;">
       <div>${escapeHtml(r.modelo)}</div>
@@ -6421,32 +6452,58 @@ function renderDashboardAnalitico(d){
       </div>
     </div>`;
 
+  // Frete em US$ (valor_frete_usd), sem conversão de câmbio e sem split Real/Previsto — pedido de
+  // Wissam, 13ª rodada. Esse gráfico mantém o bucketing por mês de CHEGADA (chegou_em, com fallback
+  // pro ETD se ainda não chegou), igual já era antes
   const freteBuckets = {};
   logboxTodos.forEach(c => {
     const dataBase = c.chegou_em ? String(c.chegou_em).slice(0, 10) : c.etd;
     if (!dataBase) return;
+    if (c.valor_frete_usd === null || c.valor_frete_usd === undefined) return;
     const chave = anMesChave(dataBase);
-    const f = fechMap[String(c.id)];
-    let valor = null, real = false;
-    if (f && f.frete !== null && f.frete !== undefined){ valor = Number(f.frete); real = true; }
-    else if (c.valor_frete_usd !== null && c.valor_frete_usd !== undefined){ valor = round2(Number(c.valor_frete_usd) * usdBrl); real = false; }
-    if (valor === null) return;
-    if (!freteBuckets[chave]) freteBuckets[chave] = { real: 0, previsto: 0 };
-    freteBuckets[chave][real ? "real" : "previsto"] += valor;
+    if (!freteBuckets[chave]) freteBuckets[chave] = 0;
+    freteBuckets[chave] += Number(c.valor_frete_usd);
   });
   const freteChaves = Object.keys(freteBuckets).sort();
-  const freteMax = Math.max(1, ...freteChaves.map(k => freteBuckets[k].real + freteBuckets[k].previsto));
+  const freteMax = Math.max(1, ...freteChaves.map(k => freteBuckets[k]));
   const freteHtml = `
     <div class="dash-section">
       <div class="dash-section-title">🚚 Frete por mês (LOGBOX)</div>
-      <div class="an-legend"><span><i style="background:#16a34a;"></i>Real (Fechamento lançado)</span><span><i style="background:#93c5fd;"></i>Estimado</span></div>
+      <div style="font-size:11.5px; color:var(--text-muted); margin-bottom:8px;">Soma do frete (US$) por mês de chegada do contêiner</div>
       ${freteChaves.length ? freteChaves.map(k => {
-        const b = freteBuckets[k];
-        const total = b.real + b.previsto;
+        const total = freteBuckets[k];
         return `<div class="an-bar-row">
           <div class="an-bar-label">${anMesLabel(k)}</div>
-          <div class="an-bar-track"><div class="an-bar-fill an-fill-real" style="width:${(b.real / freteMax) * 100}%;"></div><div class="an-bar-fill an-fill-previsto" style="width:${(b.previsto / freteMax) * 100}%;"></div></div>
-          <div class="an-bar-value">R$ ${fmtN(total, 0)}</div>
+          <div class="an-bar-track"><div class="an-bar-fill an-fill-real" style="width:${(total / freteMax) * 100}%;"></div></div>
+          <div class="an-bar-value">US$ ${fmtN(total, 0)}</div>
+        </div>`;
+      }).join("") : `<div class="empty-state">Sem dados de frete lançados ainda.</div>`}
+    </div>`;
+
+  // Frete médio por contêiner (novo gráfico, 13ª rodada): soma de valor_frete_usd ÷ qtde de
+  // contêineres, bucketed pelo mês do ETD (competência = quando o contêiner embarcou)
+  const freteMedioBuckets = {};
+  logboxTodos.forEach(c => {
+    if (!c.etd) return;
+    if (c.valor_frete_usd === null || c.valor_frete_usd === undefined) return;
+    const chave = anMesChave(c.etd);
+    if (!freteMedioBuckets[chave]) freteMedioBuckets[chave] = { soma: 0, qtde: 0 };
+    freteMedioBuckets[chave].soma += Number(c.valor_frete_usd);
+    freteMedioBuckets[chave].qtde += 1;
+  });
+  const freteMedioChaves = Object.keys(freteMedioBuckets).sort();
+  const freteMedioMax = Math.max(1, ...freteMedioChaves.map(k => freteMedioBuckets[k].soma / freteMedioBuckets[k].qtde));
+  const freteMedioHtml = `
+    <div class="dash-section">
+      <div class="dash-section-title">🚢 Frete médio por contêiner (LOGBOX)</div>
+      <div style="font-size:11.5px; color:var(--text-muted); margin-bottom:8px;">Média do frete (US$) por contêiner, por mês de ETD</div>
+      ${freteMedioChaves.length ? freteMedioChaves.map(k => {
+        const b = freteMedioBuckets[k];
+        const media = b.soma / b.qtde;
+        return `<div class="an-bar-row">
+          <div class="an-bar-label">${anMesLabel(k)}</div>
+          <div class="an-bar-track"><div class="an-bar-fill an-fill-real" style="width:${(media / freteMedioMax) * 100}%;"></div></div>
+          <div class="an-bar-value">US$ ${fmtN(media, 0)}</div>
         </div>`;
       }).join("") : `<div class="empty-state">Sem dados de frete lançados ainda.</div>`}
     </div>`;
@@ -6533,7 +6590,7 @@ function renderDashboardAnalitico(d){
       </div>
     </div>`;
 
-  el.innerHTML = kpisHtml + empresaHtml + `<div class="dash-grid-2">${freteHtml}${evolucaoHtml}</div>` + cambioHtml + `<div class="dash-grid-2">${marcasHtml}${leadHtml}</div>`;
+  el.innerHTML = kpisHtml + empresaHtml + `<div class="dash-grid-2">${freteHtml}${freteMedioHtml}</div>` + evolucaoHtml + cambioHtml + `<div class="dash-grid-2">${marcasHtml}${leadHtml}</div>`;
 }
 
 /* ============================================================ */
@@ -6621,13 +6678,41 @@ async function loadPainelGeral(){
   renderPainelGeral();
 }
 
+const PG_PERIODO_KEY = "pgPeriodo";
+function pgPeriodoAtual(){
+  let p = "tudo";
+  try { p = localStorage.getItem(PG_PERIODO_KEY) || "tudo"; } catch(e){}
+  if (!["3", "6", "12", "tudo"].includes(p)) p = "tudo";
+  return p;
+}
+window.pgSetPeriodo = function(p){
+  try { localStorage.setItem(PG_PERIODO_KEY, p); } catch(e){}
+  renderPainelGeral();
+};
+
 function renderPainelGeral(){
   if (!PG_DATA) return;
-  const { registros, meses } = PG_DATA;
+  const { registros, meses: todosMeses } = PG_DATA;
   const el = document.getElementById("painelGeralContent");
   if (!el) return;
 
   const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const hojeChave = anMesChave(hoje.toISOString().slice(0, 10));
+
+  // período visível (3/6/12/Tudo) — lembra a última escolha (localStorage), padrão "Tudo" (todos os
+  // meses, desde o primeiro contêiner) — pedido de Wissam, 13ª rodada
+  const periodo = pgPeriodoAtual();
+  let meses = todosMeses;
+  if (periodo !== "tudo"){
+    const n = Number(periodo);
+    const idxHoje = todosMeses.indexOf(hojeChave);
+    const centro = idxHoje >= 0 ? idxHoje : todosMeses.length - 1;
+    let ini = Math.max(0, centro - Math.floor(n / 2));
+    let fim = Math.min(todosMeses.length, ini + n);
+    ini = Math.max(0, fim - n);
+    meses = todosMeses.slice(ini, fim);
+  }
+
   const somaJanela = (dias) => {
     const limite = new Date(hoje.getTime() + dias * 86400000);
     let real = 0, previsto = 0;
@@ -6639,62 +6724,85 @@ function renderPainelGeral(){
   };
   const j30 = somaJanela(30), j60 = somaJanela(60), j90 = somaJanela(90);
   const kpiCard = (label, j) => `
-    <div class="dash-kpi">
+    <div class="dash-kpi pg-kpi-card">
       <div class="dash-kpi-label">📅 ${label}</div>
       <div class="dash-kpi-value">R$ ${fmtN(j.total, 0)}</div>
       <div class="dash-kpi-sub"><span class="pg-kpi-real">✅ R$ ${fmtN(j.real, 0)} real</span> · <span class="pg-kpi-previsto">⏳ R$ ${fmtN(j.previsto, 0)} previsto</span></div>
     </div>`;
   const kpisHtml = `<div class="dash-kpis">${kpiCard("Próximos 30 dias", j30)}${kpiCard("Próximos 60 dias", j60)}${kpiCard("Próximos 90 dias", j90)}</div>`;
 
+  const periodoBtn = (val, label) => `<button class="pg-periodo-btn${periodo === val ? " active" : ""}" onclick="pgSetPeriodo('${val}')">${label}</button>`;
+  const periodoHtml = `<div class="pg-periodo-bar">
+    <span style="font-size:11.5px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:.4px;">Período:</span>
+    ${periodoBtn("3", "3 meses")}${periodoBtn("6", "6 meses")}${periodoBtn("12", "12 meses")}${periodoBtn("tudo", "Tudo")}
+  </div>`;
+
   const somaCel = (categoria, mes, real) => registros.filter(r => r.categoria === categoria && anMesChave(r.data) === mes && r.real === real).reduce((s, r) => s + r.valor, 0);
 
-  const linhas = meses.map(mes => {
-    const despR = somaCel("despesas", mes, true), despP = somaCel("despesas", mes, false);
-    const camR = somaCel("cambio", mes, true), camP = somaCel("cambio", mes, false);
-    const mtiR = somaCel("mti", mes, true), mtiP = somaCel("mti", mes, false);
-    return { mes, despR, despP, camR, camP, mtiR, mtiP, totR: despR + camR + mtiR, totP: despP + camP + mtiP };
+  // categorias viram LINHA, meses viram COLUNA (Previsto antes de Real) — pedido de Wissam, 13ª rodada
+  const CATEGORIAS = [
+    { key: "despesas", label: "Despesas + Impostos LOGBOX", icone: "💸" },
+    { key: "cambio", label: "Câmbio LOGBOX", icone: "💱" },
+    { key: "mti", label: "Parcelas MTI", icone: "📄" }
+  ];
+  const dados = CATEGORIAS.map(cat => {
+    const porMes = meses.map(mes => ({ mes, previsto: somaCel(cat.key, mes, false), real: somaCel(cat.key, mes, true) }));
+    return { ...cat, porMes, totPrevisto: porMes.reduce((s, m) => s + m.previsto, 0), totReal: porMes.reduce((s, m) => s + m.real, 0) };
   });
+  const totalPorMes = meses.map((mes, i) => ({
+    mes,
+    previsto: dados.reduce((s, d) => s + d.porMes[i].previsto, 0),
+    real: dados.reduce((s, d) => s + d.porMes[i].real, 0)
+  }));
+  const totalGeralPrevisto = dados.reduce((s, d) => s + d.totPrevisto, 0);
+  const totalGeralReal = dados.reduce((s, d) => s + d.totReal, 0);
 
-  const totalGeral = linhas.reduce((acc, l) => ({
-    despR: acc.despR + l.despR, despP: acc.despP + l.despP, camR: acc.camR + l.camR, camP: acc.camP + l.camP,
-    mtiR: acc.mtiR + l.mtiR, mtiP: acc.mtiP + l.mtiP, totR: acc.totR + l.totR, totP: acc.totP + l.totP
-  }), { despR: 0, despP: 0, camR: 0, camP: 0, mtiR: 0, mtiP: 0, totR: 0, totP: 0 });
+  const celHtml = (categoria, mes, real, valor, mesAtual) => {
+    const cls = `${mesAtual ? "pg-mes-atual " : ""}${real ? "an-real" : "an-previsto"}`;
+    return valor > 0
+      ? `<td class="${cls} an-cell-click" onclick="pgAbrirDrilldown('${categoria}','${mes}',${real})"><span class="an-chip ${real ? "an-chip-real" : "an-chip-previsto"}">${fmtN(valor, 0)}</span></td>`
+      : `<td class="${cls}">—</td>`;
+  };
 
-  const cellHtml = (categoria, mes, real, valor) => valor > 0
-    ? `<td class="${real ? "an-real" : "an-previsto"} an-cell-click" onclick="pgAbrirDrilldown('${categoria}','${mes}',${real})">${fmtN(valor, 0)}</td>`
-    : `<td class="${real ? "an-real" : "an-previsto"}">—</td>`;
+  const mesHeaderHtml = meses.map(mes => `<th colspan="2" class="${mes === hojeChave ? "pg-mes-atual" : ""}">${anMesLabel(mes)}</th>`).join("");
+  const mesSubHeaderHtml = meses.map(mes => {
+    const cls = mes === hojeChave ? "pg-mes-atual" : "";
+    return `<th class="${cls}">Previsto</th><th class="${cls}">Real</th>`;
+  }).join("");
+
+  const linhasHtml = dados.map(d => `<tr>
+    <td class="pg-cat-cell"><span class="pg-cat-label">${d.icone} ${d.label}</span></td>
+    ${d.porMes.map(m => `${celHtml(d.key, m.mes, false, m.previsto, m.mes === hojeChave)}${celHtml(d.key, m.mes, true, m.real, m.mes === hojeChave)}`).join("")}
+    <td class="an-previsto pg-total-col">${fmtN(d.totPrevisto, 0)}</td><td class="an-real">${fmtN(d.totReal, 0)}</td>
+  </tr>`).join("");
+
+  const totalRowHtml = `<tr class="an-total-row">
+    <td class="pg-cat-cell">TOTAL</td>
+    ${totalPorMes.map(m => {
+      const cls = m.mes === hojeChave ? "pg-mes-atual" : "";
+      return `<td class="an-previsto ${cls}">${fmtN(m.previsto, 0)}</td><td class="an-real ${cls}">${fmtN(m.real, 0)}</td>`;
+    }).join("")}
+    <td class="an-previsto pg-total-col">${fmtN(totalGeralPrevisto, 0)}</td><td class="an-real">${fmtN(totalGeralReal, 0)}</td>
+  </tr>`;
 
   const tabelaHtml = `
     <div class="dash-section">
       <div class="dash-section-title">📊 Fluxo de caixa projetado por mês</div>
-      <div class="an-legend"><span class="pg-kpi-real">● Real (já lançado)</span><span class="pg-kpi-previsto">● Previsto (estimado)</span><span style="margin-left:auto; font-size:11px;">clique num valor pra ver o detalhe</span></div>
-      <div style="overflow-x:auto;">
-      <table class="an-table">
+      ${periodoHtml}
+      <div class="an-legend"><span class="pg-kpi-previsto">● Previsto (estimado)</span><span class="pg-kpi-real">● Real (já lançado)</span><span style="margin-left:auto; font-size:11px;">clique num valor pra ver o detalhe</span></div>
+      <div style="overflow:auto; max-height:520px;">
+      <table class="an-table pg-table">
         <thead>
           <tr>
-            <th rowspan="2" style="text-align:left; vertical-align:bottom;">Mês</th>
-            <th colspan="2">Despesas + Impostos LOGBOX</th>
-            <th colspan="2">Câmbio LOGBOX</th>
-            <th colspan="2">Parcelas MTI</th>
-            <th colspan="2">TOTAL</th>
+            <th rowspan="2" class="pg-cat-cell">Descrição</th>
+            ${mesHeaderHtml}
+            <th colspan="2" class="pg-total-col">Total do período</th>
           </tr>
-          <tr><th>Real</th><th>Previsto</th><th>Real</th><th>Previsto</th><th>Real</th><th>Previsto</th><th>Real</th><th>Previsto</th></tr>
+          <tr>${mesSubHeaderHtml}<th class="pg-total-col">Previsto</th><th>Real</th></tr>
         </thead>
         <tbody>
-          ${linhas.map(l => `<tr>
-            <td style="text-align:left; font-family:'Inter',sans-serif; font-weight:700;">${anMesLabel(l.mes)}</td>
-            ${cellHtml("despesas", l.mes, true, l.despR)}${cellHtml("despesas", l.mes, false, l.despP)}
-            ${cellHtml("cambio", l.mes, true, l.camR)}${cellHtml("cambio", l.mes, false, l.camP)}
-            ${cellHtml("mti", l.mes, true, l.mtiR)}${cellHtml("mti", l.mes, false, l.mtiP)}
-            <td class="an-real">${fmtN(l.totR, 0)}</td><td class="an-previsto">${fmtN(l.totP, 0)}</td>
-          </tr>`).join("")}
-          <tr class="an-total-row">
-            <td style="text-align:left;">TOTAL</td>
-            <td class="an-real">${fmtN(totalGeral.despR, 0)}</td><td class="an-previsto">${fmtN(totalGeral.despP, 0)}</td>
-            <td class="an-real">${fmtN(totalGeral.camR, 0)}</td><td class="an-previsto">${fmtN(totalGeral.camP, 0)}</td>
-            <td class="an-real">${fmtN(totalGeral.mtiR, 0)}</td><td class="an-previsto">${fmtN(totalGeral.mtiP, 0)}</td>
-            <td class="an-real">${fmtN(totalGeral.totR, 0)}</td><td class="an-previsto">${fmtN(totalGeral.totP, 0)}</td>
-          </tr>
+          ${linhasHtml}
+          ${totalRowHtml}
         </tbody>
       </table>
       </div>
@@ -6748,10 +6856,18 @@ async function finGarantirContainers(forcar){
   // (correção 29/09, pedido do Wissam)
   const { data, error } = await db.from("imp_containers").select("*, imp_container_itens(*)")
     .neq("fonte", "mti")
-    .or("status_embarque.eq.desembaraco,chegou_em.not.is.null")
-    .order("etd", { ascending: false });
+    .or("status_embarque.eq.desembaraco,chegou_em.not.is.null");
   if (error){ toast("Erro ao carregar contêineres.", "error"); FIN_CONTAINERS = FIN_CONTAINERS || []; return FIN_CONTAINERS; }
-  FIN_CONTAINERS = data || [];
+  // ordena pela data de chegada (ainda não chegados sempre no topo); em caso de empate na data
+  // (ou ambos ainda não chegados), desempata pelo número do contêiner em ordem DECRESCENTE
+  // (número maior primeiro) — pedido de Wissam, 13ª rodada
+  FIN_CONTAINERS = (data || []).slice().sort((a, b) => {
+    if (!a.chegou_em && !b.chegou_em) return compareNatural(b.nome, a.nome);
+    if (!a.chegou_em) return -1;
+    if (!b.chegou_em) return 1;
+    const cmp = String(b.chegou_em).localeCompare(String(a.chegou_em));
+    return cmp !== 0 ? cmp : compareNatural(b.nome, a.nome);
+  });
   return FIN_CONTAINERS;
 }
 async function finGarantirProdutos(){
