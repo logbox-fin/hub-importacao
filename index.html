@@ -489,6 +489,10 @@
   table.pg-table th.pg-mes-atual, table.pg-table td.pg-mes-atual{ background:#dbeafe; }
   table.pg-table tbody tr.an-total-row td.pg-mes-atual{ background:#bfdbfe; }
   table.pg-table th.pg-total-col, table.pg-table td.pg-total-col{ border-left:2px solid var(--border-strong); }
+  /* tudo centralizado e com respiro nas bordas — pedido de Wissam (valores estavam encostados nas bordas das células) */
+  table.an-table.pg-table th, table.an-table.pg-table td,
+  table.an-table.pg-table th.pg-cat-cell, table.an-table.pg-table td.pg-cat-cell{ text-align:center; vertical-align:middle; padding:11px 16px; }
+  table.an-table.pg-table td.pg-cat-cell .pg-cat-label{ display:inline-block; }
   .pg-cat-label{ display:flex; align-items:center; gap:7px; font-weight:700; font-family:'Inter',sans-serif; }
   .an-chip{ display:inline-block; padding:3px 10px; border-radius:6px; font-weight:800; font-size:12px; }
   .an-chip.an-chip-real{ background:#dcfce7; color:#166534; }
@@ -1923,6 +1927,13 @@ document.getElementById("confirmOkBtn").addEventListener("click", async () => {
 /* ======================= CONFIGURAÇÕES ======================= */
 /* ============================================================ */
 let CONFIG = null;
+// garante CONFIG carregado (telas fora de Configurações — B/L, detalhe do contêiner — também precisam da lista de agentes)
+async function garantirConfig(){
+  if (CONFIG) return CONFIG;
+  const { data } = await db.from("imp_config").select("*").limit(1).maybeSingle();
+  if (data) CONFIG = data;
+  return CONFIG;
+}
 
 async function loadConfig(){
   const { data, error } = await db.from("imp_config").select("*").limit(1).maybeSingle();
@@ -4891,6 +4902,44 @@ function addBusinessDays(dateStr, dias){
   }
   return d.toISOString().slice(0, 10);
 }
+// ---- Calendário de dias úteis do Brasil (sáb/dom + feriados nacionais) — usado na data padrão do Câmbio no fluxo de caixa ----
+function _isoUTC(d){ return d.toISOString().slice(0, 10); }
+function _pascoa(ano){ // algoritmo de Meeus/Jones/Butcher
+  const a = ano % 19, b = Math.floor(ano / 100), c = ano % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(Date.UTC(ano, mes - 1, dia));
+}
+const _FERIADOS_CACHE = {};
+function feriadosNacionaisBR(ano){
+  if (_FERIADOS_CACHE[ano]) return _FERIADOS_CACHE[ano];
+  const set = new Set();
+  [[1,1],[4,21],[5,1],[9,7],[10,12],[11,2],[11,15],[11,20],[12,25]].forEach(([m, d]) => set.add(_isoUTC(new Date(Date.UTC(ano, m - 1, d)))));
+  const p = _pascoa(ano);
+  [-48, -47, -2, 60].forEach(off => set.add(_isoUTC(new Date(p.getTime() + off * 86400000)))); // Carnaval (seg/ter), Sexta-feira Santa, Corpus Christi
+  _FERIADOS_CACHE[ano] = set;
+  return set;
+}
+function ehDiaUtilBR(d){ // d = Date em UTC
+  const dow = d.getUTCDay();
+  if (dow === 0 || dow === 6) return false;
+  return !feriadosNacionaisBR(d.getUTCFullYear()).has(_isoUTC(d));
+}
+// "YYYY-MM-DD" + meses + dias, depois joga pro PRÓXIMO dia útil (pra frente) se cair em fim de semana/feriado
+function dataMaisMesesDiasProxDiaUtil(dateStr, meses, dias){
+  if (!dateStr) return null;
+  const [y, m, dd] = String(dateStr).slice(0, 10).split("-").map(Number);
+  const alvoMes = m - 1 + meses;
+  const ano = y + Math.floor(alvoMes / 12), mes = ((alvoMes % 12) + 12) % 12;
+  const ultimoDiaMes = new Date(Date.UTC(ano, mes + 1, 0)).getUTCDate();
+  let d = new Date(Date.UTC(ano, mes, Math.min(dd, ultimoDiaMes)));
+  d = new Date(d.getTime() + dias * 86400000);
+  while (!ehDiaUtilBR(d)) d = new Date(d.getTime() + 86400000);
+  return _isoUTC(d);
+}
 // estimativa de chegada no galpão: ETA + dias úteis por fonte (LOGBOX 4, MTI 7)
 function calcEtaGalpaoEstimado(etaStr, fonte){
   if (!etaStr) return null;
@@ -5605,6 +5654,7 @@ window.blUploadIniciar = async function(evt, fonte, containerId){
   } catch (e){
     toast("Não consegui ler esse PDF automaticamente — confira e preencha os campos manualmente.", "error");
   }
+  await garantirConfig();
   await blCarregarAliasesAgente();
   campos.agente_nome = blResolverAgenteInicial(agenteRawNome);
   campos.data_china = "";
@@ -5750,6 +5800,7 @@ window.blSalvarConferencia = async function(){
 window.blAbrirVisualizacao = async function(fonte, containerId){
   const container = PL_CONTAINERS[fonte]?.find(c => c.id === containerId);
   if (!container){ toast("Contêiner não encontrado.", "error"); return; }
+  await garantirConfig();
   await blCarregarAliasesAgente();
   BL_CONFERENCIA = {
     fonte, containerId, file: null, modo: "edicao", agenteRawNome: "", _novoAgente: false,
@@ -6138,16 +6189,18 @@ window.fecharDetalheOverlay = function(){
   KB_DETALHE = null;
 };
 
-window.abrirContainerDetalhe = function(fonte, containerId){
+window.abrirContainerDetalhe = async function(fonte, containerId){
   const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
   if (!container){ toast("Contêiner não encontrado.", "error"); return; }
+  await garantirConfig(); // lista de agentes de carga vem de imp_config (não depende de ter aberto Configurações antes)
   KB_DETALHE = null;
   PL_DETALHE = { fonte, containerId };
   renderContainerDetalhe();
 };
-window.abrirKanbanDetalhe = function(fonte, containerId){
+window.abrirKanbanDetalhe = async function(fonte, containerId){
   const container = PL_CONTAINERS[fonte].find(c => c.id === containerId);
   if (!container){ toast("Contêiner não encontrado.", "error"); return; }
+  await garantirConfig();
   PL_DETALHE = null;
   KB_DETALHE = { fonte, containerId };
   renderKanbanContainerDetalhe();
@@ -7170,7 +7223,10 @@ async function loadPainelGeral(){
       const valorImp = temRealImp ? Number(c.real_imp_despesas) : previsaoImpDespesas(c);
       if (valorImp !== null && valorImp !== undefined) registros.push({ categoria: "despesas", real: temRealImp, data: dataBase, valor: valorImp, nome: c.nome });
     }
-    const dataCambio = c.data_fechamento_cambio || c.prev_data_cambio_manual || dataBase;
+    // Câmbio NÃO segue a chegada (ETA): usa a data de fechamento lançada ou a data de competência da Previsão de Custos;
+    // sem nenhuma das duas, estima ETA + 2 meses e 15 dias, jogado pro próximo dia útil (pedido de Wissam)
+    const etaBaseCambio = c.eta || (c.chegou_em ? String(c.chegou_em).slice(0, 10) : null);
+    const dataCambio = c.data_fechamento_cambio || c.prev_data_cambio_manual || dataMaisMesesDiasProxDiaUtil(etaBaseCambio, 2, 15);
     if (dataCambio){
       const temRealCambio = c.real_cambio !== null && c.real_cambio !== undefined && c.real_cambio !== "";
       const valorCambio = temRealCambio ? Number(c.real_cambio) : previsaoCambio(c);
