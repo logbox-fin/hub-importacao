@@ -8704,6 +8704,33 @@ window.precSelecionarContainer = async function(containerId){
   chip.innerHTML = `<span class="fin-status-chip ok">✅ ${PREC_APOIO.imp_nfe_apoio_itens.length} SKU(s)</span>`;
   precRender();
 };
+// SKUs cujo VMLD pode ser ajustado À MÃO só nesta aba (Precificação — Custo Base de Dados). O ajuste fica salvo em
+// imp_containers.prec_vmld_override ({sku: valor}) e NUNCA vai pro Apoio NF-e, Fechamento ou Contábil; o rateio das
+// despesas continua usando o VMLD original — o ajuste só refaz a soma (Valor Total) e o Custo/Unid. da linha.
+const PREC_SKUS_VMLD_EDITAVEL = new Set(["TM-MA10", "TM-MA11"]);
+function precSkuVmldEditavel(sku){ return PREC_SKUS_VMLD_EDITAVEL.has(String(sku || "").trim().toUpperCase()); }
+function precVmldOverride(sku){
+  const ov = PREC_CONTAINER?.prec_vmld_override;
+  if (!ov || typeof ov !== "object") return null;
+  const v = ov[String(sku || "").trim().toUpperCase()];
+  return (v === undefined || v === null || v === "" || !Number.isFinite(Number(v))) ? null : Number(v);
+}
+window.precEditarVmld = async function(sku, valorStr){
+  if (!PREC_CONTAINER || !precSkuVmldEditavel(sku)) return;
+  const chave = String(sku).trim().toUpperCase();
+  const item = (PREC_APOIO?.imp_nfe_apoio_itens || []).find(it => String(it.sku || "").trim().toUpperCase() === chave);
+  const original = item ? round2(Number(item.vmld) || 0) : null;
+  const n = parseNum(valorStr);
+  const novo = { ...(PREC_CONTAINER.prec_vmld_override || {}) };
+  // vazio ou igual ao VMLD original = volta ao normal (tira o ajuste)
+  if (n === null || (original !== null && round2(n) === original)) delete novo[chave];
+  else novo[chave] = round2(n);
+  const { error } = await db.from("imp_containers").update({ prec_vmld_override: novo }).eq("id", PREC_CONTAINER.id);
+  if (error){ toast("Erro ao salvar o VMLD.", "error"); precRender(); return; }
+  PREC_CONTAINER.prec_vmld_override = novo;
+  toast(novo[chave] !== undefined ? "VMLD ajustado — só nesta aba." : "VMLD voltou ao original.");
+  precRender();
+};
 function precComputar(){
   if (!PREC_APOIO || !PREC_FECH) return [];
   const itens = PREC_APOIO.imp_nfe_apoio_itens || [];
@@ -8739,11 +8766,15 @@ function precComputar(){
     // usa valor_cofins_padrao (não o valor_cofins real) — aqui a Composição de CMV já mostra Cofins(+)
     // como coluna própria, somar o valor_cofins real de novo contaria o excedente em dobro
     const tributaveis = round2((Number(it.valor_ipi)||0)+(Number(it.valor_pis)||0)+(Number(it.valor_icms)||0)+(Number(it.valor_cofins_padrao)||0));
-    const valorTotal = round2((Number(it.vmld)||0) + localCharge + agente + sda + atualComex + transporteBrasil + armazenagem + diretos);
+    // VMLD ajustado à mão (só TM-MA10/TM-MA11, só esta tabela): entra apenas na soma — o rateio acima (shares) e a
+    // tabela Contábil seguem com o VMLD original
+    const vmldOverride = precSkuVmldEditavel(it.sku) ? precVmldOverride(it.sku) : null;
+    const vmldBase = vmldOverride !== null ? vmldOverride : (Number(it.vmld)||0);
+    const valorTotal = round2(vmldBase + localCharge + agente + sda + atualComex + transporteBrasil + armazenagem + diretos);
     const custoBase = it.qtde ? valorTotal/it.qtde : 0;
     const valorTotalContabil = round2((Number(it.vmld)||0) + (Number(it.valor_ii)||0) + (Number(it.tx_siscomex)||0) + (Number(it.marinha_mercante)||0) + (Number(it.valor_cofins_mais)||0));
     const custoContabil = it.qtde ? valorTotalContabil/it.qtde : 0;
-    return { ...it, share, localCharge, agente, sda, atualComex, transporteBrasil, armazenagem, diretos, tributaveis, valorTotal, custoBase, valorTotalContabil, custoContabil };
+    return { ...it, share, vmldBase, vmldOverride, localCharge, agente, sda, atualComex, transporteBrasil, armazenagem, diretos, tributaveis, valorTotal, custoBase, valorTotalContabil, custoContabil };
   });
 }
 function precRender(){
@@ -8777,7 +8808,9 @@ function precRender(){
     <tr>
       <td class="left"><b>${escapeHtml(it.sku||"—")}</b><div style="font-size:10.5px; color:var(--text-faint);">${escapeHtml((it.descricao_despachante||"").slice(0,34))}</div></td>
       <td>${fmtN(it.qtde,0)}</td>
-      <td class="mono">${fmtN(it.vmld,2)}</td>
+      ${precSkuVmldEditavel(it.sku)
+        ? `<td class="mono"><input type="text" inputmode="decimal" class="fin-input" style="min-width:110px; ${it.vmldOverride !== null ? "background:#fef3c7; border-color:#f59e0b;" : ""}" value="${fmtN(it.vmldBase,2)}" title="${it.vmldOverride !== null ? `Ajustado à mão — original: ${fmtN(it.vmld,2)}. Apague ou digite o original pra voltar.` : "Editável só nesta aba"}" onchange="precEditarVmld('${escJsStr(it.sku)}', this.value)"></td>`
+        : `<td class="mono">${fmtN(it.vmld,2)}</td>`}
       <td class="mono">${fmtN(it.localCharge,2)}</td>
       <td class="mono">${fmtN(it.agente,2)}</td>
       <td class="mono">${fmtN(it.marinha_mercante,2)}</td>
