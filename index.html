@@ -707,6 +707,20 @@
   ::-webkit-scrollbar{ height:10px; width:10px; }
   ::-webkit-scrollbar-thumb{ background: var(--border-strong); border-radius:10px; }
   @media (max-width: 900px){ #sidebar{ width:70px; } .sidebar-brand span, .nav-group-label, .nav-item span.label{ display:none; } }
+
+  /* ===== login + modo somente visualização ===== */
+  #loginOverlay{ position:fixed; inset:0; z-index:1000; background:var(--bg, #f4f6fb); display:none; align-items:center; justify-content:center; padding:20px; }
+  .login-card{ width:100%; max-width:360px; background:#fff; border:1px solid var(--border); border-radius:14px; box-shadow:0 10px 40px rgba(15,23,42,.10); padding:30px 28px; display:flex; flex-direction:column; gap:8px; }
+  .login-brand{ font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:700; color:var(--text); margin-bottom:12px; line-height:1.1; }
+  .login-brand span{ display:block; font-family:'Inter',sans-serif; font-size:11px; font-weight:500; color:var(--text-faint); text-transform:uppercase; letter-spacing:.6px; margin-top:3px; }
+  .login-card label{ font-size:12px; font-weight:700; color:var(--text); margin-top:6px; }
+  .login-card input{ padding:10px 12px; border-radius:8px; border:1px solid var(--border-strong); font-size:15px; width:100%; box-sizing:border-box; }
+  .login-card input:focus{ outline:2px solid var(--accent-soft); border-color:var(--accent); }
+  .login-erro{ min-height:18px; font-size:12.5px; color:#b91c1c; font-weight:600; }
+  .login-card .btn{ justify-content:center; padding:11px; font-size:14.5px; }
+  body.auth-pending #sidebar, body.auth-pending #main{ visibility:hidden; }
+  .auth-chip{ display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600; color:var(--text-muted); }
+  #roBanner{ background:#fef3c7; color:#92400e; border-bottom:1px solid #fde68a; padding:8px 24px; font-size:12.5px; font-weight:600; flex-shrink:0; }
 </style>
 </head>
 <body>
@@ -773,9 +787,11 @@
       <div id="topbarLoteActions" style="display:none; align-items:center; gap:8px;">
         <button class="btn btn-ghost btn-sm" onclick="abrirGerarPedido()">🛒 Gerar Pedido</button>
       </div>
+      <div class="auth-chip"><span id="authChipNome"></span><button class="btn btn-ghost btn-sm" onclick="authSair()">Sair</button></div>
       <div class="conn-status"><span class="conn-dot" id="connDot"></span><span id="connLabel">conectando…</span></div>
     </div>
   </div>
+  <div id="roBanner" style="display:none;">👁 Somente visualização — nesta aba você pode consultar tudo, mas não alterar nada.</div>
 
   <div id="content">
 
@@ -1574,6 +1590,18 @@
   </div>
 </div>
 
+<div id="loginOverlay">
+  <form class="login-card" onsubmit="authLogin(event)">
+    <div class="login-brand">HUB IMPORTAÇÃO<span>LogBox</span></div>
+    <label>Usuário</label>
+    <input type="text" id="loginUsuario" autocomplete="username" autocapitalize="off" spellcheck="false">
+    <label>Senha</label>
+    <input type="password" id="loginSenha" autocomplete="current-password">
+    <div class="login-erro" id="loginErro"></div>
+    <button type="submit" class="btn btn-primary" id="loginBtn">Entrar</button>
+  </form>
+</div>
+
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
@@ -1582,6 +1610,126 @@ const SUPABASE_URL = "https://xvecqetlptysnsjadvzb.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZWNxZXRscHR5c25zamFkdnpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNjMxNTIsImV4cCI6MjA5MTkzOTE1Mn0.KQ1c30VsZc_JupmEov5a7v8T2M9dEMYaEY80o-eHZWY";
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ======================= LOGIN + PERMISSÃO POR ABA ======================= */
+/* Usuário/senha conferidos DENTRO do banco (funções imp_login / imp_validar_sessao; tabela imp_usuarios trancada).
+   A sessão fica num token (localStorage, 30 dias). O que cada usuário vê/edita vem do banco (abas / edita).
+   Limite conhecido (combinado com o Wissam): é controle de TELA — as demais tabelas do banco seguem sem RLS. */
+const AUTH_KEY = "hubImpAuthToken";
+let AUTH = null; // { token, usuario, nome, admin, abas[], edita[], view, viewAnterior, viewMudouEm }
+function authAbaPermitida(viewId){ return !!AUTH && (AUTH.admin || AUTH.abas.includes(viewId)); }
+function authEditaView(viewId){ return !!AUTH && (AUTH.admin || AUTH.edita.includes(viewId)); }
+function authPodeEscrever(){
+  if (!AUTH) return false;
+  if (authEditaView(AUTH.view)) return true;
+  // tolerância: um salvamento agendado (ex.: 600ms de debounce do Apoio NFe) não pode se perder se a pessoa trocou de aba logo em seguida
+  return !!AUTH.viewAnterior && authEditaView(AUTH.viewAnterior) && (Date.now() - AUTH.viewMudouEm) < 4000;
+}
+let _authAvisoEm = 0;
+function authAvisoSoLeitura(){
+  if (Date.now() - _authAvisoEm < 2500) return;
+  _authAvisoEm = Date.now();
+  toast("Você só pode visualizar esta aba — alterações não são permitidas.", "error");
+}
+function _authStubBloqueado(){
+  authAvisoSoLeitura();
+  const res = { data: null, error: { message: "Somente visualização nesta aba.", code: "SOMENTE_LEITURA" }, count: null, status: 403, statusText: "Forbidden" };
+  const p = new Proxy(function(){}, {
+    get(_, k){
+      if (k === "then") return (ok, ko) => Promise.resolve(res).then(ok, ko);
+      if (k === "catch") return (ko) => Promise.resolve(res).catch(ko);
+      if (k === "finally") return (f) => Promise.resolve(res).finally(f);
+      return () => p;
+    },
+    apply(){ return p; }
+  });
+  return p;
+}
+function _authProxyEscrita(obj, metodos){
+  return new Proxy(obj, {
+    get(target, prop){
+      const v = target[prop];
+      if (typeof v !== "function") return v;
+      if (metodos.includes(prop)) return (...args) => authPodeEscrever() ? v.apply(target, args) : _authStubBloqueado();
+      return v.bind(target);
+    }
+  });
+}
+// toda escrita no banco (insert/update/upsert/delete) e no Storage (upload/remove/move/copy) passa por aqui:
+// quem não tem permissão de edição na aba atual é barrado, mesmo que algum botão ainda apareça na tela
+(function(){
+  const _from = db.from.bind(db);
+  db.from = (tabela) => _authProxyEscrita(_from(tabela), ["insert", "update", "upsert", "delete"]);
+  const st = db.storage;
+  const _sfrom = st.from.bind(st);
+  st.from = (bucket) => _authProxyEscrita(_sfrom(bucket), ["upload", "update", "remove", "move", "copy"]);
+})();
+
+function authMostrarLogin(msg){
+  document.body.classList.add("auth-pending");
+  const ov = document.getElementById("loginOverlay");
+  if (ov) ov.style.display = "flex";
+  const err = document.getElementById("loginErro");
+  if (err) err.textContent = msg || "";
+  setTimeout(() => document.getElementById("loginUsuario")?.focus(), 50);
+}
+window.authLogin = async function(ev){
+  if (ev) ev.preventDefault();
+  const usuario = document.getElementById("loginUsuario").value.trim();
+  const senha = document.getElementById("loginSenha").value;
+  const err = document.getElementById("loginErro");
+  const btn = document.getElementById("loginBtn");
+  if (!usuario || !senha){ err.textContent = "Informe usuário e senha."; return; }
+  btn.disabled = true; btn.textContent = "Entrando…"; err.textContent = "";
+  const { data, error } = await db.rpc("imp_login", { p_usuario: usuario, p_senha: senha });
+  btn.disabled = false; btn.textContent = "Entrar";
+  if (error || !data){ err.textContent = "Não consegui conectar. Tente de novo."; return; }
+  if (!data.ok){ err.textContent = data.erro || "Usuário ou senha incorretos."; document.getElementById("loginSenha").value = ""; return; }
+  try { localStorage.setItem(AUTH_KEY, data.token); } catch(e){}
+  document.getElementById("loginSenha").value = "";
+  authEntrar(data);
+};
+window.authSair = async function(){
+  let tk = null;
+  try { tk = localStorage.getItem(AUTH_KEY); localStorage.removeItem(AUTH_KEY); } catch(e){}
+  if (tk){ try { await db.rpc("imp_logout", { p_token: tk }); } catch(e){} }
+  location.reload();
+};
+function authEntrar(sess){
+  AUTH = { token: sess.token || null, usuario: sess.usuario, nome: sess.nome || sess.usuario, admin: !!sess.admin,
+           abas: sess.abas || [], edita: sess.edita || [], view: null, viewAnterior: null, viewMudouEm: 0 };
+  document.body.classList.remove("auth-pending");
+  const ov = document.getElementById("loginOverlay");
+  if (ov) ov.style.display = "none";
+  const chip = document.getElementById("authChipNome");
+  if (chip) chip.textContent = "👤 " + AUTH.nome;
+  // menu: some o que o usuário não pode abrir; grupo sem nenhum item visível some inteiro
+  document.querySelectorAll(".nav-item[data-view]").forEach(n => { n.style.display = authAbaPermitida(n.dataset.view) ? "" : "none"; });
+  document.querySelectorAll(".nav-group").forEach(g => {
+    const algum = [...g.querySelectorAll(".nav-item[data-view]")].some(n => n.style.display !== "none");
+    g.style.display = algum ? "" : "none";
+  });
+  // primeira tela: Dashboard pro admin; pros demais, a primeira aba liberada do menu
+  const primeiro = authAbaPermitida("dashboard") ? document.querySelector('.nav-item[data-view="dashboard"]')
+                  : [...document.querySelectorAll(".nav-item[data-view]")].find(n => n.style.display !== "none");
+  if (primeiro) primeiro.click();
+  else toast("Seu usuário ainda não tem nenhuma aba liberada. Fale com o administrador.", "error");
+}
+async function authIniciar(){
+  let tk = null;
+  try { tk = localStorage.getItem(AUTH_KEY); } catch(e){}
+  if (!tk){ authMostrarLogin(); return; }
+  const { data, error } = await db.rpc("imp_validar_sessao", { p_token: tk });
+  if (error){ authMostrarLogin("Não consegui conectar. Tente de novo."); return; }
+  if (!data || !data.ok){ try { localStorage.removeItem(AUTH_KEY); } catch(e){} authMostrarLogin(); return; }
+  authEntrar({ ...data, token: tk });
+}
+function authAtualizarBanner(viewId){
+  const b = document.getElementById("roBanner");
+  if (!b) return;
+  const soLeitura = !!AUTH && !authEditaView(viewId) && viewId !== "dashboard" && viewId !== "ph-dashanalitico" && viewId !== "ph-painelgeral";
+  b.style.display = soLeitura ? "block" : "none";
+}
 
 /* ======================= CONSTANTES DE NEGÓCIO ======================= */
 const FRETE_PERC = { baixo:{bom:.02,medio:.03,ruim:.04}, medio:{bom:.06,medio:.09,ruim:.12}, alto:{bom:.12,medio:.18,ruim:.24} };
@@ -1843,6 +1991,13 @@ function setConn(ok){
 /* ======================= NAVEGAÇÃO ======================= */
 const loadedViews = new Set();
 function irPara(viewId, built, label){
+  // permissão por aba (login): bloqueia qualquer caminho de navegação, não só o menu
+  if (!authAbaPermitida(viewId)){
+    if (AUTH) toast("Você não tem acesso a essa aba.", "error");
+    return;
+  }
+  if (AUTH.view !== viewId){ AUTH.viewAnterior = AUTH.view; AUTH.viewMudouEm = Date.now(); AUTH.view = viewId; }
+  authAtualizarBanner(viewId);
   document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
   const clicked = document.querySelector(`.nav-item[data-view="${viewId}"]`);
   if (clicked) clicked.classList.add("active");
@@ -4746,6 +4901,7 @@ function normModelo(modeloOriginal){
 }
 
 async function plRecarregarLogbox(){
+  if (!authPodeEscrever()){ authAvisoSoLeitura(); return; }
   const btn = document.getElementById("plRecarregarBtn_logbox");
   const textoOriginal = btn ? btn.innerHTML : "";
   if (btn){ btn.disabled = true; btn.innerHTML = "⏳ Lendo a planilha…"; }
@@ -4774,6 +4930,7 @@ async function plRecarregarLogbox(){
 }
 
 async function plRecarregarMti(){
+  if (!authPodeEscrever()){ authAvisoSoLeitura(); return; }
   const btn = document.getElementById("plRecarregarBtn_mti");
   const textoOriginal = btn ? btn.innerHTML : "";
   if (btn){ btn.disabled = true; btn.innerHTML = "⏳ Lendo a planilha…"; }
@@ -8893,7 +9050,7 @@ function precRender(){
 }
 
 /* ======================= INIT ======================= */
-irPara("dashboard", true, "Dashboard");
+authIniciar();
 </script>
 </body>
 </html>
