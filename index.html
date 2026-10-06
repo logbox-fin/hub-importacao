@@ -539,6 +539,12 @@
   table.pc-table tbody tr.pc-row-pago{ background: var(--success-soft); }
   table.pc-table tbody tr.pc-row-pago td:first-child{ border-left:3px solid var(--success); }
   table.pc-table tbody tr:not(.pc-row-pago) td:first-child{ border-left:3px solid var(--warn); }
+  table.pc-table tbody tr.pc-row-semfrete td{ border-top:2px solid var(--danger); border-bottom:2px solid var(--danger); }
+  table.pc-table tbody tr.pc-row-semfrete td:first-child{ border-left:4px solid var(--danger); }
+  table.pc-table tbody tr.pc-row-semfrete td:last-child{ border-right:2px solid var(--danger); }
+  .pc-semfrete-tag{ display:block; margin-top:3px; font-size:10.5px; font-weight:700; color:var(--danger); letter-spacing:.2px; white-space:nowrap; }
+  .pc-manual-tag{ display:block; margin-top:3px; font-size:10.5px; font-weight:700; color:var(--text-muted); letter-spacing:.2px; white-space:nowrap; }
+  #pcAvisoFrete{ margin:0 0 12px; padding:10px 14px; border:1px solid var(--danger); border-radius:8px; background:#fef2f2; color:#991b1b; font-size:12.5px; font-weight:600; }
   table.pc-table th, table.pc-table td{ text-align:center; }
   table.pc-table td{ font-size:13.5px; }
   table.pc-table td.mono{ font-weight:700; letter-spacing:.2px; }
@@ -830,6 +836,7 @@
     <!-- ============ PREVISÃO DOS CUSTOS (LOGBOX) ============ -->
     <div class="view" id="view-ph-prevcustos">
       <div id="prevCustosKpis" class="pc-kpis"></div>
+      <div id="pcAvisoFrete" style="display:none;"></div>
       <div class="toolbar">
         <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted);">💵 Previsão dos Custos — LOGBOX</div>
         <div class="spacer"></div>
@@ -904,6 +911,14 @@
               <select id="cfg_cenario"><option value="baixo">🟢 Baixo</option><option value="medio">🟡 Médio</option><option value="alto">🔴 Alto</option></select>
             </div>
           </div>
+        </fieldset>
+        <fieldset style="margin:16px 0 0;">
+          <legend>Previsão de Impostos e Despesas (LOGBOX)</legend>
+          <div class="field-grid cols-3">
+            <div class="field"><label>% padrão IMP+Desp. (contêineres novos)</label><input type="text" inputmode="decimal" id="cfg_perc_imp_desp" class="mono-field"></div>
+            <div class="field"><label>Capatazia prevista (R$ por contêiner)</label><input type="text" inputmode="decimal" id="cfg_capatazia_prev" class="mono-field"></div>
+          </div>
+          <div style="font-size:12px; color:var(--text-faint); margin-top:8px;">Previsão = (previsão de câmbio + frete do card em R$ + capatazia) × %. Mudar o % padrão vale só para contêineres criados depois; os que já existem mantêm o % deles. A capatazia vale para todas as previsões ainda em aberto.</div>
         </fieldset>
         <div style="display:flex; justify-content:flex-end; margin-top:14px;">
           <button class="btn btn-primary" onclick="salvarConfig()">💾 Salvar Configurações</button>
@@ -2099,6 +2114,8 @@ async function loadConfig(){
   document.getElementById("cfg_rmb_usd").value = CONFIG.rmb_usd;
   document.getElementById("cfg_usd_brl").value = CONFIG.usd_brl;
   document.getElementById("cfg_cenario").value = CONFIG.cenario || "medio";
+  document.getElementById("cfg_perc_imp_desp").value = (CONFIG.perc_imp_despesas_padrao ?? 90);
+  document.getElementById("cfg_capatazia_prev").value = fmtN(CONFIG.capatazia_prev ?? 850, 2);
   renderTagList("cfg_marcas_list", CONFIG.marcas || [], "marcas");
   renderTagList("cfg_responsaveis_list", CONFIG.responsaveis || [], "responsaveis");
   renderTagList("cfg_agentes_list", CONFIG.agentes_carga || [], "agentes_carga");
@@ -2227,6 +2244,9 @@ window.salvarConfig = async function(){
   const usd_brl = parseNum(document.getElementById("cfg_usd_brl").value);
   const cenario = document.getElementById("cfg_cenario").value;
   if (rmb_usd === null || usd_brl === null){ toast("Preencha os câmbios corretamente.", "error"); return; }
+  const perc_imp_despesas_padrao = parseNum(document.getElementById("cfg_perc_imp_desp").value);
+  const capatazia_prev = parseNum(document.getElementById("cfg_capatazia_prev").value);
+  if (perc_imp_despesas_padrao === null || perc_imp_despesas_padrao < 0 || capatazia_prev === null || capatazia_prev < 0){ toast("Preencha o % padrão e a capatazia corretamente.", "error"); return; }
 
   const historicoMudou = cenario !== CONFIG.cenario || rmb_usd !== Number(CONFIG.rmb_usd) || usd_brl !== Number(CONFIG.usd_brl);
   const historico = CONFIG.historico || [];
@@ -2234,7 +2254,7 @@ window.salvarConfig = async function(){
     historico.unshift({ data: new Date().toISOString(), cenario, rmb_usd, usd_brl });
   }
 
-  const payload = { rmb_usd, usd_brl, cenario, historico };
+  const payload = { rmb_usd, usd_brl, cenario, historico, perc_imp_despesas_padrao, capatazia_prev };
   const { error } = await db.from("imp_config").update(payload).eq("id", CONFIG.id);
   if (error){ toast("Erro ao salvar configurações.", "error"); return; }
   toast("Configurações salvas.");
@@ -2516,6 +2536,7 @@ let PC_FECHAMENTOS = {};
 async function loadPrevisaoCustos(){
   const tbody = document.getElementById("pcTbody");
   if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="empty-state">Carregando…</td></tr>`;
+  await garantirConfig(); // capatazia prevista vem de Configurações
   const { data, error } = await db.from("imp_containers").select("*").eq("fonte", "logbox");
   if (error){ toast("Erro ao carregar previsão de custos.", "error"); return; }
   PC_CONTAINERS = data || [];
@@ -2569,12 +2590,36 @@ function pcDataCambioInfo(c){
   if (c.prev_data_cambio_manual) return { data: c.prev_data_cambio_manual, travado: false };
   return { data: null, travado: false };
 }
-function pcPrevisaoImpDespesas(c){
-  if (c.prev_imp_despesas_manual !== null && c.prev_imp_despesas_manual !== undefined && c.prev_imp_despesas_manual !== "") return Number(c.prev_imp_despesas_manual);
-  const cambio = pcPrevisaoCambio(c);
-  if (cambio === null || c.perc_imp_despesas === null || c.perc_imp_despesas === undefined) return null;
-  return cambio * (Number(c.perc_imp_despesas) / 100);
+/* Previsão IMP+Despesas (compartilhada com o Painel Financeiro):
+   (previsão de câmbio + frete do card em R$ + capatazia) × % do contêiner.
+   - frete do card = valor_frete_usd × estimativa_dolar do próprio contêiner (mesma cotação da previsão de câmbio)
+   - capatazia = Configurações (padrão 850)
+   - valor manual continua mandando se existir
+   - contêiner com Real já lançado mantém a conta antiga (câmbio × %) — não muda histórico */
+function impDespCapatazia(){
+  const v = CONFIG ? CONFIG.capatazia_prev : null;
+  return (v === null || v === undefined || v === "") ? 850 : Number(v);
 }
+function impDespFreteBRL(c){
+  const f = Number(c.valor_frete_usd);
+  const d = Number(c.estimativa_dolar);
+  if (c.valor_frete_usd === null || c.valor_frete_usd === undefined || c.valor_frete_usd === "" || !(f > 0)) return null;
+  if (c.estimativa_dolar === null || c.estimativa_dolar === undefined || c.estimativa_dolar === "" || !(d > 0)) return null;
+  return f * d;
+}
+function impDespPrevInfo(c, cambio){
+  const manual = (c.prev_imp_despesas_manual !== null && c.prev_imp_despesas_manual !== undefined && c.prev_imp_despesas_manual !== "");
+  if (manual) return { valor: Number(c.prev_imp_despesas_manual), manual: true, semFrete: false, cambio, frete: null, capatazia: null };
+  const perc = (c.perc_imp_despesas === null || c.perc_imp_despesas === undefined || c.perc_imp_despesas === "") ? null : Number(c.perc_imp_despesas);
+  if (cambio === null || cambio === undefined || perc === null) return { valor: null, manual: false, semFrete: false, cambio, frete: null, capatazia: null };
+  const temReal = (c.real_imp_despesas !== null && c.real_imp_despesas !== undefined && c.real_imp_despesas !== "");
+  if (temReal) return { valor: cambio * (perc / 100), manual: false, semFrete: false, cambio, frete: null, capatazia: null, perc, antiga: true };
+  const frete = impDespFreteBRL(c);
+  const capatazia = impDespCapatazia();
+  return { valor: (cambio + (frete || 0) + capatazia) * (perc / 100), manual: false, semFrete: frete === null, cambio, frete, capatazia, perc };
+}
+function pcPrevImpInfo(c){ return impDespPrevInfo(c, pcPrevisaoCambio(c)); }
+function pcPrevisaoImpDespesas(c){ return pcPrevImpInfo(c).valor; }
 function renderPrevisaoCustos(){
   const tbody = document.getElementById("pcTbody");
   const kpisEl = document.getElementById("prevCustosKpis");
@@ -2593,7 +2638,13 @@ function renderPrevisaoCustos(){
     tbody.innerHTML = lista.map(c => {
       const cambio = pcPrevisaoCambio(c);
       const cambioLancado = pcCustoProdutoLancado(c);
-      const impDesp = pcPrevisaoImpDespesas(c);
+      const impInfo = pcPrevImpInfo(c);
+      const impDesp = impInfo.valor;
+      const impTitulo = impInfo.manual
+        ? "Valor manual — clique, apague o número e saia do campo para voltar ao cálculo automático"
+        : (impInfo.cambio !== null && impInfo.cambio !== undefined && impInfo.perc !== undefined && impInfo.perc !== null && !impInfo.antiga
+          ? `(Câmbio R$ ${fmtN(impInfo.cambio, 2)} + Frete R$ ${impInfo.frete !== null ? fmtN(impInfo.frete, 2) : "— (sem frete)"} + Capatazia R$ ${fmtN(impInfo.capatazia, 2)}) × ${fmtN(impInfo.perc, 2)}% — clique para editar`
+          : "Clique para editar");
       const dataChegadaHtml = c.chegou_em
         ? fmtDate(String(c.chegou_em).slice(0, 10))
         : (c.eta ? `<span style="color:var(--text-faint);">${fmtDate(c.eta)} (estim.)</span>` : "—");
@@ -2604,7 +2655,7 @@ function renderPrevisaoCustos(){
       const temReal2 = c.real_cambio !== null && c.real_cambio !== undefined && c.real_cambio !== "";
       const travadoInfo = pcCambioTravadoInfo(c);
       const dataCambioInfo = pcDataCambioInfo(c);
-      return `<tr class="${c.cambio_fechado ? "pc-row-pago" : ""}">
+      return `<tr class="${c.cambio_fechado ? "pc-row-pago" : ""}${impInfo.semFrete ? " pc-row-semfrete" : ""}">
         <td style="font-weight:700;">${escapeHtml(c.nome)}</td>
         <td><span class="pc-status-pill ${pcStatusClasse(c)}">${pcStatusIcone(c)} ${pcStatusLabel(c)}</span></td>
         <td>${valorPill}</td>
@@ -2615,7 +2666,7 @@ function renderPrevisaoCustos(){
         <td class="num"><input type="text" inputmode="decimal" class="mono-field pc-input" style="width:78px;" value="${fmtEdit(c.estimativa_dolar)}" onchange="pcSalvarCampo('${c.id}','estimativa_dolar', this.value)"></td>
         <td class="num"><div class="pc-perc-wrap"><input type="text" inputmode="decimal" class="mono-field pc-input" style="width:44px;" value="${c.perc_imp_despesas ?? ""}" onchange="pcSalvarCampo('${c.id}','perc_imp_despesas', this.value)"><span class="pc-perc-sign">%</span></div></td>
         <td class="num" id="pcCell_prev_imp_despesas_manual_${c.id}">${impDesp !== null
-          ? `<span class="pc-calc-chip pc-editavel" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_imp_despesas_manual',${impDesp})">${fmtN(impDesp, 2)}</span>`
+          ? `<span class="pc-calc-chip pc-editavel" title="${escapeHtml(impTitulo)}" onclick="pcEditarCampo('${c.id}','prev_imp_despesas_manual',${impDesp})">${fmtN(impDesp, 2)}</span>${impInfo.manual ? `<span class="pc-manual-tag">✎ manual</span>` : ""}${impInfo.semFrete ? `<span class="pc-semfrete-tag" title="${c.valor_frete_usd > 0 ? "Falta a cotação (Estim. Dólar) para converter o frete" : "Preencha o frete no card do contêiner"}">⚠ SEM FRETE</span>` : ""}`
           : `<span class="pc-editavel" style="color:var(--text-faint);" title="Clique para editar" onclick="pcEditarCampo('${c.id}','prev_imp_despesas_manual',null)">—</span>`}</td>
         <td class="num" id="pcCell_real_imp_despesas_${c.id}">${temReal1
           ? `<span class="pc-calc-chip pc-travado" title="Travado — Real IMP+Despesas já lançado">${fmtN(c.real_imp_despesas, 2)}</span>`
@@ -2641,6 +2692,18 @@ function renderPrevisaoCustos(){
   const somaCambioReal = pagos.reduce((s, c) => s + (Number(c.real_cambio) || 0), 0);
   const naoPagosChegados = naoPagos.filter(c => c.chegou_em).sort((a, b) => String(a.chegou_em).localeCompare(String(b.chegou_em)));
   const proximo = naoPagosChegados[0] || null;
+
+  const avisoEl = document.getElementById("pcAvisoFrete");
+  if (avisoEl){
+    const semFrete = PC_CONTAINERS.filter(c => !c.cambio_fechado && pcPrevImpInfo(c).semFrete);
+    if (semFrete.length){
+      avisoEl.style.display = "block";
+      avisoEl.innerHTML = `⚠ ${semFrete.length} contêiner(es) sem frete no card: ${semFrete.map(c => escapeHtml(c.nome)).join(", ")}. A Prev. IMP+Desp. deles está calculada sem o frete — preencha o frete no card do contêiner.`;
+    } else {
+      avisoEl.style.display = "none";
+      avisoEl.innerHTML = "";
+    }
+  }
 
   if (kpisEl){
     kpisEl.innerHTML = `
@@ -2685,6 +2748,17 @@ window.pcSalvarCampo = async function(containerId, campo, valorStr){
   if (c) c[campo] = valor;
   renderPrevisaoCustos();
 };
+// Prev. IMP+Desp.: só vira valor manual se o número realmente foi alterado (clicar e sair não "congela" o cálculo);
+// campo vazio = volta ao cálculo automático
+window.pcSalvarImpDespManual = async function(containerId, campo, valorStr){
+  const c = PC_CONTAINERS.find(x => String(x.id) === String(containerId));
+  const novo = parseNum(valorStr);
+  if (c && novo !== null){
+    const atual = pcPrevImpInfo(c).valor;
+    if (atual !== null && Math.abs(round2(novo) - round2(atual)) < 0.005){ renderPrevisaoCustos(); return; }
+  }
+  await pcSalvarCampo(containerId, campo, valorStr);
+};
 window.pcSalvarDataCambio = async function(containerId, valorStr){
   const valor = valorStr || null;
   const { error } = await db.from("imp_containers").update({ prev_data_cambio_manual: valor }).eq("id", containerId);
@@ -2698,7 +2772,8 @@ window.pcEditarCampo = function(containerId, campo, valorAtual){
   const wrap = document.getElementById(`pcCell_${campo}_${containerId}`);
   if (!wrap) return;
   const val = (valorAtual === null || valorAtual === undefined) ? "" : fmtN(valorAtual, 2);
-  wrap.innerHTML = `<input type="text" inputmode="decimal" class="mono-field pc-input" style="width:100px;" value="${val}" onblur="pcSalvarCampo('${containerId}','${campo}', this.value)" onkeydown="if(event.key==='Enter') this.blur();">`;
+  const handler = campo === "prev_imp_despesas_manual" ? "pcSalvarImpDespManual" : "pcSalvarCampo";
+  wrap.innerHTML = `<input type="text" inputmode="decimal" class="mono-field pc-input" style="width:100px;" value="${val}" onblur="${handler}('${containerId}','${campo}', this.value)" onkeydown="if(event.key==='Enter') this.blur();">`;
   const input = wrap.querySelector("input");
   input.focus();
   input.select();
@@ -7343,7 +7418,8 @@ async function loadPainelGeral(){
   if (el) el.innerHTML = `<div class="empty-state">Carregando painel financeiro…</div>`;
   const [contRes, fechRes] = await Promise.all([
     db.from("imp_containers").select("*"),
-    db.from("imp_fechamento_container").select("container_id,vmld,frete,capatazia")
+    db.from("imp_fechamento_container").select("container_id,vmld,frete,capatazia"),
+    garantirConfig() // capatazia prevista vem de Configurações
   ]);
   if (contRes.error){ toast("Erro ao carregar painel financeiro.", "error"); return; }
   const all = contRes.data || [];
@@ -7364,12 +7440,7 @@ async function loadPainelGeral(){
     if (c.valor_container === null || c.valor_container === undefined || c.estimativa_dolar === null || c.estimativa_dolar === undefined) return null;
     return Number(c.valor_container) * Number(c.estimativa_dolar);
   };
-  const previsaoImpDespesas = c => {
-    if (c.prev_imp_despesas_manual !== null && c.prev_imp_despesas_manual !== undefined && c.prev_imp_despesas_manual !== "") return Number(c.prev_imp_despesas_manual);
-    const cambio = previsaoCambio(c);
-    if (cambio === null || c.perc_imp_despesas === null || c.perc_imp_despesas === undefined) return null;
-    return cambio * (Number(c.perc_imp_despesas) / 100);
-  };
+  const previsaoImpDespesas = c => impDespPrevInfo(c, previsaoCambio(c)).valor;
 
   const registros = [];
 
