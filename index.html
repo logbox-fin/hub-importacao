@@ -6679,7 +6679,7 @@ function renderContainerDetalhe(){
   const prodNomePorSku = {};
   (PL_PRODUTOS[fonte] || []).forEach(p => { prodNomePorSku[p.sku] = p.nome_produto; });
   const rows = itens.map(it => `
-    <div class="pl-item-row">
+    <div class="pl-item-row" style="grid-template-columns: 1.6fr 1fr 70px 70px 90px 90px 90px 90px 34px;">
       <div>${escapeHtml((it.sku && prodNomePorSku[it.sku]) || String(it.modelo_original || "").split("\n")[0])}</div>
       <div>${it.sku
         ? `<div class="pir-sku-pend"><span class="pir-sku-ok">${escapeHtml(it.sku)}</span><button class="btn-icon" style="width:24px; height:24px;" title="Trocar SKU vinculado" onclick="plAbrirResolverSku('${fonte}','${it.id}','${escJsStr(escapeHtml(String(it.modelo_original || "").split("\n")[0]))}')">🔗</button></div>`
@@ -6691,13 +6691,14 @@ function renderContainerDetalhe(){
       <div class="mono">¥ ${fmtN(it.valor_rmb, 2)}</div>
       <div class="mono">${fmtN(it.cbm_total, 2)}</div>
       <div class="mono">${fmtN(it.peso_bruto_total, 1)}</div>
+      <div><button class="btn-icon" style="width:26px; height:26px;" title="Remover este item do contêiner" onclick="plExcluirItem('${fonte}','${it.id}')">🗑</button></div>
     </div>`).join("") || `<div class="empty-state">Nenhum produto neste contêiner ainda.</div>`;
 
   abrirOverlayDinamico("plDetalheOverlay", `
     ${containerDetalheHeaderHtml(container, fonte)}
     ${containerDetalheTotaisHtml(itens)}
     <div style="overflow:auto; flex:1; padding:0 24px;">
-      <div class="pl-item-row head"><div>Modelo</div><div>SKU</div><div>Qtd/Cx</div><div>Caixas</div><div>Qtd Total</div><div>Valor RMB</div><div>CBM</div><div>Peso Bruto</div></div>
+      <div class="pl-item-row head" style="grid-template-columns: 1.6fr 1fr 70px 70px 90px 90px 90px 90px 34px;"><div>Modelo</div><div>SKU</div><div>Qtd/Cx</div><div>Caixas</div><div>Qtd Total</div><div>Valor RMB</div><div>CBM</div><div>Peso Bruto</div><div></div></div>
       ${rows}
     </div>
     ${containerDetalheFooterHtml(container, fonte, containerId)}
@@ -7061,6 +7062,29 @@ document.addEventListener("click", (e) => {
   const dropdown = document.getElementById("niBuscaDropdown");
   if (dropdown && !e.target.closest("#ni_busca") && !e.target.closest("#niBuscaDropdown")) dropdown.style.display = "none";
 });
+// Remove UM item do contêiner (ex.: SKU que veio na importação mas não consta na Packing List).
+// Apaga só a linha em imp_container_itens — catálogo de produtos e outros contêineres não são tocados.
+// Vale na hora (não depende do "Salvar Alterações"); o que já foi digitado no cabeçalho é preservado.
+window.plExcluirItem = function(fonte, itemId){
+  const state = detalheAtualState();
+  if (!state) return;
+  const container = PL_CONTAINERS[state.fonte].find(c => c.id === state.containerId);
+  const it = (container?.imp_container_itens || []).find(x => x.id === itemId);
+  if (!it) return;
+  const nome = String(it.modelo_original || "").split("\n")[0] || "item";
+  const rotulo = it.sku ? `${nome} (${it.sku})` : nome;
+  pedirConfirmacao("Remover item do contêiner", `Remover "${rotulo}" do contêiner ${container?.nome || ""}?`, "O item é apagado só deste contêiner. O cadastro de produtos não é alterado.", async () => {
+    const ids = ["pld_nome","pld_etd","pld_eta","pld_valor_container","pld_frete_usd","pld_obs"];
+    const guardado = {}; ids.forEach(id => { const el = document.getElementById(id); if (el) guardado[id] = el.value; });
+    const { error } = await db.from("imp_container_itens").delete().eq("id", itemId);
+    if (error){ toast(error.code === "SOMENTE_LEITURA" ? "Somente visualização nesta aba." : "Erro ao remover o item.", "error"); return; }
+    toast("Item removido do contêiner.");
+    await refrescarTelasContainer(state.fonte);
+    refrescarDetalheSeAberto();
+    ids.forEach(id => { const el = document.getElementById(id); if (el && guardado[id] !== undefined) el.value = guardado[id]; });
+  });
+};
+
 window.salvarNovoItemContainer = async function(){
   const state = detalheAtualState();
   if (!state) return;
