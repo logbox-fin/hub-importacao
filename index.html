@@ -2,7 +2,12 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#14213d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hub Importação">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>HUB IMPORTAÇÃO</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -174,14 +179,15 @@
   .modal-foot{ padding: 16px 24px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:10px; }
   fieldset{ border:none; margin:0 0 18px; padding:0; }
   fieldset legend{ font-size: 12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color: var(--accent); margin-bottom: 10px; padding:0; }
-  .field-grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap: 12px 16px; }
-  .field-grid.cols-3{ grid-template-columns: repeat(3, 1fr); }
+  .field-grid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px 16px; }
+  .field-grid.cols-3{ grid-template-columns: repeat(3, minmax(0,1fr)); }
   .field-grid.cols-4{ grid-template-columns: repeat(4, minmax(0,1fr)); }
-  .field{ display:flex; flex-direction:column; gap:5px; }
+  .field{ display:flex; flex-direction:column; gap:5px; min-width:0; }
+  .field input:not([type=checkbox]):not([type=radio]):not([type=file]), .field select, .field textarea{ width:100%; min-width:0; box-sizing:border-box; }
   .field label{ font-size:12px; font-weight:600; color: var(--text-muted); }
-  .field input, .field select{ padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border-strong); font-size: 14px; font-family:'Inter',sans-serif; color: var(--text); background: var(--surface); }
+  .field input, .field select, .field textarea{ padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border-strong); font-size: 14px; font-family:'Inter',sans-serif; color: var(--text); background: var(--surface); }
   .field select{ cursor:pointer; }
-  .field input:focus, .field select:focus{ outline:2px solid var(--accent-soft); border-color: var(--accent); }
+  .field input:focus, .field select:focus, .field textarea:focus{ outline:2px solid var(--accent-soft); border-color: var(--accent); }
   .field input.mono-field{ font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; }
   .field input[readonly]{ background: var(--surface-alt); color: var(--text-muted); cursor:not-allowed; }
   .field input.invalid, .field select.invalid{ border-color: var(--danger); background: var(--danger-soft); }
@@ -768,10 +774,86 @@
   body.auth-pending #sidebar, body.auth-pending #main{ visibility:hidden; }
   .auth-chip{ display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600; color:var(--text-muted); }
   #roBanner{ background:#fef3c7; color:#92400e; border-bottom:1px solid #fde68a; padding:8px 24px; font-size:12.5px; font-weight:600; flex-shrink:0; }
+  /* ===== RESPONSIVO (celular e tablet) — só entra em telas estreitas; no computador nada muda ===== */
+  #menuBtn{ display:none; background:none; border:1px solid var(--border); border-radius:10px; width:42px; height:42px; font-size:22px; line-height:1; cursor:pointer; color:var(--text); flex-shrink:0; }
+  #menuBackdrop{ display:none; }
+  @media (max-width: 768px){
+    body{ display:block; }
+    /* menu lateral vira gaveta (abre pelo botão ☰) */
+    #sidebar{ position:fixed; left:0; top:0; bottom:0; width:min(84vw,300px) !important; height:100vh; height:100dvh; z-index:900; transform:translateX(-105%); transition:transform .22s ease; padding-top:env(safe-area-inset-top); }
+    body.menu-open #sidebar{ transform:none; box-shadow:0 0 40px rgba(0,0,0,.45); }
+    #menuBackdrop{ position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:850; }
+    body.menu-open #menuBackdrop{ display:block; }
+    body.menu-open{ overflow:hidden; }
+    .sidebar-brand span{ display:block; } .nav-group-label{ display:block; } .nav-item span.label{ display:inline; }
+    .nav-item{ min-height:44px; font-size:14.5px; }
+    #main{ height:100vh; height:100dvh; width:100%; }
+    #menuBtn{ display:inline-flex; align-items:center; justify-content:center; }
+    #topbar{ padding:10px 12px; padding-top:calc(10px + env(safe-area-inset-top)); gap:10px; }
+    #topbar > div:first-of-type{ display:flex; align-items:center; gap:10px; min-width:0; flex:1; }
+    #topbar h2{ font-size:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    #topbar .breadcrumb{ display:none; }
+    #topbar > div:last-child{ gap:8px !important; flex-shrink:0; }
+    #authChipNome, #connLabel{ display:none; }
+    #topbarLoteActions .btn{ padding:6px 9px; font-size:12.5px; }
+    #roBanner{ padding:8px 12px; font-size:12px; }
+    #content{ padding:14px 12px 80px; }
+    .toolbar > *{ max-width:100%; }
+    .toolbar select, .toolbar input[type=text], .toolbar input[type=search]{ flex:1 1 150px; min-width:0; }
+    .toast-wrap{ left:12px; right:12px; bottom:calc(14px + env(safe-area-inset-bottom)); align-items:stretch; }
+    .toast{ max-width:none; }
+
+    /* janelas (pop-ups) em tela cheia */
+    .overlay:not(#confirmOverlay){ padding:0 !important; align-items:stretch !important; }
+    .overlay:not(#confirmOverlay) .modal, .overlay:not(#confirmOverlay) .modal.modal-wide{ max-width:none !important; width:100%; height:100vh; height:100dvh; border-radius:0 !important; display:flex; flex-direction:column; }
+    .overlay:not(#confirmOverlay) .modal-body{ max-height:none !important; flex:1; min-height:0; overflow:auto; padding:16px; }
+    .overlay:not(#confirmOverlay) .modal-head{ padding:14px 16px; padding-top:calc(14px + env(safe-area-inset-top)); }
+    .overlay:not(#confirmOverlay) .modal-foot{ padding:12px 16px calc(12px + env(safe-area-inset-bottom)); flex-wrap:wrap; }
+    .modal-close{ font-size:24px; padding:8px 12px; }
+    .dyn-overlay{ padding:0 !important; align-items:stretch !important; }
+    .dyn-box{ max-width:none !important; width:100% !important; height:100vh; height:100dvh; max-height:none !important; border-radius:0 !important; }
+    .dyn-box [style*="max-height:65vh"]{ max-height:none !important; flex:1; min-height:0; }
+    .dyn-box [style*="repeat(3,1fr)"]{ grid-template-columns:1fr !important; }
+    .dyn-box > div:first-child{ padding-top:calc(14px + env(safe-area-inset-top)) !important; }
+    .dyn-box > div:last-child{ padding-bottom:calc(12px + env(safe-area-inset-bottom)); flex-wrap:wrap; }
+    #confirmOverlay{ padding:16px !important; align-items:center !important; }
+
+    /* formulários: 1 coluna, campos grandes (16px evita o zoom automático do iPhone) */
+    .field-grid, .field-grid.cols-3, .field-grid.cols-4{ grid-template-columns:minmax(0,1fr); }
+    .field input:not([type=checkbox]):not([type=radio]), .field select, .field textarea,
+    input[type=text], input[type=number], input[type=date], input[type=search], input[type=password], select, textarea{ font-size:16px !important; }
+    .field input:not([type=checkbox]):not([type=radio]):not([type=file]), .field select{ min-height:44px; }
+    .btn, .btn-sm{ min-height:42px; }
+    .btn-icon{ min-width:40px; min-height:40px; }
+    .mkt-grid, .ped-tot-row{ grid-template-columns:minmax(0,1fr); }
+    .ped-meta-row{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .dash-kpis{ grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); }
+    .pc-kpis, .fin-kpis{ grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); }
+    .fab-grid, .lote-grid{ grid-template-columns:minmax(0,1fr); }
+    .dx-grid, .fin-grid-fields, .fin-cmv-box{ grid-template-columns:minmax(0,1fr); }
+    .fin-card-section-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .an-bar-row{ grid-template-columns:56px minmax(0,1fr) 96px !important; }
+
+    /* tabelas: rolam de lado e a 1ª coluna fica fixa (foco em consultar) */
+    .table-wrap, .pg-wrap, .ef-wrap{ -webkit-overflow-scrolling:touch; max-width:100%; }
+    .table-wrap table th:first-child, .table-wrap table td:first-child{ position:sticky; left:0; z-index:2; background:var(--surface); box-shadow:1px 0 0 var(--border); }
+    .table-wrap table thead th:first-child{ z-index:4; background:var(--surface-alt); }
+    table.pg-table td.pg-cat-cell{ min-width:140px; max-width:170px; white-space:normal; padding-left:12px; padding-right:8px; font-size:13px; }
+    table.pg-table thead th.pg-cat-cell{ padding-left:12px; }
+    table.pg-table tbody td{ min-width:96px; padding:0 12px; font-size:15px; }
+    .pg-intervalo{ margin-left:0; flex-wrap:wrap; max-width:100%; }
+    .pg-intervalo{ border-radius:14px; } .pg-intervalo input[type="month"]{ min-width:0; flex:1 1 150px; font-size:15px; }
+    .pl-item-row{ min-width:680px; }
+    .pl-item-row[style*="1fr 130px"]{ min-width:0; }
+    .pl-item-row > div:first-child{ position:sticky; left:0; z-index:1; background:var(--surface); }
+    .pl-item-row.head > div:first-child{ background:var(--surface-alt); }
+    .ped-item-row{ min-width:720px; }
+  }
 </style>
 </head>
 <body>
 
+<div id="menuBackdrop" onclick="menuFechar()"></div>
 <nav id="sidebar">
   <div class="sidebar-brand">HUB IMPORTAÇÃO<span>LogBox</span></div>
 
@@ -828,8 +910,11 @@
 <div id="main">
   <div id="topbar">
     <div>
-      <h2 id="topbarTitle">Dashboard</h2>
-      <div class="breadcrumb" id="topbarBreadcrumb">HUB IMPORTAÇÃO</div>
+      <button id="menuBtn" aria-label="Abrir menu" onclick="menuAlternar()">☰</button>
+      <div style="min-width:0;">
+        <h2 id="topbarTitle">Dashboard</h2>
+        <div class="breadcrumb" id="topbarBreadcrumb">HUB IMPORTAÇÃO</div>
+      </div>
     </div>
     <div style="display:flex; align-items:center; gap:16px;">
       <div id="topbarLoteActions" style="display:none; align-items:center; gap:8px;">
@@ -3219,8 +3304,9 @@ function abrirOverlayDinamico(id, innerHtml, maxWidth){
   document.getElementById(id)?.remove();
   const overlay = document.createElement("div");
   overlay.id = id;
+  overlay.className = "dyn-overlay";
   overlay.style.cssText = "position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:600; display:flex; align-items:center; justify-content:center; padding:16px;";
-  overlay.innerHTML = `<div style="background:#fff; border-radius:16px; width:100%; max-width:${maxWidth}px; max-height:88vh; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.25); display:flex; flex-direction:column;">${innerHtml}</div>`;
+  overlay.innerHTML = `<div class="dyn-box" style="background:#fff; border-radius:16px; width:100%; max-width:${maxWidth}px; max-height:88vh; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.25); display:flex; flex-direction:column;">${innerHtml}</div>`;
   overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
 }
@@ -5381,6 +5467,7 @@ function docsFaltando(container){
   if (!container.doc_bl_url) f.push("B/L");
   if (!container.doc_comercial_invoice_url) f.push("Comercial Invoice");
   if (!container.doc_duimp_url) f.push("DUIMP");
+  if (!container.doc_nf_url) f.push("Nota Fiscal");
   if (!container.doc_chave_acesso_url) f.push("Chave de Acesso");
   return f;
 }
@@ -6577,6 +6664,8 @@ function detalheAtualState(){ return KB_DETALHE || PL_DETALHE; }
 function refrescarDetalheSeAberto(){
   if (KB_DETALHE) renderKanbanContainerDetalhe();
   else if (PL_DETALHE) renderContainerDetalhe();
+  // o pop-up do contêiner é recriado no fim do <body> — janelas que estavam abertas por cima dele voltam pra frente
+  ["docsPopupOverlay", "blConferenciaOverlay", "nfConferenciaOverlay", "plAtuOverlay"].forEach(id => { const el = document.getElementById(id); if (el) document.body.appendChild(el); });
 }
 async function refrescarTelasContainer(fonte){
   await loadPackingList(fonte);
@@ -6637,7 +6726,7 @@ function containerDetalheHeaderHtml(container, fonte){
       <button onclick="fecharDetalheOverlay()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px; margin-left:14px; flex-shrink:0;">×</button>
     </div>
     <div style="padding:12px 24px 0; flex-shrink:0;">
-      <div class="field"><label>Observações</label><input type="text" id="pld_obs" value="${escapeHtml(container.observacoes || "")}"></div>
+      <div class="field"><label>Observações</label><textarea id="pld_obs" rows="2" style="resize:vertical; min-height:42px;">${escapeHtml(container.observacoes || "")}</textarea></div>
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:9px 14px; margin:12px 0;">
         <div style="font-size:12.5px; color:var(--text-muted);">📄 Documentos: ${falt.length ? `<span style="color:#b45309; font-weight:700;">faltando ${falt.join(", ")}</span>` : `<span style="color:#166534; font-weight:700;">completos</span>`}</div>
         <button class="btn btn-ghost btn-sm" onclick="abrirDocumentosPopup('${fonte}','${container.id}', false)">Gerenciar documentos</button>
@@ -6833,7 +6922,7 @@ function renderDocumentosPopupBody(fonte, containerId){
           : `<label class="btn btn-ghost btn-sm" style="cursor:pointer; margin:0;">📎 Comprovante (opcional)<input type="file" accept="application/pdf" style="display:none;" onchange="docsUploadComprovanteParcela(event,'${fonte}','${containerId}',${i})"></label>`}
         <button class="btn-icon" title="Remover parcela" style="margin-left:auto;" onclick="docsRemoverParcela('${fonte}','${containerId}',${i})">🗑</button>
       </div>`).join("") || `<span style="color:var(--text-faint); font-size:12px;">Nenhuma parcela cadastrada ainda.</span>`;
-    camposHtml = campoHtml("doc_nf_url", "NF") + `
+    camposHtml = nfCampoHtml(fonte, containerId, container) + `
       <div class="field">
         <label>Parcelas (${parcelas.length})</label>
         <div style="display:flex; flex-direction:column; margin-bottom:8px;">${linhasParcelas}</div>
@@ -6853,7 +6942,7 @@ function renderDocumentosPopupBody(fonte, containerId){
       </div>
       <div id="blUploadStatus_${containerId}" style="margin-top:4px; font-size:11.5px; color:var(--text-faint);"></div>
     </div>`;
-    camposHtml = blHtml + campoHtml("doc_comercial_invoice_url", "Comercial Invoice") + campoHtml("doc_duimp_url", "DUIMP") + campoHtml("doc_chave_acesso_url", "Chave de Acesso");
+    camposHtml = blHtml + campoHtml("doc_comercial_invoice_url", "Comercial Invoice") + campoHtml("doc_duimp_url", "DUIMP") + nfCampoHtml(fonte, containerId, container) + campoHtml("doc_chave_acesso_url", "Chave de Acesso");
   }
   const falt = docsFaltando(container);
   const msgTudoOk = fonte === "mti" ? "✅ Pagamento concluído" : "✅ Todos os documentos enviados";
@@ -6874,6 +6963,231 @@ function renderDocumentosPopupBody(fonte, containerId){
     </div>
   `, 520);
 }
+/* ---------- Nota Fiscal (NF-e / DANFE) — LOGBOX e MTI ----------
+   Upload do PDF no pop-up Documentos: lê número, série e chave de acesso (44 dígitos) no próprio navegador,
+   abre uma conferência editável e, ao confirmar, grava o PDF + nf_numero/nf_serie/nf_chave e coloca
+   "Numero da Nota Fiscal: X - Série Y" na PRIMEIRA linha das Observações do contêiner. */
+let NF_CONF = null;
+
+// dígito verificador da chave (módulo 11, pesos 2..9 da direita pra esquerda)
+function nfDvChave(k43){
+  let peso = 2, soma = 0;
+  for (let i = k43.length - 1; i >= 0; i--){ soma += Number(k43[i]) * peso; peso = peso === 9 ? 2 : peso + 1; }
+  const r = soma % 11;
+  return (r === 0 || r === 1) ? 0 : 11 - r;
+}
+// procura no texto uma sequência de 44 dígitos (com ou sem espaços) que seja uma chave válida (modelo 55/65 + DV)
+function nfAchaChave(texto){
+  const re = /\d[\d ]{42,70}\d/g;
+  let m;
+  while ((m = re.exec(String(texto || "")))){
+    const d = m[0].replace(/ /g, "");
+    for (let i = 0; i + 44 <= d.length; i++){
+      const k = d.slice(i, i + 44);
+      if ((k.slice(20, 22) === "55" || k.slice(20, 22) === "65") && nfDvChave(k.slice(0, 43)) === Number(k[43])) return k;
+    }
+  }
+  return "";
+}
+// número e série lidos dos rótulos "Nº 000.036 … SÉRIE 5" do cabeçalho do DANFE (segunda leitura, independente da chave)
+function nfAchaRotulos(texto){
+  const t = String(texto || "").replace(/\s+/g, " ");
+  let numero = "", serie = "";
+  let m = t.match(/N[º°O]\.?\s*:?\s*(\d[\d.]*)\s*(?:FOLHA\s*:?\s*\d+\s*(?:de|\/)\s*\d+\s*)?S[ÉE]RIE\s*:?\s*(\d{1,3})\b/i);
+  if (m){ numero = m[1]; serie = m[2]; }
+  else {
+    const mn = t.match(/N[º°]\.?\s*:?\s*(\d{1,3}(?:\.\d{3}){1,2})\b/);
+    const ms = t.match(/S[ÉE]RIE\s*:?\s*(\d{1,3})\b/i);
+    if (mn) numero = mn[1];
+    if (ms) serie = ms[1];
+  }
+  const nNum = parseInt(String(numero).replace(/\./g, ""), 10), nSer = parseInt(serie, 10);
+  return { numero: Number.isFinite(nNum) ? String(nNum) : "", serie: Number.isFinite(nSer) ? String(nSer) : "" };
+}
+async function nfLerPdf(file){
+  await blCarregarPdfJs();
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  const bruto = [];
+  const nPag = Math.min(pdf.numPages, 3);
+  for (let p = 1; p <= nPag; p++){
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    bruto.push(content.items.map(it => it.str).filter(s => s && s.trim()).join(" "));
+  }
+  return bruto.join(" \n ");
+}
+// devolve { numero, serie, chave, aviso } — a chave (validada pelo DV) manda; os rótulos conferem
+async function nfExtrair(file){
+  const r = { numero: "", serie: "", chave: "", aviso: "" };
+  let texto = "";
+  try { texto = await nfLerPdf(file); } catch (e){ r.aviso = "Não consegui ler esse PDF automaticamente — preencha os campos manualmente."; return r; }
+  let linhas = "";
+  try { linhas = await blExtrairTextoPdf(file); } catch (e) { linhas = ""; }
+  r.chave = nfAchaChave(texto) || nfAchaChave(linhas);
+  const rot = nfAchaRotulos(texto);
+  const rot2 = (!rot.numero || !rot.serie) ? nfAchaRotulos(linhas) : rot;
+  const rotulos = { numero: rot.numero || rot2.numero, serie: rot.serie || rot2.serie };
+  if (r.chave){
+    const nChave = String(parseInt(r.chave.slice(25, 34), 10)), sChave = String(parseInt(r.chave.slice(22, 25), 10));
+    r.numero = nChave; r.serie = sChave;
+    if ((rotulos.numero && rotulos.numero !== nChave) || (rotulos.serie && rotulos.serie !== sChave)){
+      r.aviso = `Atenção: o cabeçalho do PDF indica Nº ${rotulos.numero || "?"} / Série ${rotulos.serie || "?"}, mas a chave de acesso indica Nº ${nChave} / Série ${sChave}. Confira com o documento antes de salvar.`;
+    }
+  } else if (rotulos.numero || rotulos.serie){
+    r.numero = rotulos.numero; r.serie = rotulos.serie;
+    r.aviso = "Não encontrei uma chave de acesso válida no PDF — número e série vieram só do cabeçalho. Confira com o documento.";
+  } else {
+    r.aviso = "Não consegui identificar número e série nesse PDF — preencha os campos manualmente.";
+  }
+  return r;
+}
+
+const NF_ROTULO_OBS = "Numero da Nota Fiscal:";
+function nfLinhaObs(n, s){ return `${NF_ROTULO_OBS} ${n} - Série ${s}`; }
+function nfSemLinha(base){
+  return String(base || "").split(/\r?\n/).filter(l => !/^\s*Numero da Nota Fiscal:/i.test(l));
+}
+// põe a linha da NF na PRIMEIRA linha das Observações, mantendo o texto que já existia logo abaixo
+// (se já havia uma linha da NF, ela é substituída — nunca duplica)
+function nfAplicarObs(base, n, s){
+  const resto = nfSemLinha(base);
+  while (resto.length && resto[0].trim() === "") resto.shift();
+  return [nfLinhaObs(n, s), ...resto].join("\n").replace(/\s+$/, "");
+}
+function nfRemoverObs(base){
+  const resto = nfSemLinha(base);
+  while (resto.length && resto[0].trim() === "") resto.shift();
+  return resto.join("\n").replace(/\s+$/, "");
+}
+// texto atual das Observações: se o pop-up do contêiner está aberto com texto ainda não salvo, usa ele
+function nfObsAtual(containerId, container){
+  const st = detalheAtualState();
+  const el = document.getElementById("pld_obs");
+  if (st && st.containerId === containerId && el) return el.value;
+  return (container && container.observacoes) || "";
+}
+
+function nfCampoHtml(fonte, containerId, container){
+  const url = container.doc_nf_url;
+  const info = (container.nf_numero || container.nf_serie)
+    ? `<div style="margin-top:4px; font-size:12px; color:var(--text-muted);">Nº <b class="mono">${escapeHtml(container.nf_numero || "—")}</b> · Série <b class="mono">${escapeHtml(container.nf_serie || "—")}</b></div>` : "";
+  return `<div class="field" style="margin-bottom:14px;">
+    <label>Nota Fiscal</label>
+    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+      ${url
+        ? `<button class="btn btn-ghost btn-sm" onclick="abrirDocumentoPrivado('${escJsStr(url)}')">📄 Ver PDF</button><button class="btn btn-ghost btn-sm" onclick="nfAbrirEdicao('${fonte}','${containerId}')">📋 Ver dados da NF</button><button class="btn-icon" title="Remover" onclick="nfRemover('${fonte}','${containerId}')">🗑</button>`
+        : `<span style="color:var(--text-faint); font-size:12px;">Nenhum enviado</span>`}
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer; margin:0;">📎 ${url ? "Substituir" : "Enviar"} PDF<input type="file" accept="application/pdf" style="display:none;" onchange="nfUploadIniciar(event,'${fonte}','${containerId}')"></label>
+    </div>
+    ${info}
+    <div id="nfUploadStatus_${containerId}" style="margin-top:4px; font-size:11.5px; color:var(--text-faint);"></div>
+  </div>`;
+}
+
+window.nfUploadIniciar = async function(evt, fonte, containerId){
+  const file = evt.target.files[0];
+  if (!file) return;
+  if (!authPodeEscrever()){ authAvisoSoLeitura(); evt.target.value = ""; return; }
+  const statusEl = document.getElementById(`nfUploadStatus_${containerId}`);
+  if (statusEl) statusEl.textContent = "Lendo o PDF…";
+  const r = await nfExtrair(file);
+  if (statusEl) statusEl.textContent = "";
+  evt.target.value = "";
+  NF_CONF = { fonte, containerId, file, modo: "conferencia", numero: r.numero, serie: r.serie, chave: r.chave, aviso: r.aviso };
+  nfRenderConferencia();
+};
+window.nfAbrirEdicao = function(fonte, containerId){
+  const c = PL_CONTAINERS[fonte]?.find(x => x.id === containerId);
+  if (!c){ toast("Contêiner não encontrado.", "error"); return; }
+  NF_CONF = { fonte, containerId, file: null, modo: "edicao", numero: c.nf_numero || "", serie: c.nf_serie || "", chave: c.nf_chave || "", aviso: "" };
+  nfRenderConferencia();
+};
+function nfRenderConferencia(){
+  const st = NF_CONF; if (!st) return;
+  const c = PL_CONTAINERS[st.fonte]?.find(x => x.id === st.containerId);
+  const podeSalvar = !!(String(st.numero).trim() && String(st.serie).trim());
+  const chaveTxt = String(st.chave || "").replace(/(\d{4})(?=\d)/g, "$1 ");
+  const ok = !st.aviso && st.chave && st.modo === "conferencia";
+  abrirOverlayDinamico("nfConferenciaOverlay", `
+    <div style="padding:18px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <h2 class="modal-title" style="margin:0;">🧾 ${st.modo === "edicao" ? "Dados da Nota Fiscal" : "Conferência da Nota Fiscal"} — ${escapeHtml(c ? c.nome : "")}</h2>
+      <button onclick="nfFecharConferencia()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px;">×</button>
+    </div>
+    <div style="padding:20px 24px; max-height:65vh; overflow:auto;">
+      ${ok ? `<div style="margin-bottom:14px; font-size:12px; color:#166534; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:9px 12px;">✅ Número e série conferem com a chave de acesso do PDF. Revise e confirme.</div>` : ""}
+      ${st.aviso ? `<div style="margin-bottom:14px; font-size:12px; color:#92400e; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:9px 12px;">⚠ ${escapeHtml(st.aviso)}</div>` : ""}
+      <div class="field-grid" style="margin-bottom:14px;">
+        <div class="field"><label>Número da Nota Fiscal <span style="color:#dc2626;">*</span></label><input type="text" inputmode="numeric" value="${escapeHtml(st.numero || "")}" onchange="nfCampoChange('numero', this.value)"></div>
+        <div class="field"><label>Série <span style="color:#dc2626;">*</span></label><input type="text" inputmode="numeric" value="${escapeHtml(st.serie || "")}" onchange="nfCampoChange('serie', this.value)"></div>
+      </div>
+      <div class="field" style="margin-bottom:14px;"><label>Chave de acesso (44 dígitos)</label><input type="text" class="mono-field" value="${escapeHtml(chaveTxt)}" onchange="nfCampoChange('chave', this.value)"></div>
+      <div style="font-size:12px; color:var(--text-muted); background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:9px 12px;">
+        Vai entrar na <b>primeira linha</b> das Observações do contêiner:<br>
+        <span class="mono" style="font-weight:700; color:var(--text);">${podeSalvar ? escapeHtml(nfLinhaObs(String(st.numero).trim(), String(st.serie).trim())) : "— preencha número e série —"}</span>
+      </div>
+      ${!podeSalvar ? `<div style="margin-top:12px; font-size:12px; color:#b45309; font-weight:600;">⚠ Preencha número e série pra poder salvar.</div>` : ""}
+    </div>
+    <div style="padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn btn-ghost" onclick="nfFecharConferencia()">Cancelar</button>
+      <button class="btn btn-primary" ${podeSalvar ? "" : "disabled style=\"opacity:.45; cursor:not-allowed;\""} onclick="nfSalvarConferencia()">${st.modo === "edicao" ? "💾 Salvar alterações" : "✅ Confirmar e Salvar"}</button>
+    </div>
+  `, 560);
+}
+window.nfCampoChange = function(campo, valor){
+  if (!NF_CONF) return;
+  if (campo === "chave") valor = String(valor || "").replace(/\D/g, "");
+  NF_CONF[campo] = valor;
+  nfRenderConferencia();
+};
+window.nfFecharConferencia = function(){
+  document.getElementById("nfConferenciaOverlay")?.remove();
+  NF_CONF = null;
+};
+window.nfSalvarConferencia = async function(){
+  const st = NF_CONF; if (!st) return;
+  const numero = String(st.numero).trim(), serie = String(st.serie).trim();
+  if (!numero || !serie){ toast("Preencha número e série pra poder salvar.", "error"); return; }
+  if (!authPodeEscrever()){ authAvisoSoLeitura(); return; }
+  toast("Salvando Nota Fiscal…");
+  const c = PL_CONTAINERS[st.fonte]?.find(x => x.id === st.containerId);
+  let url = c ? c.doc_nf_url : null;
+  if (st.file){
+    const path = `${st.fonte}/${st.containerId}/doc_nf_url-${Date.now()}-${sanitizeFileName(st.file.name)}`;
+    const { error: upErr } = await db.storage.from("container-docs").upload(path, st.file, { upsert: true, contentType: "application/pdf" });
+    if (upErr){ toast("Erro ao enviar o PDF da Nota Fiscal: " + upErr.message, "error"); return; }
+    url = path;
+  }
+  const obs = nfAplicarObs(nfObsAtual(st.containerId, c), numero, serie);
+  const payload = { doc_nf_url: url, nf_numero: numero, nf_serie: serie, nf_chave: st.chave || null, observacoes: obs };
+  const { error } = await db.from("imp_containers").update(payload).eq("id", st.containerId);
+  if (error){ toast("Erro ao salvar a Nota Fiscal: " + error.message, "error"); return; }
+  if (c) Object.assign(c, payload);
+  toast("Nota Fiscal salva — número e série foram pra primeira linha das Observações.");
+  const { fonte, containerId } = st;
+  nfFecharConferencia();
+  await nfRefrescarTudo(fonte, containerId, obs);
+};
+window.nfRemover = async function(fonte, containerId){
+  if (!authPodeEscrever()){ authAvisoSoLeitura(); return; }
+  const c = PL_CONTAINERS[fonte]?.find(x => x.id === containerId);
+  const obs = nfRemoverObs(nfObsAtual(containerId, c));
+  const payload = { doc_nf_url: null, nf_numero: null, nf_serie: null, nf_chave: null, observacoes: obs || null };
+  const { error } = await db.from("imp_containers").update(payload).eq("id", containerId);
+  if (error){ toast("Erro ao remover a Nota Fiscal.", "error"); return; }
+  if (c) Object.assign(c, payload);
+  toast("Nota Fiscal removida (e a linha das Observações também).");
+  await nfRefrescarTudo(fonte, containerId, obs);
+};
+// atualiza pop-up de Documentos + telas + pop-up do contêiner sem perder o que já foi digitado no cabeçalho
+async function nfRefrescarTudo(fonte, containerId, obsNova){
+  renderDocumentosPopupBody(fonte, containerId);
+  await plAtuRefrescarPreservando(fonte, ["pld_obs"]);
+  const el = document.getElementById("pld_obs");
+  if (el) el.value = obsNova || "";
+  document.getElementById("docsPopupOverlay") && document.body.appendChild(document.getElementById("docsPopupOverlay"));
+}
+
 window.docsUploadArquivo = async function(evt, fonte, containerId, campo){
   const file = evt.target.files[0];
   if (!file) return;
@@ -7156,8 +7470,8 @@ async function plAtuGravarOrdem(idsEmOrdem, itensAtuais){
   return posMudou;
 }
 
-async function plAtuRefrescarPreservando(fonte){
-  const ids = ["pld_nome","pld_etd","pld_eta","pld_valor_container","pld_frete_usd","pld_obs"];
+async function plAtuRefrescarPreservando(fonte, excluir){
+  const ids = ["pld_nome","pld_etd","pld_eta","pld_valor_container","pld_frete_usd","pld_obs"].filter(i => !(excluir || []).includes(i));
   const guardado = {}; ids.forEach(id => { const el = document.getElementById(id); if (el) guardado[id] = el.value; });
   await refrescarTelasContainer(fonte);
   refrescarDetalheSeAberto();
@@ -10088,6 +10402,24 @@ function dxWorkbookParaHtml(wb, titulo){
     })();
   <\/script></body></html>`;
 }
+
+
+/* ===== Celular: menu em gaveta + "adicionar à tela inicial" ===== */
+function menuAlternar(){ document.body.classList.toggle("menu-open"); }
+function menuFechar(){ document.body.classList.remove("menu-open"); }
+document.getElementById("sidebar").addEventListener("click", e => { if (e.target.closest(".nav-item")) menuFechar(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") menuFechar(); });
+window.addEventListener("resize", () => { if (window.innerWidth > 768) menuFechar(); });
+(function(){
+  try {
+    const icone = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#14213d"/><text x="256" y="330" font-family="Arial,sans-serif" font-size="230" font-weight="700" fill="#fff" text-anchor="middle">HI</text></svg>');
+    const manifesto = { name: "HUB IMPORTAÇÃO", short_name: "Hub Importação", display: "standalone", start_url: location.pathname, background_color: "#14213d", theme_color: "#14213d", icons: [{ src: icone, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }] };
+    const link = document.createElement("link"); link.rel = "manifest";
+    link.href = URL.createObjectURL(new Blob([JSON.stringify(manifesto)], { type: "application/manifest+json" }));
+    document.head.appendChild(link);
+    const ai = document.createElement("link"); ai.rel = "apple-touch-icon"; ai.href = icone; document.head.appendChild(ai);
+  } catch (e) { /* opcional — não atrapalha nada se falhar */ }
+})();
 
 /* ======================= INIT ======================= */
 authIniciar();
