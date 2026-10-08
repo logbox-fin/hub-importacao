@@ -777,7 +777,7 @@
   /* ===== RESPONSIVO (celular e tablet) — só entra em telas estreitas; no computador nada muda ===== */
   #menuBtn{ display:none; background:none; border:1px solid var(--border); border-radius:10px; width:42px; height:42px; font-size:22px; line-height:1; cursor:pointer; color:var(--text); flex-shrink:0; }
   #menuBackdrop{ display:none; }
-  @media (max-width: 768px){
+  @media (max-width: 768px), (hover: none) and (pointer: coarse) and (max-width: 1100px){
     body{ display:block; }
     /* menu lateral vira gaveta (abre pelo botão ☰) */
     #sidebar{ position:fixed; left:0; top:0; bottom:0; width:min(84vw,300px) !important; height:100vh; height:100dvh; z-index:900; transform:translateX(-105%); transition:transform .22s ease; padding-top:env(safe-area-inset-top); }
@@ -1532,6 +1532,7 @@
           <div class="field"><label>ICMS %</label><input type="text" inputmode="decimal" id="pl_icms_p" class="mono-field" value="18" oninput="recalcularPreviewProdLote()"></div>
         </div>
         <div class="calc-box"><span class="calc-label">CMV calculado</span><span class="calc-value" id="cmvPreview">R$ —</span></div>
+        <button type="button" class="btn btn-ghost" style="margin-top:10px;" onclick="plMostrarCalculo()">🧮 Ver cálculo linha por linha</button>
       </fieldset>
 
       <fieldset>
@@ -3479,6 +3480,102 @@ window.recalcularPreviewProdLote = function(){
     else if (m.margem_p < 0){ margemEl.style.background = "var(--danger-soft)"; margemEl.style.color = "#991b1b"; }
     else { margemEl.style.background = "var(--surface)"; margemEl.style.color = "var(--text-faint)"; }
   });
+};
+
+/* ===== Ver cálculo linha por linha (CMV + margem por marketplace) — só mostra, não altera nada ===== */
+window.plMostrarCalculo = function(){
+  const nome = (document.getElementById("pl_nome").value || "").trim() || "(sem nome)";
+  const rmb = parseNum(document.getElementById("pl_rmb").value) || 0;
+  const categ = document.getElementById("pl_categ").value;
+  const ii_p = parseNum(document.getElementById("pl_ii_p").value) || 0;
+  const ipi_p = parseNum(document.getElementById("pl_ipi_p").value) || 0;
+  const cofins_p = parseNum(document.getElementById("pl_cofins_p").value) ?? 9.65;
+  const icms_p = parseNum(document.getElementById("pl_icms_p").value) ?? 18;
+  const ctx = getCmvContext();
+  const c = calcCMV(rmb, categ, ctx.cenario, ctx.cotRmb, ctx.cotUsd, ii_p, ipi_p, cofins_p, icms_p);
+  const nCen = { baixo:"Baixo", medio:"Médio", alto:"Alto" }[ctx.cenario] || ctx.cenario;
+  const nCat = { bom:"Bom", medio:"Médio", ruim:"Ruim" }[categ] || categ;
+  const usd = ctx.cotRmb ? rmb / ctx.cotRmb : 0;
+  const brl = usd * ctx.cotUsd;
+  const bcIcms = c.vmld + c.ii + c.ipi + c.pis + c.cof + c.afrmm;
+  const pc = v => fmtN(v, 2) + "%";
+
+  const linha = (titulo, conta, valor, opts) => {
+    opts = opts || {};
+    const cor = opts.cor || "var(--text)";
+    const fundo = opts.destaque ? "background:var(--accent-soft);" : "";
+    const peso = opts.destaque ? 800 : 600;
+    return `<div style="display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 12px; padding:9px 12px; border-bottom:1px solid var(--border); align-items:start; ${fundo}">
+      <div style="min-width:0;">
+        <div style="font-size:13px; font-weight:${peso}; color:${opts.suave ? 'var(--text-faint)' : 'var(--text)'};">${titulo}</div>
+        <div style="font-size:11.5px; color:var(--text-faint); margin-top:2px; word-break:break-word;">${conta}</div>
+      </div>
+      <div style="font-size:14px; font-weight:${opts.destaque ? 800 : 700}; font-variant-numeric:tabular-nums; white-space:nowrap; color:${cor};">${valor}</div>
+    </div>`;
+  };
+  const secao = t => `<div style="padding:10px 12px 6px; font-size:11.5px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--accent);">${t}</div>`;
+
+  let html = secao("1) Custo do produto (CMV)");
+  html += `<div style="margin:0 12px 8px; padding:8px 10px; background:var(--surface-alt); border-radius:8px; font-size:12px; color:var(--text-muted);">Usando: cenário de frete <b>${nCen}</b> · categoria <b>${nCat}</b> · RMB = <b>${fmtN(ctx.cotRmb,4)}</b> por US$ · dólar = <b>R$ ${fmtN(ctx.cotUsd,4)}</b>${loteAtual ? "" : " <i>(produto avulso: valores padrão do sistema)</i>"}</div>`;
+  html += `<div style="border-top:1px solid var(--border);">`;
+  html += linha("Preço em yuan", "informado no cadastro", "¥ " + fmtN(rmb,2));
+  html += linha("Converte para dólar", `¥ ${fmtN(rmb,2)} ÷ ${fmtN(ctx.cotRmb,4)}`, "US$ " + fmtN(usd,2));
+  html += linha("Converte para reais", `US$ ${fmtN(usd,2)} × ${fmtN(ctx.cotUsd,4)}`, fmtR(brl));
+  html += linha("VMLE (valor da mercadoria no embarque)", `${fmtR(brl)} × 1,05 (margem de 5% embutida pelo sistema)`, fmtR(c.vmle));
+  html += linha("Frete (percentual do cenário × categoria)", `cenário ${nCen} + categoria ${nCat}`, pc(c.fp*100));
+  html += linha("VMLD (valor da mercadoria no desembaraço)", `${fmtR(c.vmle)} × (1 + ${pc(c.fp*100)})`, fmtR(c.vmld));
+  html += linha("AFRMM", `${fmtR(c.vmle)} × ${pc(c.fp*100)} × 8%`, fmtR(c.afrmm));
+  html += linha("Imposto de Importação (II)", `${fmtR(c.vmld)} × ${pc(ii_p)}`, fmtR(c.ii));
+  html += linha("Despesas de importação", `${fmtR(c.vmld)} × 10%`, fmtR(c.desp));
+  html += linha("COFINS excedente", cofins_p > 9.65 ? `${fmtR(c.vmld)} × (${pc(cofins_p)} − 9,65%)` : `COFINS de ${pc(cofins_p)} não passa de 9,65%, então não há excedente`, fmtR(c.cofExc));
+  html += linha("CMV = VMLD + II + AFRMM + Despesas + COFINS excedente", `${fmtR(c.vmld)} + ${fmtR(c.ii)} + ${fmtR(c.afrmm)} + ${fmtR(c.desp)} + ${fmtR(c.cofExc)}`, fmtR(c.cmv), { destaque:true, cor:"var(--accent-dark)" });
+  html += `</div>`;
+  html += `<div style="margin:10px 12px 0; font-size:11.5px; color:var(--text-faint);">Abaixo, impostos que o sistema calcula só para conferência — <b>não entram no CMV</b> porque são recuperados (crédito):</div>`;
+  html += `<div style="border-top:1px solid var(--border); margin-top:6px;">`;
+  html += linha("IPI (crédito)", `(${fmtR(c.vmld)} + ${fmtR(c.ii)}) × ${pc(ipi_p)}`, fmtR(c.ipi), { suave:true });
+  html += linha("PIS (crédito)", `${fmtR(c.vmld)} × 2,1%`, fmtR(c.pis), { suave:true });
+  html += linha("COFINS (crédito)", `${fmtR(c.vmld)} × ${pc(cofins_p)}`, fmtR(c.cof), { suave:true });
+  html += linha("ICMS (crédito)", icms_p > 0 ? `base ${fmtR(bcIcms)} ÷ (1 − ${pc(icms_p)}) × ${pc(icms_p)}` : "ICMS 0%", fmtR(c.icms), { suave:true });
+  html += `</div>`;
+
+  let temMkt = false;
+  MKT_KEYS.forEach(mk => {
+    const precoEl = document.getElementById(`mkt_${mk}_preco`);
+    if (!precoEl) return;
+    const preco = parseNum(precoEl.value);
+    if (!preco) return;
+    temMkt = true;
+    const frete = parseNum(document.getElementById(`mkt_${mk}_frete`).value) || 0;
+    const tarifa = parseNum(document.getElementById(`mkt_${mk}_tarifa`).value) || 0;
+    const rebate = parseNum(document.getElementById(`mkt_${mk}_rebate`).value) || 0;
+    const ads = parseNum(document.getElementById(`mkt_${mk}_ads`).value) || 0;
+    const m = calcMargem(c.cmv, ipi_p, preco, frete, tarifa, rebate, ads);
+    const credT = m.tarifa_rs * .0925, credA = m.ads_rs * .0925, credF = frete * .0925;
+    const corM = m.margem_p > 0 ? "#166534" : (m.margem_p < 0 ? "#991b1b" : "var(--text)");
+    html += secao(`2) Margem — ${MKT_LABEL[mk]}`);
+    html += `<div style="border-top:1px solid var(--border);">`;
+    html += linha("Preço de venda", "informado", fmtR(preco));
+    html += linha("Frete cobrado do vendedor", "informado", fmtR(frete));
+    html += linha("Tarifa do marketplace", `${fmtR(preco)} × (${pc(tarifa)} − rebate ${pc(rebate)})`, fmtR(m.tarifa_rs));
+    html += linha("Anúncios (Ads)", `${fmtR(preco)} × ${pc(ads)}`, fmtR(m.ads_rs));
+    html += linha("ICMS da venda (fixo 18,5%)", `${fmtR(preco)} × 18,5%`, fmtR(m.icms_s));
+    html += linha("IPI da venda", `${fmtR(preco)} × ${pc(ipi_p)}`, fmtR(m.ipi_s));
+    html += linha("PIS/COFINS da venda (9,25%)", `(${fmtR(preco)} − ICMS ${fmtR(m.icms_s)}) × 9,25%`, fmtR(m.piscof_s));
+    html += linha("Crédito de PIS/COFINS sobre tarifa, ads e frete", `9,25% × (${fmtR(m.tarifa_rs)} + ${fmtR(m.ads_rs)} + ${fmtR(frete)}) = ${fmtR(credT)} + ${fmtR(credA)} + ${fmtR(credF)}`, fmtR(credT + credA + credF));
+    html += linha("Custo ajustado", `CMV ${fmtR(c.cmv)} − créditos ${fmtR(credT + credA + credF)}`, fmtR(m.custo_aj));
+    html += linha("Margem em R$", `${fmtR(preco)} − custo ajustado ${fmtR(m.custo_aj)} − frete ${fmtR(frete)} − tarifa ${fmtR(m.tarifa_rs)} − ads ${fmtR(m.ads_rs)} − ICMS ${fmtR(m.icms_s)} − IPI ${fmtR(m.ipi_s)} − PIS/COFINS ${fmtR(m.piscof_s)}`, fmtR(m.margem_rs), { destaque:true, cor:corM });
+    html += linha("Margem em %", `${fmtR(m.margem_rs)} ÷ ${fmtR(preco)}`, fmtN(m.margem_p,2) + "%", { destaque:true, cor:corM });
+    html += `</div>`;
+  });
+  if (!temMkt) html += `<div style="margin:14px 12px; font-size:12.5px; color:var(--text-faint);">Nenhum marketplace com preço de venda preenchido — preencha o preço pra ver o cálculo da margem.</div>`;
+
+  abrirOverlayDinamico("plCalculoOverlay", `
+    <div style="padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:10px; flex-shrink:0;">
+      <div style="min-width:0;"><div style="font-size:15px; font-weight:800;">🧮 Cálculo linha por linha</div><div style="font-size:11.5px; color:var(--text-faint); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(nome)}</div></div>
+      <button onclick="document.getElementById('plCalculoOverlay').remove()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px; color:var(--text-faint); flex-shrink:0;">×</button>
+    </div>
+    <div style="overflow:auto; flex:1; padding-bottom:12px;">${html}</div>
+    <div style="padding:10px 18px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; flex-shrink:0;"><button class="btn btn-primary" onclick="document.getElementById('plCalculoOverlay').remove()">Fechar</button></div>`, 640);
 };
 
 window.salvarProdutoLote = async function(){
@@ -10409,7 +10506,8 @@ function menuAlternar(){ document.body.classList.toggle("menu-open"); }
 function menuFechar(){ document.body.classList.remove("menu-open"); }
 document.getElementById("sidebar").addEventListener("click", e => { if (e.target.closest(".nav-item")) menuFechar(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape") menuFechar(); });
-window.addEventListener("resize", () => { if (window.innerWidth > 768) menuFechar(); });
+const MQ_CELULAR = window.matchMedia("(max-width: 768px), (hover: none) and (pointer: coarse) and (max-width: 1100px)");
+window.addEventListener("resize", () => { if (!MQ_CELULAR.matches) menuFechar(); });
 (function(){
   try {
     const icone = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#14213d"/><text x="256" y="330" font-family="Arial,sans-serif" font-size="230" font-weight="700" fill="#fff" text-anchor="middle">HI</text></svg>');
