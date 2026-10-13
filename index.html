@@ -10426,6 +10426,7 @@ function dxEditItem(i, k, el){
   const campo = DX_CAMPOS_ITEM.find(c => c.k === k);
   const it = DX.doc.itens[i];
   if (k === "nomeEn"){ dxEditNomeEn(i, el); return; }
+  if (k === "preco"){ dxEditPreco(i, el); return; }
   if (campo.t === "num") it[k] = el.value.trim() === "" ? null : parseNum(el.value);
   else it[k] = k === "marca" ? el.value.trim().toUpperCase() : el.value.trim();
   if (k === "sku") it.semSku = false;
@@ -10498,6 +10499,75 @@ function dxPopupNomeEn(i, el, antes, novo, atual){
     toast(`Nome em inglês atualizado no cadastro (${it.sku}).`);
   };
   setTimeout(() => { const b = document.getElementById("dxNomeEnCad"); if (b) b.focus(); }, 30);
+}
+/* ---------- Valor DUIMP: confirma antes de gravar no cadastro ---------- */
+async function dxEditPreco(i, el){
+  const it = DX.doc.itens[i];
+  const antes = it.preco;
+  const novo = el.value.trim() === "" ? null : parseNum(el.value);
+  const soAqui = () => { it.preco = novo; dxRefresh(); dxAgendarSalvar(); };
+  const igual = (a, b) => a != null && b != null && Math.abs(a - b) < 1e-9;
+  if (novo === antes || igual(novo, antes)){ soAqui(); return; }
+  // vazio/zero/inválido, item sem SKU ou usuário sem permissão de edição → só neste contêiner, sem perguntar
+  if (novo == null || !isFinite(novo) || !(novo > 0) || !it.sku || it.semSku || !authPodeEscrever()){ soAqui(); return; }
+  let existe = false, atual = null;
+  try {
+    const { data, error } = await db.from(TABLE_PRODUTOS).select("sku,valor_duimp_usd").eq("sku", it.sku);
+    if (!error && data && data.length){ existe = true; atual = dxNumOuNull(data[0].valor_duimp_usd); }
+  } catch (e) { /* sem conexão: segue só neste contêiner */ }
+  if (!existe || igual(atual, novo)){ soAqui(); return; }
+  dxPopupPreco(i, el, antes, novo, atual);
+}
+function dxPopupPreco(i, el, antes, novo, atual){
+  const it = DX.doc.itens[i];
+  const skuU = String(it.sku).trim().toUpperCase();
+  const outras = DX.doc.itens.filter((x, j) => j !== i && String(x.sku || "").trim().toUpperCase() === skuU).length;
+  const id = "dxPrecoOverlay";
+  document.getElementById(id)?.remove();
+  const ov = document.createElement("div");
+  ov.id = id; ov.className = "dyn-overlay";
+  ov.style.cssText = "position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:650; display:flex; align-items:center; justify-content:center; padding:16px;";
+  const fm = v => (v == null ? "" : "US$ " + Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
+  const linha = (lab, val, dest) => `<div style="margin-bottom:10px;"><div style="font-size:10.5px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:.04em; margin-bottom:3px;">${lab}</div><div style="padding:8px 10px; border:1px solid ${dest ? 'var(--accent)' : 'var(--border)'}; background:${dest ? 'var(--surface-alt)' : '#fff'}; border-radius:8px; font-size:14px; ${dest ? 'font-weight:700;' : ''}">${val ? escapeHtml(val) : '<span style="color:var(--text-faint);">(vazio)</span>'}</div></div>`;
+  ov.innerHTML = `<div class="dyn-box" style="background:#fff; border-radius:16px; width:100%; max-width:460px; max-height:90vh; overflow:auto; box-shadow:0 20px 60px rgba(0,0,0,.25);">
+    <div style="padding:16px 20px; border-bottom:1px solid var(--border);">
+      <div style="font-size:15px; font-weight:800;">Atualizar o Valor DUIMP?</div>
+      <div style="font-size:12.5px; color:var(--text-muted); margin-top:3px;">Você alterou o Valor DUIMP (USD) de um item que já está no cadastro de produtos.</div>
+    </div>
+    <div style="padding:16px 20px;">
+      ${linha("SKU", it.sku, false)}
+      ${linha("Valor atual no cadastro", fm(atual), false)}
+      ${linha("Novo valor", fm(novo), true)}
+      <div style="font-size:12px; color:var(--text-muted); line-height:1.5;">Ao atualizar o cadastro, o novo valor passa a valer daqui para frente (novos documentos e Banco de Dados)${outras ? (outras > 1 ? ` e as outras <b>${outras}</b> linhas deste SKU neste contêiner também são ajustadas` : ` e a outra linha deste SKU neste contêiner também é ajustada`) : ''}. Documentos de outros contêineres já salvos mantêm o valor que tinham.</div>
+    </div>
+    <div style="padding:12px 20px 16px; display:flex; flex-direction:column; gap:8px;">
+      <button class="btn btn-primary" id="dxPrecoCad" style="width:100%;">Atualizar no cadastro</button>
+      <button class="btn" id="dxPrecoAqui" style="width:100%;">Só neste contêiner</button>
+      <button class="btn" id="dxPrecoCancel" style="width:100%;">Cancelar</button>
+    </div></div>`;
+  document.body.appendChild(ov);
+  const fechar = () => ov.remove();
+  const cancelar = () => { el.value = dxFmtInput(antes); fechar(); };
+  ov.addEventListener("click", e => { if (e.target === ov) cancelar(); });
+  ov.addEventListener("keydown", e => { if (e.key === "Escape"){ e.stopPropagation(); cancelar(); } });
+  document.getElementById("dxPrecoCancel").onclick = cancelar;
+  document.getElementById("dxPrecoAqui").onclick = () => { fechar(); it.preco = novo; dxRefresh(); dxAgendarSalvar(); };
+  const bCad = document.getElementById("dxPrecoCad");
+  bCad.onclick = async () => {
+    bCad.disabled = true; bCad.textContent = "Atualizando…";
+    const { error } = await db.from(TABLE_PRODUTOS).update({ valor_duimp_usd: novo }).eq("sku", it.sku);
+    fechar();
+    if (error){
+      it.preco = novo; dxRefresh(); dxAgendarSalvar();
+      toast("Não consegui atualizar o cadastro — o valor ficou só neste contêiner.", "error");
+      return;
+    }
+    DX.doc.itens.forEach(x => { if (String(x.sku || "").trim().toUpperCase() === skuU) x.preco = novo; });
+    try { produtos.forEach(p => { if (String(p.sku || "").trim().toUpperCase() === skuU) p.valor_duimp_usd = novo; }); } catch (e) {}
+    dxRenderItens(); dxRefresh(); dxAgendarSalvar();
+    toast(`Valor DUIMP atualizado no cadastro (${it.sku}).`);
+  };
+  setTimeout(() => { const b = document.getElementById("dxPrecoCad"); if (b) b.focus(); }, 30);
 }
 function dxAddItem(){
   DX.doc.itens.push({ sku: "", semSku: false, nomeEn: "", nomeCn: "", marca: "", qtyCtn: null, qtd: null, preco: null, pl: null, pb: null, c: null, l: null, a: null, ncm: "" });
