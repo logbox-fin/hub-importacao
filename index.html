@@ -1523,7 +1523,7 @@
         <div class="field-grid cols-4">
           <div class="field"><label>Nome *</label><input type="text" id="pl_nome" oninput="recalcularPreviewProdLote()"></div>
           <div class="field"><label>SKU</label><input type="text" id="pl_sku" class="mono-field"></div>
-          <div class="field" style="position:relative;"><label>NCM</label><input type="text" id="pl_ncm" class="mono-field" placeholder="Buscar por código ou descrição..." autocomplete="off" oninput="plNcmBuscar()" onfocus="plNcmBuscar()"><div id="plNcmDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:20; background:var(--surface); border:1px solid var(--border-strong); border-radius:8px; box-shadow:var(--shadow); max-height:220px; overflow:auto; margin-top:4px;"></div><div class="field-error" id="err_pl_ncm_lookup"></div></div>
+          <div class="field" style="position:relative;"><label>NCM</label><input type="text" id="pl_ncm" class="mono-field" placeholder="Buscar por código ou descrição..." autocomplete="off" oninput="plNcmBuscar()" onfocus="plNcmBuscar()"><div class="field-error" id="err_pl_ncm_lookup"></div></div>
           <div class="field"><label>Categoria (frete)</label><select id="pl_categ" onchange="recalcularPreviewProdLote()"><option value="bom">🟢 Bom</option><option value="medio">🟡 Médio</option><option value="ruim">🔴 Ruim</option></select></div>
           <div class="field"><label>Preço RMB</label><input type="text" inputmode="decimal" id="pl_rmb" class="mono-field" oninput="recalcularPreviewProdLote()"></div>
           <div class="field"><label>II %</label><input type="text" inputmode="decimal" id="pl_ii_p" class="mono-field" oninput="recalcularPreviewProdLote()"></div>
@@ -1590,7 +1590,7 @@
             <div class="field"><label>Nome do Produto *</label><input type="text" id="f_nome_produto"><div class="field-error" id="err_nome_produto"></div></div>
             <div class="field"><label>Nome (Inglês)</label><input type="text" id="f_nome_ingles"></div>
             <div class="field"><label>Nome (Chinês)</label><input type="text" id="f_nome_chines"></div>
-            <div class="field" style="position:relative;"><label>NCM</label><input type="text" id="f_ncm" class="mono-field" placeholder="Buscar por código ou descrição..." autocomplete="off" oninput="fNcmBuscar()" onfocus="fNcmBuscar()"><div id="fNcmDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:20; background:var(--surface); border:1px solid var(--border-strong); border-radius:8px; box-shadow:var(--shadow); max-height:220px; overflow:auto; margin-top:4px;"></div><div class="field-error" id="err_ncm"></div></div>
+            <div class="field" style="position:relative;"><label>NCM</label><input type="text" id="f_ncm" class="mono-field" placeholder="Buscar por código ou descrição..." autocomplete="off" oninput="fNcmBuscar()" onfocus="fNcmBuscar()"><div class="field-error" id="err_ncm"></div></div>
             <div class="field"><label>Código de Barras (EAN)</label><input type="text" id="f_codigo_barras" class="mono-field"></div>
             <div class="field"><label>Marca</label><select id="f_marca"><option value="">— selecione —</option></select></div>
             <div class="field"><label>Comprador</label><select id="f_comprador"><option value="">— selecione —</option></select></div>
@@ -1803,7 +1803,7 @@ const DOCEXP_LOGO = "iVBORw0KGgoAAAANSUhEUgAAAQEAAAC6CAYAAACulvj/AAAAAXNSR0IArs4
       for(var r=1;r<=LAST;r++){var src=(r>=27&&r<T)?27:(r>=T?r-delta:r);ws.getRow(r).height=spec.rows[src]||15;}
       // células de cabeçalho/rodapé (estilo+valor fixo)
       function put(addr,r,c,srcAddr){var o=spec.cells[srcAddr];if(!o)return;var cell=ws.getCell(r,c);var st=spec.styles[o[0]];
-        if(st.font)cell.font=st.font;if(st.fill)cell.fill=st.fill;if(st.border)cell.border=st.border;if(st.alignment)cell.alignment=st.alignment;if(st.numFmt)cell.numFmt=st.numFmt;
+        if(st.font)cell.font=st.font;if(st.fill){var fl=st.fill;if(fl.fgColor&&fl.fgColor.argb==='FFDAE3F3')fl={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'},bgColor:{indexed:64}};cell.fill=fl;}if(st.border)cell.border=st.border;if(st.alignment)cell.alignment=st.alignment;if(st.numFmt)cell.numFmt=st.numFmt;
         if(o.length>1)cell.value=o[1];}
       var colL=function(i){return String.fromCharCode(64+i);};
       addrs.forEach(function(a){var m=a.match(/^([A-Z]+)(\d+)$/),r=+m[2],cc=m[1].charCodeAt(0)-64;
@@ -1861,6 +1861,12 @@ const DOCEXP_LOGO = "iVBORw0KGgoAAAANSUhEUgAAAQEAAAC6CAYAAACulvj/AAAAAXNSR0IArs4
       spec.merges.forEach(function(m){var p=m.split(':'),a=p[0].match(/^([A-Z]+)(\d+)$/),b=p[1].match(/^([A-Z]+)(\d+)$/);
         var r1=+a[2],r2=+b[2];if(r1>=27&&r1<39)return;
         ws.mergeCells(a[1]+mapRow(r1)+':'+b[1]+mapRow(r2));});
+      // moldura preta (média) ao redor da tabela de itens: B25 até U(T+1) — aplicada APÓS as mesclagens
+      (function(){var BK={style:'medium',color:{argb:'FF000000'}};
+        for(var r=25;r<=T+1;r++){for(var c=2;c<=21;c++){
+          var cl=ws.getCell(r,c),b=cl.border||{},nb={top:b.top,left:b.left,bottom:b.bottom,right:b.right};
+          if(r===25)nb.top=BK;if(r===T+1)nb.bottom=BK;if(c===2)nb.left=BK;if(c===21)nb.right=BK;
+          cl.border=nb;}}})();
       // logo
       ws.addImage(logoId,{tl:{col:1.15,row:1.3},ext:{width:197,height:142},editAs:'oneCell'});
       ws.pageSetup={paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:(N>16?0:1),margins:spec.margins,horizontalCentered:true,verticalCentered:true,printArea:'A1:V'+(LAST+1)};
@@ -3413,26 +3419,11 @@ window.abrirEditarProdutoLote = function(id){
 window.fecharModalProdLote = function(){ document.getElementById("modalProdLoteOverlay").classList.remove("open"); };
 
 window.plNcmBuscar = function(){
-  const q = document.getElementById("pl_ncm").value.trim().toLowerCase();
-  const dropdown = document.getElementById("plNcmDropdown");
-  if (!q){ dropdown.style.display = "none"; return; }
-  const matches = NCMS.filter(n => (n.ncm||"").toLowerCase().includes(q) || (n.descricao||"").toLowerCase().includes(q)).slice(0, 20);
-  if (!matches.length){
-    dropdown.innerHTML = `<div style="padding:10px 12px; font-size:12.5px; color:var(--text-faint);">Nenhum NCM encontrado — cadastre em Planejamento &gt; Base NCM.</div>`;
-    dropdown.style.display = "block";
-    return;
-  }
-  dropdown.innerHTML = matches.map(n => `
-    <div onclick="plNcmSelecionar('${n.ncm}')" style="padding:9px 12px; cursor:pointer; border-bottom:1px solid var(--border); font-size:13px;" onmouseover="this.style.background='var(--surface-alt)'" onmouseout="this.style.background=''">
-      <span class="mono" style="font-weight:600;">${escapeHtml(n.ncm)}</span> — ${escapeHtml(n.descricao)||'sem descrição'}
-    </div>
-  `).join("");
-  dropdown.style.display = "block";
+  ncmAcAbrir(document.getElementById("pl_ncm"), n => plNcmSelecionar(n.ncm));
 };
 window.plNcmSelecionar = function(codigo){
   const achado = NCMS.find(n => n.ncm === codigo);
   document.getElementById("pl_ncm").value = codigo;
-  document.getElementById("plNcmDropdown").style.display = "none";
   const errEl = document.getElementById("err_pl_ncm_lookup");
   if (achado){
     document.getElementById("pl_ii_p").value = achado.ii;
@@ -3444,10 +3435,6 @@ window.plNcmSelecionar = function(codigo){
     recalcularPreviewProdLote();
   }
 };
-document.addEventListener("click", (e) => {
-  const dropdown = document.getElementById("plNcmDropdown");
-  if (dropdown && !e.target.closest("#pl_ncm") && !e.target.closest("#plNcmDropdown")) dropdown.style.display = "none";
-});
 
 function getCmvContext(){
   if (loteAtual) return { cenario: document.getElementById("le_cenario").value, cotRmb: parseNum(document.getElementById("le_cot_rmb").value)||loteAtual.cot_rmb, cotUsd: parseNum(document.getElementById("le_cot_usd").value)||loteAtual.cot_usd };
@@ -3666,7 +3653,7 @@ function renderCrTabela(){
     <tr>
       <td style="padding:5px 6px;"><input class="cr-nome-input" type="text" value="${escapeHtml(l.nome||'')}" placeholder="Nome do produto" style="width:100%; padding:7px 9px; border:1px solid var(--border-strong); border-radius:6px; font-size:13px;" oninput="crLinhas[${i}].nome=this.value" onkeydown="if(event.key==='Tab'&&!event.shiftKey&&${i}===crLinhas.length-1){event.preventDefault();crAddLinha();}"></td>
       <td style="padding:5px 6px;"><input type="text" value="${escapeHtml(l.sku||'')}" placeholder="SKU" style="width:100%; padding:7px 9px; border:1px solid var(--border-strong); border-radius:6px; font-size:13px;" oninput="crLinhas[${i}].sku=this.value"></td>
-      <td style="padding:5px 6px;"><div style="display:flex; gap:4px;"><input type="text" value="${escapeHtml(l.ncm||'')}" placeholder="0000.00.00" style="flex:1; padding:7px 9px; border:1px solid var(--border-strong); border-radius:6px; font-size:13px;" oninput="this.value=maskNcm(this.value);crLinhas[${i}].ncm=this.value"><button class="btn-icon" style="width:auto; padding:0 8px;" title="Buscar alíquotas" onclick="crBuscarNCM(${i}, this)">OK</button></div></td>
+      <td style="padding:5px 6px;"><div style="display:flex; gap:4px;"><input type="text" class="cr-ncm-input" autocomplete="off" value="${escapeHtml(l.ncmTxt!==undefined?l.ncmTxt:(l.ncm||''))}" placeholder="Digite o número ou o nome…" style="flex:1; min-width:0; padding:7px 9px; border:1px solid var(--border-strong); border-radius:6px; font-size:13px;" oninput="crNcmInput(this,${i})" onfocus="crNcmInput(this,${i},true)"><button class="btn-icon" style="width:auto; padding:0 8px;${l.ii_p!==undefined?' color:var(--success); border-color:var(--success);':''}" title="Buscar alíquotas" onclick="crBuscarNCM(${i}, this)">${l.ii_p!==undefined?'✓':'OK'}</button></div></td>
       <td style="padding:5px 6px;"><input type="text" inputmode="decimal" value="${l.rmb||''}" placeholder="0,00" style="width:90px; padding:7px 9px; border:1px solid var(--border-strong); border-radius:6px; font-size:13px; font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums;" oninput="crLinhas[${i}].rmb=this.value"></td>
       <td style="padding:5px 6px;"><select style="padding:7px 9px; border:1px solid var(--border-strong); border-radius:6px; font-size:13px;" onchange="crLinhas[${i}].categ=this.value">
         <option value="bom" ${l.categ==='bom'?'selected':''}>🟢 Bom</option>
@@ -3677,9 +3664,32 @@ function renderCrTabela(){
     </tr>
   `).join("");
 }
+window.crNcmInput = function(el, i, soAbrir){
+  const l = crLinhas[i];
+  if (!soAbrir){
+    const v = el.value, soNum = /^[\d.\-\s]*$/.test(v);
+    if (soNum) el.value = maskNcm(v);
+    l.ncmTxt = el.value;
+    l.ncm = (soNum && el.value.replace(/\D/g,"").length === 8) ? el.value : "";
+    // mudou o texto → as alíquotas carregadas antes deixam de valer
+    delete l.ii_p; delete l.ipi_p; delete l.cofins_p; delete l.icms_p;
+    const btn = el.parentElement.querySelector("button");
+    if (btn){ btn.textContent = "OK"; btn.style.color = ""; btn.style.borderColor = ""; }
+  }
+  if (el.value.trim()) ncmAcAbrir(el, n => crNcmEscolher(i, el, n));
+};
+function crNcmEscolher(i, el, n){
+  const l = crLinhas[i];
+  el.value = n.ncm; l.ncm = n.ncm; l.ncmTxt = n.ncm;
+  l.ii_p = n.ii; l.ipi_p = n.ipi; l.cofins_p = n.cofins; l.icms_p = n.icms;
+  el.title = n.descricao || "";
+  const btn = el.parentElement.querySelector("button");
+  if (btn){ btn.textContent = "✓"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; }
+  toast("NCM aplicado — alíquotas carregadas!");
+}
 window.crBuscarNCM = function(i, btn){
   const ncmVal = (crLinhas[i].ncm||"").trim();
-  if (!ncmVal){ toast("Informe o NCM primeiro.", "error"); return; }
+  if (!ncmVal){ toast("Escolha um NCM da lista ou digite os 8 dígitos.", "error"); return; }
   const achado = NCMS.find(n => n.ncm === ncmVal);
   if (achado){
     crLinhas[i].ii_p = achado.ii; crLinhas[i].ipi_p = achado.ipi; crLinhas[i].cofins_p = achado.cofins; crLinhas[i].icms_p = achado.icms;
@@ -3713,9 +3723,10 @@ window.salvarCadastroRapido = async function(){
   const { data, error } = await db.from("imp_lote_produtos").insert(payloads).select();
   if (error){ toast("Erro ao adicionar produtos.", "error"); return; }
   loteAtual.produtos.push(...data);
+  const semNcm = validos.filter(l => (l.ncmTxt||"").trim() && !l.ncm).length;
   toggleCadastroRapido();
   renderProdutosLote();
-  toast(`${data.length} produto${data.length>1?'s':''} adicionado${data.length>1?'s':''}!`);
+  toast(`${data.length} produto${data.length>1?'s':''} adicionado${data.length>1?'s':''}!` + (semNcm ? ` ${semNcm} sem NCM (o texto digitado não era um NCM válido — escolha da lista).` : ""));
 };
 
 /* ======================= GERAR PEDIDO ======================= */
@@ -4763,31 +4774,110 @@ function updateCbmPreview(){
   else { el.textContent = "preencha C × L × A"; }
 }
 ["f_comprimento_cm","f_largura_cm","f_altura_cm"].forEach(id => document.getElementById(id).addEventListener("input", updateCbmPreview));
-window.fNcmBuscar = function(){
-  const q = document.getElementById("f_ncm").value.trim().toLowerCase();
-  const dropdown = document.getElementById("fNcmDropdown");
-  if (!q){ dropdown.style.display = "none"; return; }
-  const matches = NCMS.filter(n => (n.ncm||"").toLowerCase().includes(q) || (n.descricao||"").toLowerCase().includes(q)).slice(0, 20);
-  if (!matches.length){
-    dropdown.innerHTML = `<div style="padding:10px 12px; font-size:12.5px; color:var(--text-faint);">Nenhum NCM encontrado — cadastre em Planejamento &gt; Base NCM.</div>`;
-    dropdown.style.display = "block";
-    return;
+/* ---- Busca de NCM com sugestões (compartilhada: Cadastro Rápido, Banco de Dados e Editar Produto) ---- */
+const NCM_AC = { box:null, inp:null, lista:[], idx:-1, total:0, onPick:null, carregando:false };
+function ncmAcNorm(s){ return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,""); }
+function ncmAcFiltrar(q){
+  const termos = ncmAcNorm(q).trim().split(/\s+/).filter(Boolean);
+  if (!termos.length) return [];
+  const res = [];
+  NCMS.forEach(n => {
+    const code = String(n.ncm||""), codeD = code.replace(/\D/g,""), hay = ncmAcNorm(code+" "+(n.descricao||""));
+    let ok = true;
+    for (const t of termos){
+      if (/^[\d.\-]+$/.test(t)){ const td = t.replace(/\D/g,""); if (td && !codeD.includes(td)){ ok = false; break; } }
+      else if (!hay.includes(t)){ ok = false; break; }
+    }
+    if (!ok) return;
+    const t0 = termos[0], d0 = /^[\d.\-]+$/.test(t0) ? t0.replace(/\D/g,"") : "";
+    res.push({ n, score: d0 && codeD.startsWith(d0) ? 0 : 1 });
+  });
+  res.sort((x,y) => x.score - y.score);
+  return res.map(r => r.n);
+}
+function ncmAcBox(){
+  if (NCM_AC.box) return NCM_AC.box;
+  const st = document.createElement("style");
+  st.textContent = "#ncmAcBox .ncm-ac-it{padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;line-height:1.35;} #ncmAcBox .ncm-ac-it.ativo,#ncmAcBox .ncm-ac-it:hover{background:var(--surface-alt);} #ncmAcBox .ncm-ac-it.ativo{box-shadow:inset 3px 0 0 var(--accent);}";
+  document.head.appendChild(st);
+  const b = document.createElement("div");
+  b.id = "ncmAcBox";
+  b.style.cssText = "display:none;position:fixed;z-index:900;background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;box-shadow:var(--shadow);overflow:auto;overscroll-behavior:contain;";
+  b.addEventListener("mousedown", e => e.preventDefault());
+  b.addEventListener("click", e => { const it = e.target.closest("[data-i]"); if (it) ncmAcEscolher(+it.dataset.i); });
+  document.body.appendChild(b);
+  NCM_AC.box = b;
+  return b;
+}
+function ncmAcFechar(){ if (NCM_AC.box) NCM_AC.box.style.display = "none"; NCM_AC.idx = -1; }
+function ncmAcPosicionar(){
+  const b = NCM_AC.box, inp = NCM_AC.inp;
+  if (!b || b.style.display === "none") return;
+  if (!inp || !document.body.contains(inp)){ ncmAcFechar(); return; }
+  const r = inp.getBoundingClientRect();
+  const w = Math.min(Math.max(r.width, 320), window.innerWidth - 16);
+  b.style.width = w + "px";
+  b.style.left = Math.min(Math.max(8, r.left), window.innerWidth - w - 8) + "px";
+  const abaixo = window.innerHeight - r.bottom;
+  if (abaixo < 200 && r.top > abaixo){ b.style.maxHeight = Math.max(100, Math.min(260, r.top - 12)) + "px"; b.style.top = "auto"; b.style.bottom = (window.innerHeight - r.top + 4) + "px"; }
+  else { b.style.maxHeight = Math.max(120, Math.min(260, abaixo - 12)) + "px"; b.style.bottom = "auto"; b.style.top = (r.bottom + 4) + "px"; }
+}
+function ncmAcRender(){
+  const b = ncmAcBox(), inp = NCM_AC.inp;
+  if (!inp) return;
+  const q = inp.value.trim();
+  if (!q){ ncmAcFechar(); return; }
+  const todos = ncmAcFiltrar(q);
+  NCM_AC.total = todos.length;
+  NCM_AC.lista = todos.slice(0, 20);
+  NCM_AC.idx = NCM_AC.lista.length ? 0 : -1;
+  if (!NCM_AC.lista.length){
+    b.innerHTML = `<div style="padding:10px 12px; font-size:12.5px; color:var(--text-faint);">${NCMS.length ? "Nenhum NCM encontrado — cadastre em Planejamento &gt; Base NCM." : "Carregando a Base NCM…"}</div>`;
+  } else {
+    b.innerHTML = NCM_AC.lista.map((n,i) => `<div class="ncm-ac-it${i===0?' ativo':''}" data-i="${i}"><span class="mono" style="font-weight:600;">${escapeHtml(n.ncm)}</span> — ${escapeHtml(n.descricao)||'sem descrição'}</div>`).join("")
+      + (NCM_AC.total > NCM_AC.lista.length ? `<div style="padding:7px 12px; font-size:11.5px; color:var(--text-faint);">Mostrando ${NCM_AC.lista.length} de ${NCM_AC.total} — continue digitando para refinar.</div>` : "");
   }
-  dropdown.innerHTML = matches.map(n => `
-    <div onclick="fNcmSelecionar('${n.ncm}')" style="padding:9px 12px; cursor:pointer; border-bottom:1px solid var(--border); font-size:13px;" onmouseover="this.style.background='var(--surface-alt)'" onmouseout="this.style.background=''">
-      <span class="mono" style="font-weight:600;">${escapeHtml(n.ncm)}</span> — ${escapeHtml(n.descricao)||'sem descrição'}
-    </div>
-  `).join("");
-  dropdown.style.display = "block";
+  b.scrollTop = 0;
+  b.style.display = "block";
+  ncmAcPosicionar();
+}
+function ncmAcAbrir(inp, onPick){
+  NCM_AC.inp = inp; NCM_AC.onPick = onPick;
+  if (!NCMS.length && !NCM_AC.carregando){
+    NCM_AC.carregando = true;
+    db.from("imp_ncms").select("*").order("ncm").then(({ data }) => { NCMS = data || []; NCM_AC.carregando = false; if (NCM_AC.inp === inp && document.activeElement === inp) ncmAcRender(); });
+  }
+  ncmAcRender();
+}
+function ncmAcDestacar(i){
+  const b = NCM_AC.box; if (!b) return;
+  NCM_AC.idx = i;
+  b.querySelectorAll(".ncm-ac-it").forEach((el,k) => { el.classList.toggle("ativo", k === i); if (k === i) el.scrollIntoView({ block:"nearest" }); });
+}
+function ncmAcEscolher(i){
+  const n = NCM_AC.lista[i], cb = NCM_AC.onPick, inp = NCM_AC.inp;
+  if (!n) return;
+  ncmAcFechar();
+  if (cb) cb(n);
+  if (inp) inp.focus({ preventScroll:true });
+}
+document.addEventListener("keydown", (e) => {
+  const b = NCM_AC.box;
+  if (!b || b.style.display === "none" || e.target !== NCM_AC.inp) return;
+  const n = NCM_AC.lista.length;
+  if (e.key === "ArrowDown"){ e.preventDefault(); if (n) ncmAcDestacar((NCM_AC.idx + 1) % n); }
+  else if (e.key === "ArrowUp"){ e.preventDefault(); if (n) ncmAcDestacar((NCM_AC.idx - 1 + n) % n); }
+  else if (e.key === "Enter"){ if (n && NCM_AC.idx >= 0){ e.preventDefault(); e.stopPropagation(); ncmAcEscolher(NCM_AC.idx); } }
+  else if (e.key === "Escape"){ e.preventDefault(); e.stopPropagation(); ncmAcFechar(); }
+}, true);
+document.addEventListener("focusout", (e) => { if (e.target === NCM_AC.inp) setTimeout(() => { if (document.activeElement !== NCM_AC.inp) ncmAcFechar(); }, 150); });
+document.addEventListener("pointerdown", (e) => { const b = NCM_AC.box; if (b && b.style.display !== "none" && !e.target.closest("#ncmAcBox") && e.target !== NCM_AC.inp) ncmAcFechar(); }, true);
+window.addEventListener("scroll", ncmAcPosicionar, true);
+window.addEventListener("resize", ncmAcPosicionar);
+window.fNcmBuscar = function(){
+  const el = document.getElementById("f_ncm");
+  ncmAcAbrir(el, n => { el.value = n.ncm; document.getElementById("err_ncm").textContent = ""; });
 };
-window.fNcmSelecionar = function(codigo){
-  document.getElementById("f_ncm").value = codigo;
-  document.getElementById("fNcmDropdown").style.display = "none";
-};
-document.addEventListener("click", (e) => {
-  const dropdown = document.getElementById("fNcmDropdown");
-  if (dropdown && !e.target.closest("#f_ncm") && !e.target.closest("#fNcmDropdown")) dropdown.style.display = "none";
-});
 
 async function loadProdutos(){
   const { data, error } = await db.from(TABLE_PRODUTOS).select("*");
@@ -5003,7 +5093,7 @@ function validarForm(){
   const nome = document.getElementById("f_nome_produto").value.trim();
   if (!nome){ setFieldError("nome_produto", "Nome do produto é obrigatório."); ok = false; }
   const ncm = document.getElementById("f_ncm").value.trim();
-  if (ncm && ncm.replace(/\D/g,"").length !== 8){ setFieldError("ncm", "NCM deve ter 8 dígitos (0000.00.00)."); ok = false; }
+  if (ncm && (!/^[\d.\-\s]+$/.test(ncm) || ncm.replace(/\D/g,"").length !== 8)){ setFieldError("ncm", "Escolha um NCM da lista ou digite os 8 dígitos (0000.00.00)."); ok = false; }
   const numericFields = ["preco_rmb","valor_duimp_usd","peso_item_kg","qtde_caixa_master","comprimento_cm","largura_cm","altura_cm","peso_liquido_caixa_kg","peso_bruto_caixa_kg"];
   numericFields.forEach(id => {
     const raw = document.getElementById(`f_${id}`).value.trim();
@@ -5038,7 +5128,7 @@ document.getElementById("btnSalvar").addEventListener("click", async () => {
     nome_produto: document.getElementById("f_nome_produto").value.trim() || null,
     nome_ingles: document.getElementById("f_nome_ingles").value.trim() || null,
     nome_chines: document.getElementById("f_nome_chines").value.trim() || null,
-    ncm: document.getElementById("f_ncm").value.trim() || null,
+    ncm: document.getElementById("f_ncm").value.trim() ? maskNcm(document.getElementById("f_ncm").value) : null,
     codigo_barras: document.getElementById("f_codigo_barras").value.trim() || null,
     marca: document.getElementById("f_marca").value || null,
     comprador: document.getElementById("f_comprador").value || null,
@@ -5168,6 +5258,8 @@ window.importarProdutosArquivo = function(inputEl){
   };
   reader.readAsArrayBuffer(file);
 };
+let IMPORT_MOSTRAR_IGUAIS = false;
+window.importAlternarIguais = function(){ IMPORT_MOSTRAR_IGUAIS = !IMPORT_MOSTRAR_IGUAIS; renderImportPreview(); };
 function processarImportacao(rows){
   const bySku = {}; produtos.forEach(p => { if (p.sku) bySku[p.sku.trim().toUpperCase()] = p; });
   const marcasExist = (CONFIG?.marcas || []).map(m => m.toLowerCase());
@@ -5209,12 +5301,13 @@ function processarImportacao(rows){
     }
     return {
       novo, existente, errors,
-      status: errors.length ? "erro" : (existente ? "atualizar" : "novo"),
+      status: errors.length ? "erro" : (existente ? (diffs.length ? "atualizar" : "igual") : "novo"),
       diffs,
     };
   });
   IMPORT_NOVOS_MARCAS = [...novasMarcas];
   IMPORT_NOVOS_COMPRADORES = [...novosCompradores];
+  IMPORT_MOSTRAR_IGUAIS = false;
   renderImportPreview();
   document.getElementById("modalImportOverlay").classList.add("open");
 }
@@ -5232,8 +5325,11 @@ function renderImportPreview(){
   tagsEl.innerHTML = tagsHtml;
 
   const rowsEl = document.getElementById("importRowsList");
-  const statusInfo = { novo:{label:"Novo produto", bg:"var(--success-soft)", color:"#166534"}, atualizar:{label:"Vai atualizar", bg:"var(--warn-soft)", color:"#92400e"}, erro:{label:"Erro", bg:"var(--danger-soft)", color:"#991b1b"} };
-  rowsEl.innerHTML = IMPORT_PREVIEW.map((r, i) => {
+  const statusInfo = { novo:{label:"Novo produto", bg:"var(--success-soft)", color:"#166534"}, atualizar:{label:"Vai atualizar", bg:"var(--warn-soft)", color:"#92400e"}, erro:{label:"Erro", bg:"var(--danger-soft)", color:"#991b1b"}, igual:{label:"Sem alterações", bg:"#eef0f3", color:"#4b5563"} };
+  const qtdIguais = IMPORT_PREVIEW.filter(r => r.status === "igual").length;
+  const barraIguais = qtdIguais ? `<div style="margin-bottom:10px;"><button class="btn" onclick="importAlternarIguais()">${IMPORT_MOSTRAR_IGUAIS ? "Ocultar os iguais" : "Mostrar também os iguais"} (${qtdIguais})</button></div>` : "";
+  const listaHtml = IMPORT_PREVIEW.map((r, i) => {
+    if (r.status === "igual" && !IMPORT_MOSTRAR_IGUAIS) return "";
     const si = statusInfo[r.status];
     let diffHtml = "";
     if (r.diffs.length){
@@ -5259,12 +5355,13 @@ function renderImportPreview(){
         </div>
         ${errHtml}${diffHtml}
       </div>`;
-  }).join("") || `<div class="empty-state">Nenhuma linha encontrada na planilha.</div>`;
+  }).join("");
+  rowsEl.innerHTML = barraIguais + (listaHtml || (IMPORT_PREVIEW.length ? `<div class="empty-state">Nenhum produto novo ou com alteração nesta planilha. Use "Mostrar também os iguais" para ver os ${qtdIguais} sem alterações.</div>` : `<div class="empty-state">Nenhuma linha encontrada na planilha.</div>`));
 
   const novos = IMPORT_PREVIEW.filter(r=>r.status==="novo").length;
   const atualiza = IMPORT_PREVIEW.filter(r=>r.status==="atualizar").length;
   const erros = IMPORT_PREVIEW.filter(r=>r.status==="erro").length;
-  document.getElementById("importResumo").textContent = `${novos} novo(s) · ${atualiza} para atualizar · ${erros} com erro (não serão importados)`;
+  document.getElementById("importResumo").textContent = `${novos} novo(s) · ${atualiza} para atualizar · ${qtdIguais} sem alterações · ${erros} com erro (não serão importados)`;
 }
 window.fecharModalImport = function(){ document.getElementById("modalImportOverlay").classList.remove("open"); };
 window.confirmarImportacao = async function(){
@@ -10328,11 +10425,79 @@ function dxEditCab(k, v){ DX.doc[k] = k === "agente" ? String(v).toUpperCase() :
 function dxEditItem(i, k, el){
   const campo = DX_CAMPOS_ITEM.find(c => c.k === k);
   const it = DX.doc.itens[i];
+  if (k === "nomeEn"){ dxEditNomeEn(i, el); return; }
   if (campo.t === "num") it[k] = el.value.trim() === "" ? null : parseNum(el.value);
   else it[k] = k === "marca" ? el.value.trim().toUpperCase() : el.value.trim();
   if (k === "sku") it.semSku = false;
   if (k === "marca") el.value = it[k];
   dxRefresh(); dxAgendarSalvar();
+}
+/* ---------- nome em inglês: confirma antes de gravar no cadastro ---------- */
+const dxNormNome = v => String(v || "").trim().replace(/\s+/g, " ").toLowerCase();
+async function dxEditNomeEn(i, el){
+  const it = DX.doc.itens[i];
+  const antes = it.nomeEn || "", novo = el.value.trim();
+  const soAqui = () => { it.nomeEn = novo; el.value = novo; dxRefresh(); dxAgendarSalvar(); };
+  if (novo === antes){ el.value = novo; return; }
+  // nome vazio, item sem SKU ou usuário sem permissão de edição → só neste contêiner, sem perguntar
+  if (!novo || !it.sku || it.semSku || !authPodeEscrever()){ soAqui(); return; }
+  let existe = false, atual = "";
+  try {
+    const { data, error } = await db.from(TABLE_PRODUTOS).select("sku,nome_ingles").eq("sku", it.sku);
+    if (!error && data && data.length){ existe = true; atual = data[0].nome_ingles || ""; }
+  } catch (e) { /* sem conexão: segue só neste contêiner */ }
+  if (!existe || dxNormNome(atual) === dxNormNome(novo)){ soAqui(); return; }
+  dxPopupNomeEn(i, el, antes, novo, atual);
+}
+function dxPopupNomeEn(i, el, antes, novo, atual){
+  const it = DX.doc.itens[i];
+  const outras = DX.doc.itens.filter((x, j) => j !== i && String(x.sku || "").trim().toUpperCase() === String(it.sku).trim().toUpperCase()).length;
+  const id = "dxNomeEnOverlay";
+  document.getElementById(id)?.remove();
+  const ov = document.createElement("div");
+  ov.id = id; ov.className = "dyn-overlay";
+  ov.style.cssText = "position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:650; display:flex; align-items:center; justify-content:center; padding:16px;";
+  const linha = (lab, val, dest) => `<div style="margin-bottom:10px;"><div style="font-size:10.5px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:.04em; margin-bottom:3px;">${lab}</div><div style="padding:8px 10px; border:1px solid ${dest ? 'var(--accent)' : 'var(--border)'}; background:${dest ? 'var(--surface-alt)' : '#fff'}; border-radius:8px; font-size:14px; ${dest ? 'font-weight:700;' : ''}">${val ? escapeHtml(val) : '<span style="color:var(--text-faint);">(vazio)</span>'}</div></div>`;
+  ov.innerHTML = `<div class="dyn-box" style="background:#fff; border-radius:16px; width:100%; max-width:460px; max-height:90vh; overflow:auto; box-shadow:0 20px 60px rgba(0,0,0,.25);">
+    <div style="padding:16px 20px; border-bottom:1px solid var(--border);">
+      <div style="font-size:15px; font-weight:800;">Atualizar o nome em inglês?</div>
+      <div style="font-size:12.5px; color:var(--text-muted); margin-top:3px;">Você alterou o nome em inglês de um item que já está no cadastro de produtos.</div>
+    </div>
+    <div style="padding:16px 20px;">
+      ${linha("SKU", it.sku, false)}
+      ${linha("Nome atual no cadastro", atual, false)}
+      ${linha("Novo nome", novo, true)}
+      <div style="font-size:12px; color:var(--text-muted); line-height:1.5;">Ao atualizar o cadastro, o novo nome passa a valer daqui para frente (novos documentos, Info B/L e buscas)${outras ? (outras > 1 ? ` e as outras <b>${outras}</b> linhas deste SKU neste contêiner também são ajustadas` : ` e a outra linha deste SKU neste contêiner também é ajustada`) : ''}. Documentos de outros contêineres já salvos mantêm o nome que tinham.</div>
+    </div>
+    <div style="padding:12px 20px 16px; display:flex; flex-direction:column; gap:8px;">
+      <button class="btn btn-primary" id="dxNomeEnCad" style="width:100%;">Atualizar no cadastro</button>
+      <button class="btn" id="dxNomeEnAqui" style="width:100%;">Só neste contêiner</button>
+      <button class="btn" id="dxNomeEnCancel" style="width:100%;">Cancelar</button>
+    </div></div>`;
+  document.body.appendChild(ov);
+  const fechar = () => ov.remove();
+  const cancelar = () => { el.value = antes; fechar(); };
+  ov.addEventListener("click", e => { if (e.target === ov) cancelar(); });
+  ov.addEventListener("keydown", e => { if (e.key === "Escape"){ e.stopPropagation(); cancelar(); } });
+  document.getElementById("dxNomeEnCancel").onclick = cancelar;
+  document.getElementById("dxNomeEnAqui").onclick = () => { fechar(); it.nomeEn = novo; el.value = novo; dxRefresh(); dxAgendarSalvar(); };
+  const bCad = document.getElementById("dxNomeEnCad");
+  bCad.onclick = async () => {
+    bCad.disabled = true; bCad.textContent = "Atualizando…";
+    const { error } = await db.from(TABLE_PRODUTOS).update({ nome_ingles: novo }).eq("sku", it.sku);
+    fechar();
+    if (error){
+      it.nomeEn = novo; el.value = novo; dxRefresh(); dxAgendarSalvar();
+      toast("Não consegui atualizar o cadastro — o nome ficou só neste contêiner.", "error");
+      return;
+    }
+    const skuU = String(it.sku).trim().toUpperCase();
+    DX.doc.itens.forEach(x => { if (String(x.sku || "").trim().toUpperCase() === skuU) x.nomeEn = novo; });
+    try { produtos.forEach(p => { if (String(p.sku || "").trim().toUpperCase() === skuU) p.nome_ingles = novo; }); } catch (e) {}
+    dxRenderItens(); dxRefresh(); dxAgendarSalvar();
+    toast(`Nome em inglês atualizado no cadastro (${it.sku}).`);
+  };
+  setTimeout(() => { const b = document.getElementById("dxNomeEnCad"); if (b) b.focus(); }, 30);
 }
 function dxAddItem(){
   DX.doc.itens.push({ sku: "", semSku: false, nomeEn: "", nomeCn: "", marca: "", qtyCtn: null, qtd: null, preco: null, pl: null, pb: null, c: null, l: null, a: null, ncm: "" });
