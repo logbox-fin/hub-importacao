@@ -597,6 +597,7 @@
   .dx-alertas{ border-radius:var(--radius); padding:12px 16px; margin-bottom:14px; font-size:13px; border:1px solid; }
   .dx-alertas.warn{ background:var(--danger-soft); border-color:#fecaca; color:#7f1d1d; }
   .dx-alertas.ok{ background:var(--success-soft); border-color:#bbf7d0; color:#166534; font-weight:600; }
+  .dx-alertas.kg{ background:var(--warn-soft); border-color:#fde68a; color:#92400e; margin-top:-6px; }
   .dx-alertas-t{ font-weight:700; margin-bottom:4px; }
   .dx-alertas ul{ margin:4px 0 0; padding-left:20px; } .dx-alertas li{ margin:2px 0; }
   table.dx-table{ min-width:1330px; }
@@ -1601,6 +1602,7 @@
           <div class="field-grid cols-3">
             <div class="field"><label>Preço RMB</label><input type="text" inputmode="decimal" id="f_preco_rmb" class="mono-field" placeholder="0,00"><div class="field-error" id="err_preco_rmb"></div></div>
             <div class="field"><label>Valor DUIMP (USD)</label><input type="text" inputmode="decimal" id="f_valor_duimp_usd" class="mono-field" placeholder="0,00"><div class="field-error" id="err_valor_duimp_usd"></div></div>
+            <div class="field"><label title="Piso de US$ por kg líquido. Na Emitir P. List + Invoice, o Hub avisa se Valor Total USD ÷ Peso Líquido Total ficar abaixo deste valor.">Parâmetro (US$/kg)</label><input type="text" inputmode="decimal" id="f_parametro_usd_kg" class="mono-field" placeholder="0,00"><div class="field-error" id="err_parametro_usd_kg"></div></div>
           </div>
         </fieldset>
         <fieldset>
@@ -4991,7 +4993,7 @@ document.querySelectorAll("th.sortable").forEach(th => {
   });
 });
 
-const FIELD_IDS = ["sku","nome_produto","nome_ingles","nome_chines","ncm","codigo_barras","preco_rmb","valor_duimp_usd","peso_item_kg","qtde_caixa_master","comprimento_cm","largura_cm","altura_cm","peso_liquido_caixa_kg","peso_bruto_caixa_kg"];
+const FIELD_IDS = ["sku","nome_produto","nome_ingles","nome_chines","ncm","codigo_barras","preco_rmb","valor_duimp_usd","parametro_usd_kg","peso_item_kg","qtde_caixa_master","comprimento_cm","largura_cm","altura_cm","peso_liquido_caixa_kg","peso_bruto_caixa_kg"];
 
 function limparForm(){
   FIELD_IDS.forEach(id => { document.getElementById(`f_${id}`).value = ""; });
@@ -5031,6 +5033,7 @@ window.abrirEdicao = function(id){
   document.getElementById("f_comprador").value = p.comprador || "";
   document.getElementById("f_preco_rmb").value = p.preco_rmb ?? "";
   document.getElementById("f_valor_duimp_usd").value = p.valor_duimp_usd ?? "";
+  document.getElementById("f_parametro_usd_kg").value = p.parametro_usd_kg ?? "";
   document.getElementById("f_peso_item_kg").value = p.peso_item_kg ?? "";
   document.getElementById("f_qtde_caixa_master").value = p.qtde_caixa_master ?? "";
   document.getElementById("f_comprimento_cm").value = p.comprimento_cm ?? "";
@@ -5061,6 +5064,7 @@ window.abrirDuplicar = function(id){
   document.getElementById("f_comprador").value = p.comprador || "";
   document.getElementById("f_preco_rmb").value = p.preco_rmb ?? "";
   document.getElementById("f_valor_duimp_usd").value = p.valor_duimp_usd ?? "";
+  document.getElementById("f_parametro_usd_kg").value = p.parametro_usd_kg ?? "";
   document.getElementById("f_peso_item_kg").value = p.peso_item_kg ?? "";
   document.getElementById("f_qtde_caixa_master").value = p.qtde_caixa_master ?? "";
   document.getElementById("f_comprimento_cm").value = p.comprimento_cm ?? "";
@@ -5094,7 +5098,7 @@ function validarForm(){
   if (!nome){ setFieldError("nome_produto", "Nome do produto é obrigatório."); ok = false; }
   const ncm = document.getElementById("f_ncm").value.trim();
   if (ncm && (!/^[\d.\-\s]+$/.test(ncm) || ncm.replace(/\D/g,"").length !== 8)){ setFieldError("ncm", "Escolha um NCM da lista ou digite os 8 dígitos (0000.00.00)."); ok = false; }
-  const numericFields = ["preco_rmb","valor_duimp_usd","peso_item_kg","qtde_caixa_master","comprimento_cm","largura_cm","altura_cm","peso_liquido_caixa_kg","peso_bruto_caixa_kg"];
+  const numericFields = ["preco_rmb","valor_duimp_usd","parametro_usd_kg","peso_item_kg","qtde_caixa_master","comprimento_cm","largura_cm","altura_cm","peso_liquido_caixa_kg","peso_bruto_caixa_kg"];
   numericFields.forEach(id => {
     const raw = document.getElementById(`f_${id}`).value.trim();
     if (raw !== ""){ const n = parseNum(raw); if (n === null || n < 0){ setFieldError(id, "Valor numérico inválido."); ok = false; } }
@@ -5134,6 +5138,7 @@ document.getElementById("btnSalvar").addEventListener("click", async () => {
     comprador: document.getElementById("f_comprador").value || null,
     preco_rmb: parseNum(document.getElementById("f_preco_rmb").value),
     valor_duimp_usd: parseNum(document.getElementById("f_valor_duimp_usd").value),
+    parametro_usd_kg: parseNum(document.getElementById("f_parametro_usd_kg").value),
     peso_item_kg: parseNum(document.getElementById("f_peso_item_kg").value),
     qtde_caixa_master: parseNum(document.getElementById("f_qtde_caixa_master").value),
     comprimento_cm: parseNum(document.getElementById("f_comprimento_cm").value),
@@ -5218,6 +5223,7 @@ const IMPORT_COLS = [
   { header:"Comprador", field:"comprador", type:"text" },
   { header:"Preço RMB", field:"preco_rmb", type:"number" },
   { header:"Valor DUIMP (USD)", field:"valor_duimp_usd", type:"number" },
+  { header:"Parâmetro (US$/kg)", field:"parametro_usd_kg", type:"number" },
   { header:"Peso Item (kg)", field:"peso_item_kg", type:"number" },
   { header:"Qtde/Caixa Master", field:"qtde_caixa_master", type:"number" },
   { header:"Comprimento (cm)", field:"comprimento_cm", type:"number" },
@@ -9477,7 +9483,7 @@ function nfeSkuCardHtml(it, idx){
         nfeCardCampoNum(idx, "Valor PIS", "valor_pis", 2)
       ].join(""), "#0d9488")}
       ${nfeCardSecao("6 · IPI", [
-        nfeCardCampoRO("VMLD", `<span class="ref-ro">R$ ${fmtN(it.vmld,2)}</span>`),
+        nfeCardCampoRO("Base IPI", `<span class="ref-ro">R$ ${fmtN((Number(it.vmld)||0)+(Number(it.valor_ii)||0),2)}</span>`),
         nfeCardCampoNumAliq(idx, "Alíquota IPI", "aliq_ipi", 2),
         nfeCardCampoNum(idx, "Valor IPI", "valor_ipi", 2)
       ].join(""), "#db2777")}
@@ -10135,7 +10141,7 @@ function precRender(){
 // Gera os 2 documentos (Excel com 2 abas + PDF) a partir dos dados do B/L e dos itens do contêiner.
 // Edições feitas aqui valem só pro contêiner aberto (tabela imp_documentos_exportacao) — o catálogo
 // de produtos NUNCA é alterado. Nada trava a emissão: campos faltando só ficam em vermelho.
-let DX = { lista: null, id: null, container: null, doc: null, salvoEm: null, editado: false, saveTimer: null, xlLib: null };
+let DX = { params: {}, lista: null, id: null, container: null, doc: null, salvoEm: null, editado: false, saveTimer: null, xlLib: null };
 
 const DX_MESES = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
 function dxDataUS(iso){
@@ -10216,9 +10222,11 @@ async function dxSelecionar(id){
   const skus = [...new Set((c.imp_container_itens || []).map(i => i.sku).filter(Boolean))];
   let catalogo = [];
   if (skus.length){
-    const r = await db.from(TABLE_PRODUTOS).select("sku,nome_ingles,nome_chines,marca,ncm,valor_duimp_usd").in("sku", skus);
+    const r = await db.from(TABLE_PRODUTOS).select("sku,nome_ingles,nome_chines,marca,ncm,valor_duimp_usd,parametro_usd_kg").in("sku", skus);
     catalogo = r.data || [];
   }
+  DX.params = {};
+  catalogo.forEach(c => { if (c.sku) DX.params[String(c.sku).trim().toUpperCase()] = dxNumOuNull(c.parametro_usd_kg); });
   const base = dxMontarBase(c, c.imp_container_itens, catalogo);
   // agente de carga: nome completo igual ao do B/L (busca reversa em imp_agente_aliases); sem vínculo → nome cadastrado em maiúsculas
   const agenteCompleto = await dxAgenteCompleto(c.agente_carga);
@@ -10282,6 +10290,13 @@ function dxFlagsCab(doc){
   DX_CAMPOS_CAB.forEach(c => { if (dxVazio(doc[c.k])) f[c.k] = true; });
   return f;
 }
+// No documento (Excel/PDF) os brinquedos (SKU XC-BRQ-...) saem sem "-COR" no fim (ex.: ...-01-VM → ...-01). Na tela e no cadastro o SKU continua completo.
+function dxSkuDoc(sku){
+  const s = String(sku == null ? "" : sku);
+  if (!/^XC-BRQ-/i.test(s)) return s;
+  const m = s.match(/^(.*)-[A-Za-z]{1,3}$/);
+  return m && /\d/.test(m[1]) ? m[1] : s;
+}
 function dxDadosBuilder(doc){
   const partes = s => String(s || "").split(",").map(x => x.trim()).filter(Boolean);
   const o = partes(doc.origem), d = partes(doc.destino);
@@ -10291,7 +10306,7 @@ function dxDadosBuilder(doc){
     fob: "FOB " + o.join(" , ") + " , per Incoterms 2000",
     rota: o.join(" , ") + " / " + d.join(" / "),
     paginas: doc.itens.length > 16 ? "" : "001 at 001",
-    itens: doc.itens
+    itens: doc.itens.map(it => Object.assign({}, it, { sku: dxSkuDoc(it.sku) }))
   };
 }
 
@@ -10393,7 +10408,30 @@ function dxRefresh(){
   document.getElementById("dxAlertas").innerHTML = linhas.length
     ? `<div class="dx-alertas warn"><div class="dx-alertas-t">⚠ ${linhas.length} ponto(s) pra conferir — nada trava a emissão, os campos em vermelho podem ser preenchidos aqui mesmo</div><ul>${linhas.join("")}</ul></div>`
     : `<div class="dx-alertas ok">✅ Tudo preenchido — documentos prontos pra emitir.</div>`;
+  document.getElementById("dxAlertas").innerHTML += dxAlertaKgHtml(doc, C);
   dxAtualizarChip();
+}
+// Alerta de US$/kg: (Valor Total USD ÷ Peso Líquido Total) por SKU abaixo do Parâmetro do cadastro. Produto sem Parâmetro é ignorado. Só avisa.
+function dxAlertaKgHtml(doc, C){
+  const por = {};
+  doc.itens.forEach((it, i) => {
+    const sku = String(it.sku || "").trim().toUpperCase();
+    const k = C.it[i];
+    if (!sku || !k) return;
+    const o = por[sku] || (por[sku] = { sku: it.sku, val: 0, kg: 0 });
+    o.val += k.K; o.kg += k.M;
+  });
+  const abaixo = [];
+  Object.keys(por).forEach(sku => {
+    const par = (DX.params || {})[sku];
+    const o = por[sku];
+    if (!(par > 0) || !(o.kg > 0) || !(o.val > 0)) return;
+    const r = o.val / o.kg;
+    if (r < par - 1e-9) abaixo.push({ sku: o.sku, r, par });
+  });
+  if (!abaixo.length) return "";
+  const f = v => Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `<div class="dx-alertas kg"><div class="dx-alertas-t">⚠ ${abaixo.length} produto(s) com valor por kg abaixo do Parâmetro — só um aviso, nada trava a emissão</div><ul>${abaixo.map(a => `<li><b>${escapeHtml(a.sku)}</b>: US$ ${f(a.r)}/kg (Parâmetro: US$ ${f(a.par)}/kg)</li>`).join("")}</ul></div>`;
 }
 function dxAtualizarChip(estado){
   const el = document.getElementById("dxChipSalvo");
@@ -10429,7 +10467,17 @@ function dxEditItem(i, k, el){
   if (k === "preco"){ dxEditPreco(i, el); return; }
   if (campo.t === "num") it[k] = el.value.trim() === "" ? null : parseNum(el.value);
   else it[k] = k === "marca" ? el.value.trim().toUpperCase() : el.value.trim();
-  if (k === "sku") it.semSku = false;
+  if (k === "sku"){
+    it.semSku = false;
+    const su = String(it.sku || "").trim().toUpperCase();
+    if (su && !(su in (DX.params || {}))){
+      db.from(TABLE_PRODUTOS).select("sku,parametro_usd_kg").eq("sku", it.sku).then(({ data }) => {
+        DX.params = DX.params || {};
+        DX.params[su] = data && data.length ? dxNumOuNull(data[0].parametro_usd_kg) : null;
+        dxRefresh();
+      }).catch(() => {});
+    }
+  }
   if (k === "marca") el.value = it[k];
   dxRefresh(); dxAgendarSalvar();
 }
