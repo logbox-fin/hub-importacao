@@ -8700,7 +8700,7 @@ async function finGarantirContainers(forcar){
 }
 async function finGarantirProdutos(){
   if (FIN_PRODUTOS_CACHE) return FIN_PRODUTOS_CACHE;
-  const { data } = await db.from(TABLE_PRODUTOS).select("sku,nome_produto,ncm,qtde_caixa_master,comprimento_cm,largura_cm,altura_cm");
+  const { data } = await db.from(TABLE_PRODUTOS).select("sku,nome_produto,nome_ingles,ncm,ativo,codigo_barras,qtde_caixa_master,comprimento_cm,largura_cm,altura_cm");
   FIN_PRODUTOS_CACHE = data || [];
   return FIN_PRODUTOS_CACHE;
 }
@@ -8736,6 +8736,7 @@ let NFE_TROCANDO_SKU = new Set(); // índices (NFE_MERGED) com o campo SKU abert
 
 async function loadApoioNfe(){
   await finGarantirContainers(true);
+  FIN_PRODUTOS_CACHE = null; // sempre relê o Banco de Dados (cadastro novo/alterado aparece na hora)
   await finGarantirProdutos();
   finPopularSelect("nfeContainerSelect", FIN_CONTAINERS, NFE_CONTAINER_ID);
   if (NFE_CONTAINER_ID){
@@ -8839,6 +8840,115 @@ function nfeMatchContainerItem(chave){
       .map(it => it.sku)
   );
   return skusDistintos.size === 1 ? [...skusDistintos][0] : null;
+}
+
+/* ---------- vínculo automático contra o BANCO DE DADOS (só produtos ativos) — 20/10 ----------
+   Ordem: (1) aprendizado/Packing List com texto IGUAL e SKU ativo; (2) código do produto escrito na
+   descrição ("MODELO: XX-000", "REF.: ...") igual a um SKU do banco; (3) NCM igual + especificações da
+   descrição (tensão, vazão, potência, cor, kg) contra o nome do produto no banco. Só vincula sozinho
+   quando sobra UM candidato; se sobrar mais de um, fica pendente e mostra os candidatos como sugestão. */
+function nfeNcmDig(v){ return String(v||"").replace(/\D/g,""); }
+function nfeProdutosAtivos(){ return (FIN_PRODUTOS_CACHE||[]).filter(p => p && p.sku && p.ativo !== false); }
+function nfeProdutoPorSku(sku){
+  const k = String(sku||"").toUpperCase();
+  return (FIN_PRODUTOS_CACHE||[]).find(p => p && p.sku && String(p.sku).toUpperCase() === k) || null;
+}
+function nfeNumBR(s){
+  s = String(s||"").trim();
+  if (!s) return NaN;
+  if (/^\d{1,3}(\.\d{3})+$/.test(s)) return parseFloat(s.replace(/\./g,""));
+  if (s.includes(",")) return parseFloat(s.replace(/\./g,"").replace(",","."));
+  return parseFloat(s);
+}
+const NFE_CORES = ["BRANC","PRET","AZUL","VERMELH","VERD","AMAREL","ROS","LARANJ","CINZ","PRAT","DOURAD","MARROM","ROX"];
+function nfeExtrairSpecs(texto, skuTexto){
+  const t = " " + String(texto||"").toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/\s+/g," ") + " ";
+  const sp = { v: new Set(), vazao: new Set(), w: new Set(), kg: new Set(), cores: new Set() };
+  if (!/BIVOLT/.test(t)){
+    let m; const rv = /(\d{2,3})\s*(?:VOLTS?\b|V\b)/g;
+    while ((m = rv.exec(t))) sp.v.add(Number(m[1]));
+    if (skuTexto){ const ms = String(skuTexto).toUpperCase().match(/-(110|127|220|380)(?:-|$)/); if (ms) sp.v.add(Number(ms[1])); }
+  }
+  let m;
+  const rf = /([\d.,]+)\s*(?:LITROS\s+POR\s+HORA|L\s*\/\s*H\b|LPH\b)/g;
+  while ((m = rf.exec(t))){ const n = nfeNumBR(m[1]); if (n > 0) sp.vazao.add(n); }
+  const rkw = /([\d.,]+)\s*(?:KW\b|QUILOWATTS?)/g;
+  while ((m = rkw.exec(t))){ const n = nfeNumBR(m[1]); if (n > 0) sp.w.add(Math.round(n*1000)); }
+  const rw = /([\d.,]+)\s*(?:WATTS?\b|W\b)/g;
+  while ((m = rw.exec(t))){ const n = nfeNumBR(m[1]); if (n > 0) sp.w.add(Math.round(n)); }
+  const rkg = /([\d.,]+)\s*KG\b/g;
+  while ((m = rkg.exec(t))){ const n = nfeNumBR(m[1]); if (n > 0) sp.kg.add(n); }
+  let trecho = t;
+  const ic = t.indexOf("COR:");
+  if (ic >= 0) trecho = t.slice(ic + 4).split(/[;,]|MARCA/)[0];
+  NFE_CORES.forEach(c => { if (trecho.includes(c)) sp.cores.add(c); });
+  return sp;
+}
+// regras duras: tensão e vazão (quando os dois lados informam, têm que ser iguais)
+function nfeSpecsConflitam(d, c){
+  const diverge = (a, b) => a.size && b.size && ![...a].some(x => b.has(x));
+  return diverge(d.v, c.v) || diverge(d.vazao, c.vazao);
+}
+// pontos extras (potência, cor, kg): só desempatam, nunca excluem
+function nfeSpecsPontos(d, c){
+  let pts = 0;
+  const bate = (a, b) => a.size && b.size && [...a].some(x => b.has(x));
+  if (bate(d.w, c.w)) pts++;
+  if (bate(d.cores, c.cores)) pts++;
+  if (bate(d.kg, c.kg)) pts++;
+  if (bate(d.v, c.v)) pts++;
+  if (bate(d.vazao, c.vazao)) pts++;
+  return pts;
+}
+function nfeResolverPool(pool, dSpec){
+  const comSpec = pool.map(p => ({ p, sp: nfeExtrairSpecs((p.nome_produto||"") + " " + (p.nome_ingles||""), p.sku) }));
+  const ok = comSpec.filter(x => !nfeSpecsConflitam(dSpec, x.sp));
+  if (!ok.length) return { sku: null, cand: [] };
+  if (ok.length === 1) return { sku: ok[0].p.sku, cand: [ok[0].p.sku] };
+  ok.forEach(x => { x.pts = nfeSpecsPontos(dSpec, x.sp); });
+  const best = Math.max(...ok.map(x => x.pts));
+  const tops = ok.filter(x => x.pts === best);
+  if (best >= 1 && tops.length === 1) return { sku: tops[0].p.sku, cand: [tops[0].p.sku] };
+  const lista = (best >= 1 ? tops : ok).slice(0, 8).map(x => x.p.sku);
+  return { sku: null, cand: lista };
+}
+function nfeVincularAuto(r, chave){
+  const ativos = nfeProdutosAtivos();
+  if (!ativos.length) return { sku: null, cand: [] };
+  const ativoPorSku = new Map(ativos.map(p => [String(p.sku).toUpperCase(), p]));
+  // (1) aprendizado / Packing List — só com texto curto igual e SKU ainda ativo no banco
+  if (chave && chave.length <= 100){
+    const a = NFE_ALIASES[chave];
+    if (a && ativoPorSku.has(String(a).toUpperCase())) return { sku: ativoPorSku.get(String(a).toUpperCase()).sku, cand: [] };
+    const pl = nfeMatchContainerItem(chave);
+    if (pl && ativoPorSku.has(String(pl).toUpperCase())) return { sku: ativoPorSku.get(String(pl).toUpperCase()).sku, cand: [] };
+  }
+  const textoTudo = String(r.descricao||"") + " " + String(r.model||"");
+  const dSpec = nfeExtrairSpecs(textoTudo, null);
+  // (2) código do produto escrito na descrição
+  const limpo = textoTudo.toUpperCase().replace(/-\s+/g, "-").replace(/\s+-/g, "-");
+  const tokens = [...new Set(limpo.split(/[\s;,:()\[\]]+/).map(x => x.replace(/^[-.]+|[-.]+$/g,"")).filter(x => x.length >= 5 && /[A-Z]/.test(x) && /\d/.test(x)))];
+  const norm = x => x.replace(/[^A-Z0-9]/g, "");
+  const exatos = new Set(), prefixo = new Set();
+  tokens.forEach(tk => {
+    ativos.forEach(p => {
+      const sk = String(p.sku).toUpperCase();
+      if (norm(sk) === norm(tk)) exatos.add(p.sku);
+      else if (sk.startsWith(tk + "-")) prefixo.add(p.sku);
+    });
+  });
+  if (exatos.size === 1) return { sku: [...exatos][0], cand: [] };
+  if (exatos.size > 1) return { sku: null, cand: [...exatos].slice(0, 8) };
+  if (prefixo.size){
+    const pool = ativos.filter(p => prefixo.has(p.sku));
+    return nfeResolverPool(pool, dSpec);
+  }
+  // (3) mesmo NCM + especificações
+  const ncm = nfeNcmDig(r.ncm);
+  if (!ncm) return { sku: null, cand: [] };
+  const pool = ativos.filter(p => nfeNcmDig(p.ncm) === ncm);
+  if (!pool.length) return { sku: null, cand: [] };
+  return nfeResolverPool(pool, dSpec);
 }
 
 function nfeParsear(wb){
@@ -9036,7 +9146,10 @@ function nfeRecalcular(){
     // anteriores (recarregado do banco ao trocar de contêiner ou abrir um arquivo novo).
     // NFE_LINHAS_DESVINCULADAS: linha que o usuário desfez uma mesclagem automática errada — força
     // pendente (não usa alias nem match automático) até ele escolher de novo manualmente.
-    r.sku = NFE_SKU_OVERRIDES_ROW[idx] || (NFE_LINHAS_DESVINCULADAS.has(idx) ? null : (NFE_ALIASES[chave] || nfeMatchContainerItem(chave))) || null;
+    // 20/10: vínculo automático agora é contra o BANCO DE DADOS (produtos ativos) — ver nfeVincularAuto
+    const auto = nfeVincularAuto(r, chave);
+    r._candidatos = auto.cand || [];
+    r.sku = NFE_SKU_OVERRIDES_ROW[idx] || (NFE_LINHAS_DESVINCULADAS.has(idx) ? null : auto.sku) || null;
     // split do COFINS: o despachante manda o valor real (podendo ser 9,65% ou 10,25%). "Valor Cofins"
     // (r.valor_cofins) é esse valor real, igual sai da planilha — sem split nenhum. A parte "padrão"
     // (9,65% da base) e o excedente ("Cofins (+)") continuam calculados aqui, mas só pra uso nos
@@ -9064,6 +9177,7 @@ function nfeRecalcular(){
     const item = {
       sku: first.sku || null,
       _chave: first._chave,
+      _candidatos: first.sku ? [] : (first._candidatos || []),
       descricao_despachante: first.descricao || first.model || "",
       ncm: first.ncm || "",
       qtde,
@@ -9164,7 +9278,12 @@ window.nfeEscolherSku = async function(idx, sku){
 
   // checa o estado ATUAL do alias direto no banco (não só o cache local) pra saber se essa descrição
   // já é ambígua (2+ SKUs diferentes historicamente, ex.: cores) ou virou ambígua agora
-  const { data: aliasAtual } = await db.from("imp_sku_aliases").select("sku,ambiguo").eq("fonte", fonte).eq("modelo_original", chave).maybeSingle();
+  // 20/10: descrição longa do despachante (> 100 caracteres) NÃO vira aprendizado — a descrição é
+  // genérica e o vínculo errado se espalhava pra outros contêineres. Aprende só chaves curtas (modelo).
+  const aprender = !!chave && chave.length <= 100;
+  const aliasAtual = aprender
+    ? (await db.from("imp_sku_aliases").select("sku,ambiguo").eq("fonte", fonte).eq("modelo_original", chave).maybeSingle()).data
+    : null;
   const ambiguo = !!(aliasAtual && (aliasAtual.ambiguo || (aliasAtual.sku && aliasAtual.sku !== sku)));
 
   // container carregado de dados já salvos (sem a planilha crua em memória nessa sessão) — não dá
@@ -9177,7 +9296,9 @@ window.nfeEscolherSku = async function(idx, sku){
     if (PL_ALIASES[fonte]) delete PL_ALIASES[fonte][chave]; // mesma tabela; mantém o cache do Packing List sincronizado se já carregado
     toast("SKU vinculado só nesse item — essa descrição já teve outro SKU antes (parece variação por cor), então o Hub parou de vincular sozinho: as próximas linhas iguais vão ficar pendentes, aguardando escolha manual.");
   } else {
-    const { error } = await db.from("imp_sku_aliases").upsert({ fonte, modelo_original: chave, sku, ambiguo: false }, { onConflict: "fonte,modelo_original" });
+    const { error } = aprender
+      ? await db.from("imp_sku_aliases").upsert({ fonte, modelo_original: chave, sku, ambiguo: false }, { onConflict: "fonte,modelo_original" })
+      : { error: null };
     if (error) toast("Vínculo aplicado, mas não consegui salvar como aprendizado: " + error.message, "error");
     // não seta NFE_ALIASES[chave] aqui de propósito: o aprendizado fica salvo pro PRÓXIMO contêiner
     // (recarregado do banco quando ele for selecionado), mas dentro dessa mesma leitura/planilha o
@@ -9326,26 +9447,35 @@ function nfeOpcoesSku(){
   });
   return opts;
 }
-function nfeSkuOpcoesLista(){
-  const vistos = new Set();
-  const lista = [];
-  (NFE_CONTAINER && NFE_CONTAINER.imp_container_itens || []).forEach(it => {
-    if (it.sku && !vistos.has(it.sku)){ vistos.add(it.sku); lista.push({ sku: it.sku, nome: (it.modelo_original||"").split("\n")[0] }); }
+function nfeSkuOpcoesLista(idx){
+  // 20/10: só produtos ATIVOS do Banco de Dados, com o nome do cadastro. Ordem: sugestões do Hub →
+  // SKUs da Packing List deste contêiner (mesmo NCM primeiro) → mesmo NCM → resto.
+  const item = (NFE_MERGED && NFE_MERGED[idx]) || {};
+  const ncmItem = nfeNcmDig(item.ncm);
+  const cand = new Set((item._candidatos || []).map(x => String(x).toUpperCase()));
+  const pl = new Set(((NFE_CONTAINER && NFE_CONTAINER.imp_container_itens) || []).map(i => i.sku).filter(Boolean).map(x => String(x).toUpperCase()));
+  const lista = nfeProdutosAtivos().map(p => {
+    const k = String(p.sku).toUpperCase();
+    const mesmoNcm = !!ncmItem && nfeNcmDig(p.ncm) === ncmItem;
+    const noPl = pl.has(k), sug = cand.has(k);
+    const grupo = sug ? 0 : (noPl && mesmoNcm) ? 1 : noPl ? 2 : mesmoNcm ? 3 : 4;
+    return { sku: p.sku, nome: p.nome_produto || "", ingles: p.nome_ingles || "", ncm: p.ncm || "", grupo, noPl, mesmoNcm, sug };
   });
-  (FIN_PRODUTOS_CACHE || []).forEach(p => {
-    if (p.sku && !vistos.has(p.sku)){ vistos.add(p.sku); lista.push({ sku: p.sku, nome: p.nome_produto||"" }); }
-  });
+  lista.sort((a, b) => (a.grupo - b.grupo) || compareNatural(a.sku, b.sku));
   return lista;
 }
 window.nfeFiltrarSku = function(idx, q){
-  const termo = finNorm(q||"");
-  const lista = nfeSkuOpcoesLista();
-  const filtrados = termo ? lista.filter(o => finNorm(o.sku).includes(termo) || finNorm(o.nome).includes(termo)) : lista;
+  const palavras = finNorm(q||"").split(" ").filter(Boolean);
+  const lista = nfeSkuOpcoesLista(idx);
+  const filtrados = palavras.length
+    ? lista.filter(o => { const h = finNorm(o.sku + " " + o.nome + " " + o.ingles + " " + o.ncm); return palavras.every(w => h.includes(w)); })
+    : lista;
   const el = document.getElementById(`finSkuAcLista_${idx}`);
   if (!el) return;
+  const tag = (txt, cor) => `<span style="font-size:10px; font-weight:700; color:${cor}; margin-left:6px;">${txt}</span>`;
   el.innerHTML = filtrados.length
-    ? filtrados.slice(0, 50).map(o => `<div class="item" onmousedown="nfeEscolherSku(${idx}, '${escJsStr(escapeHtml(o.sku))}')"><b>${escapeHtml(o.sku)}</b> — ${escapeHtml(o.nome)}</div>`).join("")
-    : `<div class="item vazio">Nenhum SKU encontrado</div>`;
+    ? filtrados.slice(0, 60).map(o => `<div class="item" onmousedown="nfeEscolherSku(${idx}, '${escJsStr(escapeHtml(o.sku))}')"><b>${escapeHtml(o.sku)}</b> — ${escapeHtml(o.nome)}${o.sug ? tag("★ sugestão", "#d97706") : ""}${o.noPl ? tag("no contêiner", "#2563eb") : ""}${o.mesmoNcm && !o.sug ? tag("NCM igual", "#16a34a") : ""}</div>`).join("")
+    : `<div class="item vazio">Nenhum produto ativo encontrado</div>`;
   el.classList.add("open");
 };
 window.nfeFecharSkuLista = function(idx){
@@ -9435,6 +9565,8 @@ function nfeSkuCardHtml(it, idx){
     : `<span class="fin-sku-badge pend">pendente</span>`;
   const nomeResumo = escapeHtml((it.descricao_despachante||"(sem descrição)").slice(0,70));
 
+  const prodVinc = it.sku ? nfeProdutoPorSku(it.sku) : null;
+  const codBarras = prodVinc && prodVinc.codigo_barras ? String(prodVinc.codigo_barras) : "";
   const podeDesvincular = it._rawCount > 1 && NFE_RAW.length > 0;
   const skuCampo = (it.sku && !trocando)
     ? nfeCardCampoRO("SKU", `<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
@@ -9448,7 +9580,7 @@ function nfeSkuCardHtml(it, idx){
           onfocus="nfeFiltrarSku(${idx}, this.value)"
           onblur="nfeFecharSkuLista(${idx})">
         <div class="fin-sku-ac-lista" id="finSkuAcLista_${idx}"></div>
-      </div>`);
+      </div>${(!it.sku && (it._candidatos||[]).length) ? `<div style="margin-top:6px; font-size:11px; color:var(--text-faint);">Sugestões: ${(it._candidatos||[]).map(c => `<button type="button" class="btn btn-ghost btn-sm" style="padding:1px 7px; font-size:11px; margin:2px 3px 0 0;" onclick="event.stopPropagation(); nfeEscolherSku(${idx}, '${escJsStr(escapeHtml(c))}')">${escapeHtml(c)}</button>`).join("")}</div>` : ""}`);
 
   const corpo = !aberto ? "" : `
     <div class="fin-sku-card-body">
@@ -9458,7 +9590,8 @@ function nfeSkuCardHtml(it, idx){
         nfeCardCampoTxt(idx, "NCM", "ncm", it.ncm),
         nfeCardCampoNum(idx, "Quantidade", "qtde", 0),
         nfeCardCampoNum(idx, "Preço Unit.", "preco_unit", 8),
-        nfeCardCampoNum(idx, "Valor Total" + (nfeValorTotalDivergente(it) ? nfeAvisoBadge("Preço Unit. × Quantidade não bate exatamente com o Valor Total (diferença > R$ 0,01). O Valor Total continua sendo o valor de origem — isso é só um aviso pra conferência.") : ""), "valor_total", 2)
+        nfeCardCampoNum(idx, "Valor Total" + (nfeValorTotalDivergente(it) ? nfeAvisoBadge("Preço Unit. × Quantidade não bate exatamente com o Valor Total (diferença > R$ 0,01). O Valor Total continua sendo o valor de origem — isso é só um aviso pra conferência.") : ""), "valor_total", 2),
+        nfeCardCampoRO("Código de barras", `<span class="ref-ro">${codBarras ? escapeHtml(codBarras) : "—"}</span>`)
       ].join(""), "#64748b")}
       ${nfeCardSecao("2 · Imposto de Importação", [
         nfeCardCampoNum(idx, "VMLD", "vmld", 2),
