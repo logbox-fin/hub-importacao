@@ -9456,20 +9456,35 @@ function nfeOpcoesSku(){
   return opts;
 }
 function nfeSkuOpcoesLista(idx){
-  // 20/10: só produtos ATIVOS do Banco de Dados, com o nome do cadastro. Ordem: sugestões do Hub →
-  // SKUs da Packing List deste contêiner (mesmo NCM primeiro) → mesmo NCM → resto.
+  // 20/10: só produtos ATIVOS do Banco de Dados, com o nome do cadastro. Ordem: SKU igual ao código da
+  // planilha / SKU já vinculado → sugestões do Hub → SKUs da Packing List do contêiner (mesmo NCM
+  // primeiro) → mesmo NCM → resto. Vale também pra contêiner já salvo (sugestão calculada na hora).
   const item = (NFE_MERGED && NFE_MERGED[idx]) || {};
   const ncmItem = nfeNcmDig(item.ncm);
+  const ativos = nfeProdutosAtivos();
+  const norm = x => String(x||"").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const textoItem = String(item._chave || "") + " " + String(item.descricao_despachante || "");
+  const tokensItem = new Set(textoItem.toUpperCase().replace(/-\s+/g, "-").split(/[\s;,:()\[\]]+/).map(x => norm(x)).filter(x => x.length >= 5));
+  const atual = item.sku ? String(item.sku).toUpperCase() : "";
   const cand = new Set((item._candidatos || []).map(x => String(x).toUpperCase()));
+  if (!cand.size){
+    try {
+      const auto = nfeVincularAuto({ descricao: item.descricao_despachante || "", model: item._chave || "", ncm: item.ncm || "" }, String(item._chave || ""));
+      if (auto.sku) cand.add(String(auto.sku).toUpperCase());
+      (auto.cand || []).forEach(x => cand.add(String(x).toUpperCase()));
+    } catch(e){}
+  }
   const pl = new Set(((NFE_CONTAINER && NFE_CONTAINER.imp_container_itens) || []).map(i => i.sku).filter(Boolean).map(x => String(x).toUpperCase()));
-  const lista = nfeProdutosAtivos().map(p => {
+  const lista = ativos.map(p => {
     const k = String(p.sku).toUpperCase();
     const mesmoNcm = !!ncmItem && nfeNcmDig(p.ncm) === ncmItem;
     const noPl = pl.has(k), sug = cand.has(k);
-    const grupo = sug ? 0 : (noPl && mesmoNcm) ? 1 : noPl ? 2 : mesmoNcm ? 3 : 4;
-    return { sku: p.sku, nome: p.nome_produto || "", ingles: p.nome_ingles || "", ncm: p.ncm || "", grupo, noPl, mesmoNcm, sug };
+    const igualPlanilha = tokensItem.has(norm(p.sku));
+    const vinculado = k === atual;
+    const grupo = (igualPlanilha || vinculado) ? 0 : sug ? 1 : (noPl && mesmoNcm) ? 2 : noPl ? 3 : mesmoNcm ? 4 : 5;
+    return { sku: p.sku, nome: p.nome_produto || "", ingles: p.nome_ingles || "", ncm: p.ncm || "", grupo, noPl, mesmoNcm, sug, igualPlanilha, vinculado };
   });
-  lista.sort((a, b) => (a.grupo - b.grupo) || compareNatural(a.sku, b.sku));
+  lista.sort((a, b) => (a.grupo - b.grupo) || (Number(b.igualPlanilha) - Number(a.igualPlanilha)) || compareNatural(a.sku, b.sku));
   return lista;
 }
 window.nfeFiltrarSku = function(idx, q){
@@ -9482,7 +9497,7 @@ window.nfeFiltrarSku = function(idx, q){
   if (!el) return;
   const tag = (txt, cor) => `<span style="font-size:10px; font-weight:700; color:${cor}; margin-left:6px;">${txt}</span>`;
   el.innerHTML = filtrados.length
-    ? filtrados.slice(0, 60).map(o => `<div class="item" onmousedown="nfeEscolherSku(${idx}, '${escJsStr(escapeHtml(o.sku))}')"><b>${escapeHtml(o.sku)}</b> — ${escapeHtml(o.nome)}${o.sug ? tag("★ sugestão", "#d97706") : ""}${o.noPl ? tag("no contêiner", "#2563eb") : ""}${o.mesmoNcm && !o.sug ? tag("NCM igual", "#16a34a") : ""}</div>`).join("")
+    ? filtrados.slice(0, 60).map(o => `<div class="item" onmousedown="nfeEscolherSku(${idx}, '${escJsStr(escapeHtml(o.sku))}')"><b>${escapeHtml(o.sku)}</b> — ${escapeHtml(o.nome)}${o.igualPlanilha ? tag("= código da planilha", "#16a34a") : ""}${o.vinculado ? tag("vinculado", "#64748b") : ""}${o.sug && !o.igualPlanilha ? tag("★ sugestão", "#d97706") : ""}${o.noPl ? tag("no contêiner", "#2563eb") : ""}${o.mesmoNcm && !o.sug && !o.igualPlanilha && !o.vinculado ? tag("NCM igual", "#16a34a") : ""}</div>`).join("")
     : `<div class="item vazio">Nenhum produto ativo encontrado</div>`;
   el.classList.add("open");
 };
