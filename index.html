@@ -8849,6 +8849,10 @@ function nfeMatchContainerItem(chave){
    quando sobra UM candidato; se sobrar mais de um, fica pendente e mostra os candidatos como sugestão. */
 function nfeNcmDig(v){ return String(v||"").replace(/\D/g,""); }
 function nfeProdutosAtivos(){ return (FIN_PRODUTOS_CACHE||[]).filter(p => p && p.sku && p.ativo !== false); }
+function nfeNomeCadastro(sku){
+  const p = nfeProdutoPorSku(sku);
+  return p && p.nome_produto ? String(p.nome_produto).trim() : "";
+}
 function nfeProdutoPorSku(sku){
   const k = String(sku||"").toUpperCase();
   return (FIN_PRODUTOS_CACHE||[]).find(p => p && p.sku && String(p.sku).toUpperCase() === k) || null;
@@ -9178,7 +9182,8 @@ function nfeRecalcular(){
       sku: first.sku || null,
       _chave: first._chave,
       _candidatos: first.sku ? [] : (first._candidatos || []),
-      descricao_despachante: first.descricao || first.model || "",
+      // 20/10: com SKU vinculado, o Nome do card é o nome do cadastro (Banco de Dados); pendente mantém o texto do despachante
+      descricao_despachante: (first.sku && nfeNomeCadastro(first.sku)) || first.descricao || first.model || "",
       ncm: first.ncm || "",
       qtde,
       // Preço Unit. fica de fora do arredondamento de propósito (precisão de 8 casas, calculado a
@@ -9330,12 +9335,15 @@ window.nfeEscolherSku = async function(idx, sku){
         bc_ibscbs: round2(somaCampo("bc_ibscbs")), valor_cbs: round2(somaCampo("valor_cbs")), valor_ibs_uf: round2(somaCampo("valor_ibs_uf")),
         _rawCount: (alvo._rawCount||1) + (item._rawCount||1), _pendente: false
       });
+      { const nm = nfeNomeCadastro(sku); if (nm) alvo.descricao_despachante = nm; }
       NFE_MERGED.splice(idx, 1);
       NFE_EXPANDIDOS = new Set(); NFE_TROCANDO_SKU = new Set(); // índices mudaram com o splice, evita ficar apontando pro card errado
       toast(`Esse SKU já existia em outro card — mesclado automaticamente (agora ${fmtN(novaQtde,0)} un.).`);
     } else {
       item.sku = sku;
       item._pendente = false;
+      const nm = nfeNomeCadastro(sku); // 20/10: Nome passa a ser o do cadastro ao vincular/trocar o SKU
+      if (nm) item.descricao_despachante = nm;
     }
     nfeRecalcularTotais();
     nfeRenderTabela();
