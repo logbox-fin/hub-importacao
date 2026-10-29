@@ -398,6 +398,12 @@
   .kanban-col-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding:0 4px; }
   .kanban-col-title{ font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:700; color:var(--text); }
   .kanban-col-count{ font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-size:12px; font-weight:700; color:var(--text-faint); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:2px 9px; }
+  .kb-emp-filtro{ display:inline-flex; gap:0; border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--surface); }
+  .kb-emp-filtro button{ border:none; background:transparent; padding:6px 13px; font-size:12px; font-weight:700; cursor:pointer; color:var(--text-muted); border-right:1px solid var(--border); font-family:inherit; }
+  .kb-emp-filtro button:last-child{ border-right:none; }
+  .kb-emp-filtro button.ativo{ background:var(--accent, #2563eb); color:#fff; }
+  .kc-bl{ display:inline-flex; align-items:center; gap:4px; font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-size:11px; font-weight:600; color:var(--text-muted); background:var(--surface-alt); border:1px solid var(--border); border-radius:6px; padding:3px 8px; user-select:text; cursor:text; word-break:break-all; }
+  .kc-bl.vazio{ color:var(--text-faint); font-weight:500; }
   .kb-sku-search-wrap{ position:relative; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .kb-sku-search-box{ position:relative; }
   .kb-sku-search-input{ width:230px; padding:8px 12px 8px 30px; border-radius:20px; border:1px solid var(--border-strong); font-size:12.5px; box-sizing:border-box; }
@@ -1109,8 +1115,8 @@
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>NCM</th><th>Descrição</th><th class="num">II %</th><th class="num">IPI %</th><th class="num">COFINS %</th><th class="num">ICMS %</th><th></th></tr></thead>
-          <tbody id="ncmTbody"><tr><td colspan="7" class="empty-state">Carregando…</td></tr></tbody>
+          <thead><tr><th>NCM</th><th>Descrição</th><th class="num">II %</th><th class="num">IPI %</th><th class="num">COFINS %</th><th class="num">ICMS %</th><th class="num" title="Só gera um alerta na Emitir P. List + Invoice — não altera valores">Parâmetro (US$/kg)</th><th></th></tr></thead>
+          <tbody id="ncmTbody"><tr><td colspan="8" class="empty-state">Carregando…</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -1445,6 +1451,11 @@
           </div>
           <div id="kbSkuTags"></div>
         </div>
+        <div class="kb-emp-filtro" id="kbEmpFiltro" title="Filtrar contêineres por empresa">
+          <button type="button" data-emp="todas" onclick="kbSetEmpresa('todas')">Todas</button>
+          <button type="button" data-emp="logbox" onclick="kbSetEmpresa('logbox')">LOGBOX</button>
+          <button type="button" data-emp="mti" onclick="kbSetEmpresa('mti')">MTI</button>
+        </div>
         <div class="spacer"></div>
         <div id="kbAlertaEtdEta"></div>
       </div>
@@ -1490,6 +1501,7 @@
         <div class="field"><label>IPI %</label><input type="text" inputmode="decimal" id="ncm_ipi" class="mono-field"></div>
         <div class="field"><label>COFINS %</label><input type="text" inputmode="decimal" id="ncm_cofins" class="mono-field" value="9.65"></div>
         <div class="field"><label>ICMS %</label><input type="text" inputmode="decimal" id="ncm_icms" class="mono-field" value="18"></div>
+        <div class="field"><label title="Piso de US$ por kg líquido. Na Emitir P. List + Invoice, o Hub só AVISA se Valor Total USD ÷ Peso Líquido Total do produto ficar abaixo deste valor — não altera nenhum valor dos documentos. O Parâmetro do próprio produto (Banco de Dados), quando existir, vale no lugar deste.">Parâmetro (US$/kg)</label><input type="text" inputmode="decimal" id="ncm_parametro" class="mono-field" placeholder="opcional"></div>
       </div>
     </div>
     <div class="modal-foot"><span></span><div style="display:flex; gap:10px;"><button class="btn btn-ghost" onclick="fecharModalNcm()">Cancelar</button><button class="btn btn-primary" onclick="salvarNCM()">Salvar</button></div></div>
@@ -1602,7 +1614,7 @@
           <div class="field-grid cols-3">
             <div class="field"><label>Preço RMB</label><input type="text" inputmode="decimal" id="f_preco_rmb" class="mono-field" placeholder="0,00"><div class="field-error" id="err_preco_rmb"></div></div>
             <div class="field"><label>Valor DUIMP (USD)</label><input type="text" inputmode="decimal" id="f_valor_duimp_usd" class="mono-field" placeholder="0,00"><div class="field-error" id="err_valor_duimp_usd"></div></div>
-            <div class="field"><label title="Piso de US$ por kg líquido. Na Emitir P. List + Invoice, o Hub avisa se Valor Total USD ÷ Peso Líquido Total ficar abaixo deste valor.">Parâmetro (US$/kg)</label><input type="text" inputmode="decimal" id="f_parametro_usd_kg" class="mono-field" placeholder="0,00"><div class="field-error" id="err_parametro_usd_kg"></div></div>
+            <div class="field"><label title="Piso de US$ por kg líquido. Na Emitir P. List + Invoice, o Hub avisa se Valor Total USD ÷ Peso Líquido Total ficar abaixo deste valor. Se ficar vazio, vale o Parâmetro do NCM (aba Base NCM).">Parâmetro (US$/kg)</label><input type="text" inputmode="decimal" id="f_parametro_usd_kg" class="mono-field" placeholder="0,00"><div class="field-error" id="err_parametro_usd_kg"></div></div>
           </div>
         </fieldset>
         <fieldset>
@@ -1862,7 +1874,17 @@ const DOCEXP_LOGO = "iVBORw0KGgoAAAANSUhEUgAAAQEAAAC6CAYAAACulvj/AAAAAXNSR0IArs4
       // mesclagens
       spec.merges.forEach(function(m){var p=m.split(':'),a=p[0].match(/^([A-Z]+)(\d+)$/),b=p[1].match(/^([A-Z]+)(\d+)$/);
         var r1=+a[2],r2=+b[2];if(r1>=27&&r1<39)return;
+        // e-mail / título / nome em chinês: mesclagem refeita abaixo (centralizada, sem recuo)
+        if(m==='B6:Q6'||m==='B7:Q7'||m==='B8:Q8')return;
         ws.mergeCells(a[1]+mapRow(r1)+':'+b[1]+mapRow(r2));});
+      // Cabeçalho (e-mail, título, nome em chinês): o modelo empurrava o texto com um recuo (indent) de 145-150 —
+      // no Excel isso estoura a célula mesclada na IMPRESSÃO e o texto some. Agora: texto centralizado, sem recuo,
+      // numa mesclagem C:R ao lado do logo (mesmo visual, nada de recuo gigante).
+      [6,7,8].forEach(function(rw){
+        var v=ws.getCell('B'+rw).value,fB=ws.getCell('B'+rw).font;
+        ws.getCell('C'+rw).value=v;ws.getCell('C'+rw).font=fB;ws.getCell('B'+rw).value=null;
+        ws.mergeCells('C'+rw+':R'+rw);
+        var cc=ws.getCell('C'+rw);cc.alignment={horizontal:'center',vertical:'middle'};});
       // moldura preta (média) ao redor da tabela de itens: B25 até U(T+1) — aplicada APÓS as mesclagens
       (function(){var BK={style:'medium',color:{argb:'FF000000'}};
         for(var r=25;r<=T+1;r++){for(var c=2;c<=21;c++){
@@ -2540,7 +2562,7 @@ function renderNCMs(){
   let list = NCMS;
   if (q) list = list.filter(n => (n.ncm||"").toLowerCase().includes(q) || (n.descricao||"").toLowerCase().includes(q));
   const tbody = document.getElementById("ncmTbody");
-  if (!list.length){ tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Nenhum NCM encontrado.</td></tr>`; return; }
+  if (!list.length){ tbody.innerHTML = `<tr><td colspan="8" class="empty-state">Nenhum NCM encontrado.</td></tr>`; return; }
   tbody.innerHTML = list.map(n => `
     <tr>
       <td class="mono">${escapeHtml(n.ncm)}</td>
@@ -2549,6 +2571,7 @@ function renderNCMs(){
       <td class="num mono">${fmtN(n.ipi)}</td>
       <td class="num mono">${fmtN(n.cofins)}</td>
       <td class="num mono">${fmtN(n.icms)}</td>
+      <td class="num mono">${n.parametro_usd_kg === null || n.parametro_usd_kg === undefined || n.parametro_usd_kg === "" ? "—" : fmtN(n.parametro_usd_kg)}</td>
       <td class="actions-cell">
         <button class="btn-icon" title="Editar" onclick="abrirEditarNCM('${n.id}')">✎</button>
         <button class="btn-icon" title="Excluir" onclick="confirmarExcluirNCM('${n.id}','${escapeHtml(n.ncm)}')">🗑</button>
@@ -2565,6 +2588,7 @@ window.abrirNovoNCM = function(){
   document.getElementById("ncm_ipi").value = "";
   document.getElementById("ncm_cofins").value = "9.65";
   document.getElementById("ncm_icms").value = "18";
+  document.getElementById("ncm_parametro").value = "";
   document.getElementById("err_ncm_codigo").textContent = "";
   document.getElementById("modalNcmOverlay").classList.add("open");
 };
@@ -2579,6 +2603,7 @@ window.abrirEditarNCM = function(id){
   document.getElementById("ncm_ipi").value = n.ipi;
   document.getElementById("ncm_cofins").value = n.cofins;
   document.getElementById("ncm_icms").value = n.icms;
+  document.getElementById("ncm_parametro").value = n.parametro_usd_kg ?? "";
   document.getElementById("err_ncm_codigo").textContent = "";
   document.getElementById("modalNcmOverlay").classList.add("open");
 };
@@ -2596,6 +2621,7 @@ window.salvarNCM = async function(){
     ipi: parseNum(document.getElementById("ncm_ipi").value) || 0,
     cofins: parseNum(document.getElementById("ncm_cofins").value) ?? 9.65,
     icms: parseNum(document.getElementById("ncm_icms").value) ?? 18,
+    parametro_usd_kg: parseNum(document.getElementById("ncm_parametro").value),
   };
   let error;
   if (editingNcmId){ ({error} = await db.from("imp_ncms").update(payload).eq("id", editingNcmId)); }
@@ -6518,6 +6544,12 @@ async function loadStatusContainers(){
 }
 
 let KB_SKU_FILTRO = []; // [{sku, nome}] — filtro de busca por SKU no Kanban
+let KB_EMPRESA = (function(){ try { const v = localStorage.getItem("kbEmpresa"); return v === "logbox" || v === "mti" ? v : "todas"; } catch(e){ return "todas"; } })(); // filtro por empresa (só exibição)
+window.kbSetEmpresa = function(v){
+  KB_EMPRESA = (v === "logbox" || v === "mti") ? v : "todas";
+  try { localStorage.setItem("kbEmpresa", KB_EMPRESA); } catch(e){}
+  renderKanban();
+};
 
 function renderKanban(){
   const todosAtivos = [...PL_CONTAINERS.logbox, ...PL_CONTAINERS.mti].filter(c => !c.chegou_em);
@@ -6530,10 +6562,12 @@ function renderKanban(){
       : "";
   }
 
+  document.querySelectorAll("#kbEmpFiltro button").forEach(b => b.classList.toggle("ativo", b.dataset.emp === KB_EMPRESA));
   const skusFiltro = KB_SKU_FILTRO.map(x => x.sku);
-  const ativos = skusFiltro.length
+  const porSku = skusFiltro.length
     ? todosAtivos.filter(c => (c.imp_container_itens || []).some(it => it.sku && skusFiltro.includes(it.sku)))
     : todosAtivos;
+  const ativos = KB_EMPRESA === "todas" ? porSku : porSku.filter(c => c.fonte === KB_EMPRESA);
 
   const infoEl = document.getElementById("kbFiltroInfo");
   if (infoEl){
@@ -6570,7 +6604,10 @@ function renderKanban(){
         ${c.agente_carga ? `<div class="kc-agente">🚚 ${escapeHtml(c.agente_carga)}</div>` : ""}
         ${(c.imp_container_itens || []).length === 0 ? `<div class="kc-provisorio">📝 Lista de produtos pendente</div>` : ""}
         <div class="kc-foot">
-          <span class="tag-emp ${c.fonte === "mti" ? "mti" : "logbox"}">${c.fonte.toUpperCase()}</span>
+          <span style="display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; min-width:0;">
+            <span class="tag-emp ${c.fonte === "mti" ? "mti" : "logbox"}">${c.fonte.toUpperCase()}</span>
+            ${c.bl_numero ? `<span class="kc-bl" title="Número do B/L" onclick="event.stopPropagation()">📄 ${escapeHtml(c.bl_numero)}</span>` : `<span class="kc-bl vazio" title="Número do B/L não preenchido">sem B/L</span>`}
+          </span>
           <div class="kanban-arrows">
             <button class="kanban-arrow" title="Mover pra ${idx > 0 ? KB_LABELS[KB_STATUSES[idx - 1]] : ""}" onclick="event.stopPropagation(); kbMover('${c.fonte}','${c.id}',${idx - 1})" ${idx === 0 ? "disabled" : ""}>‹</button>
             <button class="kanban-arrow" title="Mover pra ${idx < KB_STATUSES.length - 1 ? KB_LABELS[KB_STATUSES[idx + 1]] : ""}" onclick="event.stopPropagation(); kbMover('${c.fonte}','${c.id}',${idx + 1})" ${idx === KB_STATUSES.length - 1 ? "disabled" : ""}>›</button>
@@ -6921,6 +6958,7 @@ function containerDetalheHeaderHtml(container, fonte){
           <div class="field"><label>Número do B/L</label><input type="text" readonly value="${escapeHtml(container.bl_numero || "—")}"></div>
           <div class="field"><label>Número do Contêiner</label><input type="text" readonly value="${escapeHtml(container.bl_container_numero || "—")}"></div>
           <div class="field"><label>Número do Lacre</label><input type="text" readonly value="${escapeHtml(container.bl_navio || "—")}"></div>
+          <div class="field"><label>Navio</label><input type="text" readonly value="${escapeHtml(String(container.bl_viagem || "").split("/")[0].trim() || "—")}"></div>
         </div>` : ""}
       </div>
       <button onclick="fecharDetalheOverlay()" style="background:var(--surface-alt); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:17px; margin-left:14px; flex-shrink:0;">×</button>
@@ -10305,6 +10343,13 @@ function dxDataUS(iso){
   if (!m) return "";
   return `${DX_MESES[+m[2] - 1]}. ${m[3]}, ${m[1]}`;
 }
+function dxParamProduto(c){
+  const own = dxNumOuNull(c && c.parametro_usd_kg);
+  if (own !== null) return own;
+  const k = String((c && c.ncm) || "").replace(/\D/g, "");
+  const nv = (DX.paramsNcm || {})[k];
+  return nv === undefined ? null : nv;
+}
 function dxNumOuNull(v){ if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isFinite(n) ? n : null; }
 function dxFmtInput(v){ return v === null || v === undefined || v === "" ? "" : String(v).replace(".", ","); }
 
@@ -10381,8 +10426,14 @@ async function dxSelecionar(id){
     const r = await db.from(TABLE_PRODUTOS).select("sku,nome_ingles,nome_chines,marca,ncm,valor_duimp_usd,parametro_usd_kg").in("sku", skus);
     catalogo = r.data || [];
   }
+  // Parâmetro do alerta: o do produto (se houver) senão o da Base NCM — só alerta, nunca altera valores
+  DX.paramsNcm = {};
+  try {
+    const rn = await db.from("imp_ncms").select("ncm,parametro_usd_kg");
+    (rn.data || []).forEach(n => { const v = dxNumOuNull(n.parametro_usd_kg); if (v !== null) DX.paramsNcm[String(n.ncm||"").replace(/\D/g,"")] = v; });
+  } catch(e){}
   DX.params = {};
-  catalogo.forEach(c => { if (c.sku) DX.params[String(c.sku).trim().toUpperCase()] = dxNumOuNull(c.parametro_usd_kg); });
+  catalogo.forEach(c => { if (c.sku) DX.params[String(c.sku).trim().toUpperCase()] = dxParamProduto(c); });
   const base = dxMontarBase(c, c.imp_container_itens, catalogo);
   // agente de carga: nome completo igual ao do B/L (busca reversa em imp_agente_aliases); sem vínculo → nome cadastrado em maiúsculas
   const agenteCompleto = await dxAgenteCompleto(c.agente_carga);
@@ -10567,7 +10618,7 @@ function dxRefresh(){
   document.getElementById("dxAlertas").innerHTML += dxAlertaKgHtml(doc, C);
   dxAtualizarChip();
 }
-// Alerta de US$/kg: (Valor Total USD ÷ Peso Líquido Total) por SKU abaixo do Parâmetro do cadastro. Produto sem Parâmetro é ignorado. Só avisa.
+// Alerta de US$/kg: (Valor Total USD ÷ Peso Líquido Total) por SKU abaixo do Parâmetro (do produto, ou da Base NCM se o produto não tiver). Produto sem Parâmetro é ignorado. Só avisa.
 function dxAlertaKgHtml(doc, C){
   const por = {};
   doc.itens.forEach((it, i) => {
@@ -10627,9 +10678,9 @@ function dxEditItem(i, k, el){
     it.semSku = false;
     const su = String(it.sku || "").trim().toUpperCase();
     if (su && !(su in (DX.params || {}))){
-      db.from(TABLE_PRODUTOS).select("sku,parametro_usd_kg").eq("sku", it.sku).then(({ data }) => {
+      db.from(TABLE_PRODUTOS).select("sku,ncm,parametro_usd_kg").eq("sku", it.sku).then(({ data }) => {
         DX.params = DX.params || {};
-        DX.params[su] = data && data.length ? dxNumOuNull(data[0].parametro_usd_kg) : null;
+        DX.params[su] = data && data.length ? dxParamProduto(data[0]) : null;
         dxRefresh();
       }).catch(() => {});
     }
